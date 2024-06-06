@@ -1,0 +1,66 @@
+#-------------Setup----------------
+
+import Ed
+
+Ed.EdisonVersion = Ed.V3
+
+Ed.DistanceUnits = Ed.CM
+Ed.Tempo = Ed.TEMPO_MEDIUM
+
+
+def both_leds(state):
+    state = bool(state)
+    Ed.LeftLed(state)
+    Ed.RightLed(state)
+
+
+def clamp(speed, min, max):
+    if speed < min:
+        return min
+    elif speed > max:
+        return max
+    return speed
+
+
+def int_to_eddir(speed):
+    if speed > 0:
+        return Ed.FORWARD
+    if speed < 0:
+        return Ed.BACKWARD
+    return Ed.STOP
+
+
+def int_to_edspeed(speed):
+    speed = abs(speed)
+    if speed <= 10:
+        return clamp(speed, 1, 10)
+    return Ed.SPEED_FULL
+
+
+def drive(left, right):
+    # left and right are integer wheelspeeds within [-10, 10]
+    # Outside this range, the wheel will go full speed.
+    Ed.DriveLeftMotor(int_to_eddir(left), int_to_edspeed(left), Ed.DISTANCE_UNLIMITED)
+    Ed.DriveRightMotor(int_to_eddir(right), int_to_edspeed(right), Ed.DISTANCE_UNLIMITED)
+
+
+def sleep_ms(ms):  # short alias so you don't have to type the whole thing out
+    Ed.TimeWait(ms, Ed.TIME_MILLISECONDS)
+
+
+def drive_for_ms(left, right, time_ms):
+    drive(left, right)
+    Ed.TimeWait(time_ms, Ed.TIME_MILLISECONDS)
+
+
+def stop():
+    Ed.Drive(Ed.STOP, 1, 1)
+
+
+#--------Your code below-----------
+
+while True:
+    drive(3, 2)
+
+
+
