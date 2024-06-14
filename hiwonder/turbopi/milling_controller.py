@@ -1,8 +1,10 @@
 #!/usr/bin/python3
 # coding=utf8
+# from contextlib import ExitStack
 import sys
 
 sys.path.append('/home/pi/TurboPi/')
+import os
 import cv2
 import time
 import math
@@ -23,6 +25,15 @@ import hiwonder_common.statistics_tools as st
 
 # typing
 from typing import Any
+
+import warnings
+try:
+    import boot.buttonman as buttonman
+    buttonman.TaskManager.register_stoppable()
+except ImportError:
+    buttonman = None
+    warnings.warn("buttonman was not imported, so no processes can be registered. This means the process can't be stopped by buttonman.",  # noqa: E501
+                  ImportWarning, stacklevel=2)
 
 
 # path = '/home/pi/TurboPi/'
@@ -52,8 +63,9 @@ class BinaryProgram:
         board=None,
         lab_cfg_path=THRESHOLD_CFG_PATH,
         servo_cfg_path=SERVO_CFG_PATH,
+        exit_on_stop=True
     ) -> None:
-        self._stop = False
+        self._run = True
         self.preview_size = (640, 480)
 
         self.target_color = ('green')
@@ -79,6 +91,29 @@ class BinaryProgram:
         self.fps_averager = st.Average(10)
         self.boolean_detection_averager = st.Average(10)
 
+        self.show = self.can_show_windows()
+        if not self.show:
+            print("Failed to create test window.")
+            print("I'll assuming you're running headless; I won't show image previews.")
+
+        self.exit_on_stop = exit_on_stop
+
+    @staticmethod
+    def can_show_windows():
+        img = np.zeros((100, 100, 3), np.uint8)
+        try:
+            cv2.imshow('headless_test', img)
+            cv2.imshow('headless_test', img)
+            key = cv2.waitKey(1)
+            cv2.destroyAllWindows()
+        except BaseException as err:
+            if "Can't initialize GTK backend" in err.msg:
+                return False
+            else:
+                raise
+        else:
+            return True
+
     def init_move(self):
         servo_data = get_yaml_data(SERVO_CFG_PATH)
         self.servo1 = int(servo_data['servo1'])
@@ -92,10 +127,27 @@ class BinaryProgram:
     def load_servo_config(self, servo_cfg_path):
         self.servo_data = get_yaml_data(servo_cfg_path)
 
-    def stop(self):
+    def pause(self):
+        self._run = False
         self.chassis.set_velocity(0, 0, 0)
+        print(f"ColorDetect Paused w/ PID: {os.getpid()} Camera still open...")
+
+    def resume(self):
+        self._run = True
+        print("ColorDetect Resumed")
+
+    def stop(self):
+        self._run = False
+        self.chassis.set_velocity(0, 0, 0)
+        if self.camera:
+            self.camera.camera_close()
         self.set_rgb('None')
+        cv2.destroyAllWindows()
         print("ColorDetect Stop")
+        if buttonman:
+            buttonman.TaskManager.unregister()
+        if self.exit_on_stop:
+            sys.exit()  # exit the python script immediately
 
     def set_rgb(self, color):
         # Set the RGB light color of the expansion board to match the color you want to track
@@ -162,15 +214,33 @@ class BinaryProgram:
             draw_text(annotated_image, range_bgr['black'], 'None')
         draw_fps(annotated_image, range_bgr['black'], avg_fps)
         frame_resize = cv2.resize(annotated_image, (320, 240))
-        cv2.imshow('frame', frame_resize)
-        key = cv2.waitKey(1)
-        if key == 27:
-            return
+        if self.show:
+            cv2.imshow('frame', frame_resize)
+            key = cv2.waitKey(1)
+            if key == 27:
+                return
+        else:
+            time.sleep(1E-3)
 
     def main(self):
+
+        def sigint_handler(sig, frame):
+            self.stop()
+
+        def sigtstp_handler(sig, frame):
+            self.pause()
+
+        def sigcont_handler(sig, frame):
+            self.resume()
+
         self.init_move()
         self.camera = Camera.Camera()
         self.camera.camera_open(correction=True)  # Enable distortion correction, not enabled by default
+
+        signal.signal(signal.SIGINT, sigint_handler)
+        signal.signal(signal.SIGTERM, sigint_handler)
+        signal.signal(signal.SIGTSTP, sigtstp_handler)
+        signal.signal(signal.SIGCONT, sigcont_handler)
 
         def loop():
             t_start = time.time_ns()
@@ -180,16 +250,17 @@ class BinaryProgram:
             self.fps = 1 / frame_time
             # print(self.fps)
 
-
-        while 1:
+        while self._run:
             try:
                 loop()
             except KeyboardInterrupt:
+                self.stop()
                 break
+            except BaseException:
+                self.stop()
+                raise
 
         self.stop()
-        self.camera.camera_close()
-        cv2.destroyAllWindows()
 
 
 def color_contour_detection(
