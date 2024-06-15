@@ -1,0 +1,17 @@
+[project]
+name = "hiwonder_common"
+version = "0.0.1"
+authors = [
+  { name="Kevin Zhu", email="kzhu4@gmu.edu" },
+]
+description = "common library of tools for HiWonder TurboPi"
+readme = "README.md"
+requires-python = ">=3.9"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+]
+
+# [project.urls]
+# Homepage = "https://github.com/pypa/sampleproject"
+# Issues = "https://github.com/pypa/sampleproject/issues"

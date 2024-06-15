@@ -4,6 +4,7 @@
 import sys
 
 sys.path.append('/home/pi/TurboPi/')
+sys.path.append('/home/pi/boot/')
 import os
 import cv2
 import time
@@ -14,7 +15,7 @@ import yaml
 import numpy as np
 import operator
 import argparse
-import timeit
+import RPi.GPIO as GPIO
 # import threading
 
 # import yaml_handle
@@ -28,13 +29,18 @@ from typing import Any
 
 import warnings
 try:
-    import boot.buttonman as buttonman
+    import buttonman as buttonman
     buttonman.TaskManager.register_stoppable()
 except ImportError:
     buttonman = None
     warnings.warn("buttonman was not imported, so no processes can be registered. This means the process can't be stopped by buttonman.",  # noqa: E501
                   ImportWarning, stacklevel=2)
 
+
+KEY1_PIN = 33
+KEY2_PIN = 16
+KDN = GPIO.LOW
+KUP = GPIO.HIGH
 
 # path = '/home/pi/TurboPi/'
 THRESHOLD_CFG_PATH = '/home/pi/TurboPi/lab_config.yaml'
@@ -63,9 +69,11 @@ class BinaryProgram:
         board=None,
         lab_cfg_path=THRESHOLD_CFG_PATH,
         servo_cfg_path=SERVO_CFG_PATH,
+        pause=False,
+        startup_beep=True,
         exit_on_stop=True
     ) -> None:
-        self._run = True
+        self._run = not pause
         self.preview_size = (640, 480)
 
         self.target_color = ('green')
@@ -89,6 +97,7 @@ class BinaryProgram:
         self.dry_run = dry_run
         self.fps = 0.0
         self.fps_averager = st.Average(10)
+        self.detected = False
         self.boolean_detection_averager = st.Average(10)
 
         self.show = self.can_show_windows()
@@ -96,7 +105,26 @@ class BinaryProgram:
             print("Failed to create test window.")
             print("I'll assuming you're running headless; I won't show image previews.")
 
+        GPIO.setup(KEY1_PIN, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+
+        if buttonman:
+            self.key1_debouncer = buttonman.ButtonDebouncer(KEY1_PIN, self.btn1, bouncetime=50)
+            self.key1_debouncer.start()
+            GPIO.add_event_detect(KEY1_PIN, GPIO.BOTH, callback=self.key1_debouncer)
+
+        if startup_beep:
+            Board.setBuzzer(1)
+            time.sleep(0.05)
+            Board.setBuzzer(0)
+
         self.exit_on_stop = exit_on_stop
+
+    def btn1(self, channel, event):
+        if event == KUP:
+            if self._run:
+                self.pause()
+            else:
+                self.resume()
 
     @staticmethod
     def can_show_windows():
@@ -158,6 +186,15 @@ class BinaryProgram:
         self.board.RGB.setPixelColor(1, self.board.PixelColor(r, g, b))
         self.board.RGB.show()
 
+    def control(self):
+        self.set_rgb('green' if bool(self.smoothed_detected) else 'red')
+        if not self.dry_run:
+            if self.smoothed_detected:
+                self.chassis.set_velocity(100, 90, -0.5)  # Control robot movement function
+                # linear speed 50 (0~100), direction angle 90 (0~360), yaw angular speed 0 (-2~2)
+            else:
+                self.chassis.set_velocity(100, 90, 0.5)
+
     def main_loop(self):
         avg_fps = self.fps_averager(self.fps)  # feed the averager
         raw_img = self.camera.frame
@@ -191,28 +228,21 @@ class BinaryProgram:
         )
         # The output of color_contour_detection() is sorted highest to lowest
         biggest_contour, biggest_contour_area = target_contours[0] if target_contours else (None, 0)
-        detected: bool = biggest_contour_area > 10  # did we detect something of interest?
+        self.detected: bool = biggest_contour_area > 10  # did we detect something of interest?
 
-        smoothed_detected = self.boolean_detection_averager(detected)  # feed the averager
-
-        self.set_rgb('green' if bool(smoothed_detected) else 'red')
+        self.smoothed_detected = self.boolean_detection_averager(self.detected)  # feed the averager
 
         # print(bool(smoothed_detected), smoothed_detected)
 
-        if not self.dry_run:
-            if smoothed_detected:
-                self.chassis.set_velocity(100, 90, -0.5)  # Control robot movement function
-                # linear speed 50 (0~100), direction angle 90 (0~360), yaw angular speed 0 (-2~2)
-            else:
-                self.chassis.set_velocity(100, 90, 0.5)
+        self.control()  # ################################
 
         # draw annotations of detected contours
-        if detected:
-            draw_fitted_rect(annotated_image, biggest_contour, range_bgr[self.target_color])
-            draw_text(annotated_image, range_bgr[self.target_color], self.target_color)
+        if self.detected:
+            self.draw_fitted_rect(annotated_image, biggest_contour, range_bgr[self.target_color])
+            self.draw_text(annotated_image, range_bgr[self.target_color], self.target_color)
         else:
-            draw_text(annotated_image, range_bgr['black'], 'None')
-        draw_fps(annotated_image, range_bgr['black'], avg_fps)
+            self.draw_text(annotated_image, range_bgr['black'], 'None')
+        self.draw_fps(annotated_image, range_bgr['black'], avg_fps)
         frame_resize = cv2.resize(annotated_image, (320, 240))
         if self.show:
             cv2.imshow('frame', frame_resize)
@@ -250,68 +280,72 @@ class BinaryProgram:
             self.fps = 1 / frame_time
             # print(self.fps)
 
-        while self._run:
-            try:
-                loop()
-            except KeyboardInterrupt:
-                self.stop()
-                break
-            except BaseException:
-                self.stop()
-                raise
+        while True:
+            if self._run:
+                try:
+                    loop()
+                except KeyboardInterrupt:
+                    self.stop()
+                    break
+                except BaseException:
+                    self.stop()
+                    raise
+            else:
+                time.sleep(0.01)
 
         self.stop()
 
+    @staticmethod
+    def color_contour_detection(
+        frame,
+        threshold: tuple[tuple[int, int, int], tuple[int, int, int]],
+        open_kernel: np.array = None,
+        close_kernel: np.array = None,
+    ):
+        # Image Processing
+        # mask the colors we want
+        threshold = [tuple(li) for li in threshold]  # cast to tuple to make cv2 happy
+        frame_mask = cv2.inRange(frame, *threshold)
+        # Perform an opening and closing operation on the mask
+        # https://youtu.be/1owu136z1zI?feature=shared&t=34
+        frame = frame_mask.copy()
+        if open_kernel is not None:
+            frame = cv2.morphologyEx(frame, cv2.MORPH_OPEN, open_kernel)
+        if close_kernel is not None:
+            frame = cv2.morphologyEx(frame, cv2.MORPH_CLOSE, np.ones((3, 3), np.uint8))
+        # find contours (blobs) in the mask
+        contours = cv2.findContours(frame, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)[-2]
+        areas = [math.fabs(cv2.contourArea(contour)) for contour in contours]
+        # zip to provide pairs of (contour, area)
+        zipped = zip(contours, areas)
+        # return largest-to-smallest contour
+        return sorted(zipped, key=operator.itemgetter(1), reverse=True)
 
-def color_contour_detection(
-    frame,
-    threshold: tuple[tuple[int, int, int], tuple[int, int, int]],
-    open_kernel: np.array = None,
-    close_kernel: np.array = None,
-):
-    # Image Processing
-    # mask the colors we want
-    threshold = [tuple(li) for li in threshold]  # cast to tuple to make cv2 happy
-    frame_mask = cv2.inRange(frame, *threshold)
-    # Perform an opening and closing operation on the mask
-    # https://youtu.be/1owu136z1zI?feature=shared&t=34
-    frame = frame_mask.copy()
-    if open_kernel is not None:
-        frame = cv2.morphologyEx(frame, cv2.MORPH_OPEN, open_kernel)
-    if close_kernel is not None:
-        frame = cv2.morphologyEx(frame, cv2.MORPH_CLOSE, np.ones((3, 3), np.uint8))
-    # find contours (blobs) in the mask
-    contours = cv2.findContours(frame, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)[-2]
-    areas = [math.fabs(cv2.contourArea(contour)) for contour in contours]
-    # zip to provide pairs of (contour, area)
-    zipped = zip(contours, areas)
-    # return largest-to-smallest contour
-    return sorted(zipped, key=operator.itemgetter(1), reverse=True)
+    @staticmethod
+    def draw_fitted_rect(img, contour, color):
+        # draw rotated fitted rectangle around contour
+        rect = cv2.minAreaRect(contour)
+        box = np.int0(cv2.boxPoints(rect))
+        cv2.drawContours(img, [box], -1, color, 2)
 
+    @staticmethod
+    def draw_text(img, color, name):
+        # Print the detected color on the screen
+        cv2.putText(img, f"Color: {name}", (10, img.shape[0] - 10),
+            cv2.FONT_HERSHEY_SIMPLEX, 0.65, color, 2)
 
-def draw_fitted_rect(img, contour, color):
-    # draw rotated fitted rectangle around contour
-    rect = cv2.minAreaRect(contour)
-    box = np.int0(cv2.boxPoints(rect))
-    cv2.drawContours(img, [box], -1, color, 2)
-
-
-def draw_text(img, color, name):
-    # Print the detected color on the screen
-    cv2.putText(img, f"Color: {name}", (10, img.shape[0] - 10),
-        cv2.FONT_HERSHEY_SIMPLEX, 0.65, color, 2)
-
-
-def draw_fps(img, color, fps):
-    # Print the detected color on the screen
-    cv2.putText(img, f"fps: {fps:.3}", (10, 20),
-        cv2.FONT_HERSHEY_SIMPLEX, 0.65, color, 2)
+    @staticmethod
+    def draw_fps(img, color, fps):
+        # Print the detected color on the screen
+        cv2.putText(img, f"fps: {fps:.3}", (10, 20),
+            cv2.FONT_HERSHEY_SIMPLEX, 0.65, color, 2)
 
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument("--dry_run", action='store_true')
+    parser.add_argument("--startpaused", action='store_true')
     args = parser.parse_args()
 
-    program = BinaryProgram(dry_run=args.dry_run)
+    program = BinaryProgram(dry_run=args.dry_run, pause=args.startpaused)
     program.main()

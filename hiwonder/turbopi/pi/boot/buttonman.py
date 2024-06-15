@@ -6,10 +6,12 @@ import itertools
 import pathlib as pl
 import json
 import threading
+import subprocess
 # import asyncio
 
 try:
     import psutil
+    psutil = psutil
 except ImportError:
     psutil = None
 try:
@@ -48,6 +50,12 @@ KUP = GPIO.HIGH
 
 
 def reset_wifi():
+    os.system("systemctl stop hw_wifi.service > /dev/null 2>&1")
+    os.system("systemctl restart wpa_supplicant.service > /dev/null 2>&1")
+    os.system("systemctl restart dhcpcd.service > /dev/null 2>&1")
+
+
+def start_ap():
     os.system("rm /etc/Hiwonder/* -rf > /dev/null 2>&1")
     os.system("systemctl restart hw_wifi.service > /dev/null 2>&1")
 
@@ -240,13 +248,167 @@ class ButtonDebouncer(threading.Thread):
         self.lock.release()
 
 
+class PushStateMachine(statemachine.StateMachine):
+    idle = statemachine.State(initial=True)
+    down = statemachine.State()
+    held = statemachine.State()
+    rlsd = statemachine.State()
+    unheld = statemachine.State()
+
+    def __init__(self, *args, hold_period=0.35, timeout=0.45, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.t_down = 0
+        self.t_rlsd = 0
+        self.hold_period = hold_period
+        self.timeout = timeout
+        self.short_press = lambda: None
+        self.long_press = lambda: None
+        self.holding = lambda: None
+        self.done = lambda: None
+
+    cycle = (down.to(held, cond='held_long_enough', before='send_hold')
+           | rlsd.to(idle, cond='rlsd_long_enough', before='send_done')
+         | unheld.to(idle, cond='rlsd_long_enough', before='send_done')
+           | idle.to.itself(internal=True)
+           | held.to.itself(internal=True)
+           | down.to.itself(internal=True)
+           | rlsd.to.itself(internal=True)
+           | unheld.to.itself(internal=True)
+    )
+
+    pushed = (idle.to(down)
+            | rlsd.to(down)
+          | unheld.to(down))
+    released = (down.to(rlsd, before='send_short')
+              | held.to(unheld, before='send_long'))
+
+    # quik_press = down.to(rlsd)
+    # long_press = held.to(unheld)
+    # holding = down.to(held)
+    # done = idle.from_(unheld) | idle.from_(rlsd)
+
+    @pushed.on
+    def pushed_sideffect(self, t: int):
+        self.t_down = t
+        # print("pushed", t)
+        # return True
+
+    @released.on
+    def released_sideffect(self, t: int):
+        self.t_rlsd = t
+        # return True
+
+    def held_long_enough(self, t: int):
+        return (t - self.t_down) > (self.hold_period * 1E9)
+
+    def rlsd_long_enough(self, t: int):
+        return (t - self.t_rlsd) > (self.timeout * 1E9)
+
+    # @quik_press.after
+    def send_short(self):
+        # print("short press")
+        self.short_press()
+
+    # @long_press.after
+    def send_long(self):
+        # print("long press")
+        self.long_press()
+
+    # @holding.after
+    def send_hold(self):
+        # print("holding")
+        self.holding()
+
+    # @done.after
+    def send_done(self):
+        # print("----------------")
+        self.done()
+
+    # def after_transition(self, event: str, source: statemachine.State, target: statemachine.State, event_data):
+        # print(f"Running {event} from {source!s} to {target!s}: {event_data.trigger_data.kwargs!r}")
+
+
+class ActionMachine(statemachine.StateMachine):
+    idle = statemachine.State(initial=True)
+    invalid = statemachine.State()
+    c = statemachine.State()
+    cc = statemachine.State()
+    ccc = statemachine.State()
+    cccc = statemachine.State()
+    ccccc = statemachine.State()
+    cccccc = statemachine.State()
+    H = statemachine.State()
+    cH = statemachine.State()
+    ccH = statemachine.State()
+    cccH = statemachine.State()
+
+    b2_add_c = invalid.to.itself()
+    b2_add_c |= idle.to(c)
+    b2_add_c |= c.to(cc)
+    b2_add_c |= cc.to(ccc)
+    b2_add_c |= ccc.to(cccc)
+    b2_add_c |= cccc.to(ccccc)
+    b2_add_c |= ccccc.to(cccccc)
+    b2_add_c |= invalid.from_(cccccc, H, cH, ccH, cccH)
+
+    b2_add_H = invalid.to.itself()
+    b2_add_H |= idle.to(H, before='do_1H')
+    b2_add_H |= c.to(cH, before='do_2H')
+    b2_add_H |= cc.to(ccH, before='do_3H')
+    b2_add_H |= ccc.to(cccH, before='do_4H')
+    b2_add_H |= invalid.from_(cccc, ccccc, cccccc, H, cH, ccH, cccH)
+
+    reset = invalid.to(idle)
+    reset |= idle.from_(c, before='do_1c')
+    reset |= idle.from_(cc, before='do_2c')
+    reset |= idle.from_(ccc, before='do_3c')
+    reset |= idle.from_(cccc, before='do_4c')
+    reset |= idle.from_(ccccc, before='do_5c')
+    reset |= idle.from_(cccccc, before='do_6c')
+    reset |= idle.from_(H, cH, ccH, cccH)
+
+    def do_1c(self):
+        subprocess.Popen("/home/pi/program1.sh")
+        print("Started program1.")
+
+    def do_2c(self):
+        subprocess.Popen("/home/pi/program2.sh")
+        print("Started program2.")
+
+    def do_3c(self):
+        battery_check()
+
+    def do_4c(self):
+        reset_wifi()
+
+    def do_1H(self):
+        TaskManager().close_all_registered()
+
+    def do_2H(self):
+        TaskManager().close_all_registered()
+        try:
+            sys.path.append('/home/pi/TurboPi/')
+            import HiwonderSDK.mecanum as mecanum
+            chassis = mecanum.MecanumChassis()
+            self.chassis.set_velocity(0, 0, 0)
+        except BaseException:
+            pass
+
+    def do_3H(self):
+        subprocess.Popen("sudo python3 /home/pi/boot/hardware_test.py")
+
+    def do_4H(self):
+        start_ap()
+
+    do_5c = do_6c = lambda self: None
+
+
 class ButtonManager:
     def __init__(self) -> None:
 
         GPIO.setmode(GPIO.BCM)
         GPIO.setup(KEY1_PIN, GPIO.IN, pull_up_down=GPIO.PUD_UP)
         GPIO.setup(KEY2_PIN, GPIO.IN, pull_up_down=GPIO.PUD_UP)
-
 
         self.lock = threading.Lock()
         self.sequence = []
@@ -255,8 +417,16 @@ class ButtonManager:
         self.t_next = time.time_ns() + 100
         self.spin_period = 100E-3 * 1E9
 
-        self.key1_debouncer = ButtonDebouncer(KEY1_PIN, self.btn_event, bouncetime=50)
-        self.key2_debouncer = ButtonDebouncer(KEY2_PIN, self.btn_event, bouncetime=50)
+        self.key1_debouncer = None
+        self.key2_debouncer = None
+
+        self.key1_sm = PushStateMachine()
+        self.key2_sm = PushStateMachine()
+        self.actionsm = ActionMachine()
+        asm = self.actionsm
+        self.key2_sm.short_press = lambda: asm.send('b2_add_c')
+        self.key2_sm.holding = lambda: asm.send('b2_add_H')
+        self.key2_sm.done = lambda: asm.send('reset')
 
     def btn_event(self, channel, state):
         t = time.time_ns()
@@ -265,7 +435,7 @@ class ButtonManager:
         self.sequence.append((channel, state, t))
         self.serviced = False
         self.lock.release()
-        print(f"Key {1 if channel == KEY1_PIN else 2} {'down' if state == KDN else 'up'}")
+        # print(f"Key {1 if channel == KEY1_PIN else 2} {'down' if state == KDN else 'up'}")
 
     def initialize_edge_listeners(self, bouncetime=50):
         self.key1_debouncer = ButtonDebouncer(KEY1_PIN, self.btn_event, bouncetime=bouncetime)
@@ -280,6 +450,7 @@ class ButtonManager:
         GPIO.remove_event_detect(KEY2_PIN)
 
     def bootup_check(self):
+        print("Bootup period... if key 1 is held, AP mode will be set.")
         self.initialize_edge_listeners(45)
 
         if not self.sequence and GPIO.input(KEY1_PIN) == KDN:
@@ -321,7 +492,9 @@ class ButtonManager:
         if any(t > 4E9 for t in k1_held_durations):  # if key 1 was held for longer than 4 seconds
             print("wifi reset triggered")
             # reset_wifi()
+            start_ap()
 
+        self.sequence = []
         self.serviced = True
         # print(k1_held_durations)
 
@@ -331,68 +504,40 @@ class ButtonManager:
             dt = self.spin_period
         if dt < 0:
             self.t_next = time.time_ns() + self.spin_period
-        time.sleep(dt * 1E-9)
+        else:
+            time.sleep(dt * 1E-9)
 
     def spin(self):
         while not self.lock.acquire_lock():  # SPINLOCK BRR
             time.sleep(0)
         sequence = self.sequence.copy()
+        self.sequence = []
         self.serviced = True
         self.lock.release()
-        pass
 
+        # print(sequence)
 
-    # key1_pressed = False
-    # key2_pressed = False
-    # count = 0
-    # while True:
-    #     if GPIO.input(KEY1_PIN) == GPIO.LOW:
-    #         time.sleep(0.05)
-    #         if GPIO.input(KEY1_PIN) == GPIO.LOW:
-    #             if key1_pressed == True:
-    #                 count += 1
-    #                 servo_test = True
-    #                 if count == 60:
-    #                     count = 0
-    #                     servo_test = False
-    #                     key1_pressed = False
-    #                     print('reset_wifi')
-    #                     reset_wifi()
-    #         else:
-    #             count = 0
-    #             continue
+        for key, event, t in sequence:
+            sm = self.key1_sm if key == KEY1_PIN else self.key2_sm
+            sm.send('pushed' if event == KDN else 'released', t=t)
+        now = time.time_ns()
+        # if not any(key == KEY1_PIN for key, _, _ in sequence):
+            # self.key1_sm.cycle(t=now)
+        # if not any(key == KEY2_PIN for key, _, _ in sequence):
+        self.key2_sm.cycle(t=now)
 
-    #     elif GPIO.input(KEY2_PIN) == GPIO.LOW:
-    #         time.sleep(0.05)
-    #         if GPIO.input(KEY2_PIN) == GPIO.LOW:
-    #             if key2_pressed == True:
-    #                 count += 1
-    #                 if count == 60:
-    #                     count = 0
-    #                     key2_pressed = False
-    #                     print('sudo halt')
-    #                     os.system('sudo halt')
-    #         else:
-    #             count = 0
-    #             continue
-    #     else:
-    #         if servo_test:
-    #             # servo_test = False
-    #             # os.system("sudo python3 /home/pi/TurboPi/HiwonderSDK/hardware_test.py")
-    #             os.system("sudo python3 /home/pi/Binary_Control.py")
-
-    #         count = 0
-    #         if not key1_pressed:
-    #             key1_pressed = True
-    #         if not key2_pressed:
-    #             key2_pressed = True
-    #         time.sleep(0.05)
-
+        self.wait_cycle()
 
 
 if __name__ == "__main__":
     manager = ButtonManager()
     manager.bootup_check()
+    manager.initialize_edge_listeners()
+    try:
+        subprocess.Popen("/home/pi/boot.sh")
+    except FileNotFoundError:
+        pass
     print('exited bootup check')
     while 1:
-        time.sleep(0)
+        manager.spin()
+        # time.sleep(0)

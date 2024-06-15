@@ -1,0 +1,12 @@
+[Unit]
+Description=start buttonman.py
+
+[Service]
+Type=simple
+Restart=always
+RestartSec=5
+ExecStart=/usr/bin/python3 /home/pi/boot/buttonman.py
+ExecStop=/bin/systemctl kill buttonman
+
+[Install]
+WantedBy=multi-user.target
