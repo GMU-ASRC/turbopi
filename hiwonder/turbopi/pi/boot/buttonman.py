@@ -19,8 +19,6 @@ try:
 except ImportError:
     statemachine = None
 
-
-
 import RPi.GPIO as GPIO
 
 # typing
@@ -43,8 +41,10 @@ else:
             a = b
 
 
+# BCM NUMBERING
 KEY1_PIN = 13
 KEY2_PIN = 23
+BUZZER_PIN = 6
 KDN = GPIO.LOW
 KUP = GPIO.HIGH
 
@@ -266,9 +266,9 @@ class PushStateMachine(statemachine.StateMachine):
         self.holding = lambda: None
         self.done = lambda: None
 
-    cycle = (down.to(held, cond='held_long_enough', before='send_hold')
-           | rlsd.to(idle, cond='rlsd_long_enough', before='send_done')
-         | unheld.to(idle, cond='rlsd_long_enough', before='send_done')
+    cycle = (down.to(held, cond='held_long_enough', after='send_hold')
+           | rlsd.to(idle, cond='rlsd_long_enough', after='send_done')
+         | unheld.to(idle, cond='rlsd_long_enough', after='send_done')
            | idle.to.itself(internal=True)
            | held.to.itself(internal=True)
            | down.to.itself(internal=True)
@@ -279,8 +279,8 @@ class PushStateMachine(statemachine.StateMachine):
     pushed = (idle.to(down)
             | rlsd.to(down)
           | unheld.to(down))
-    released = (down.to(rlsd, before='send_short')
-              | held.to(unheld, before='send_long'))
+    released = (down.to(rlsd, after='send_short')
+              | held.to(unheld, after='send_long'))
 
     # quik_press = down.to(rlsd)
     # long_press = held.to(unheld)
@@ -352,20 +352,23 @@ class ActionMachine(statemachine.StateMachine):
     b2_add_c |= invalid.from_(cccccc, H, cH, ccH, cccH)
 
     b2_add_H = invalid.to.itself()
-    b2_add_H |= idle.to(H, before='do_1H')
-    b2_add_H |= c.to(cH, before='do_2H')
-    b2_add_H |= cc.to(ccH, before='do_3H')
-    b2_add_H |= ccc.to(cccH, before='do_4H')
+    b2_add_H |= idle.to(H, after='do_1H')
+    b2_add_H |= c.to(cH, after='do_2H')
+    b2_add_H |= cc.to(ccH, after='do_3H')
+    b2_add_H |= ccc.to(cccH, after='do_4H')
     b2_add_H |= invalid.from_(cccc, ccccc, cccccc, H, cH, ccH, cccH)
 
     reset = invalid.to(idle)
-    reset |= idle.from_(c, before='do_1c')
-    reset |= idle.from_(cc, before='do_2c')
-    reset |= idle.from_(ccc, before='do_3c')
-    reset |= idle.from_(cccc, before='do_4c')
-    reset |= idle.from_(ccccc, before='do_5c')
-    reset |= idle.from_(cccccc, before='do_6c')
+    reset |= idle.from_(c, after='do_1c')
+    reset |= idle.from_(cc, after='do_2c')
+    reset |= idle.from_(ccc, after='do_3c')
+    reset |= idle.from_(cccc, after='do_4c')
+    reset |= idle.from_(ccccc, after='do_5c')
+    reset |= idle.from_(cccccc, after='do_6c')
     reset |= idle.from_(H, cH, ccH, cccH)
+
+    disable = lambda: None  # noqa: E731
+    enable = lambda: None  # noqa: E731
 
     def do_1c(self):
         subprocess.Popen("/home/pi/program1.sh")
@@ -376,10 +379,14 @@ class ActionMachine(statemachine.StateMachine):
         print("Started program2.")
 
     def do_3c(self):
-        battery_check()
+        # subprocess.Popen("sudo python3 /home/pi/boot/battchk.py".split(' '))
+        self.disable()
+        os.system("sudo python3 /home/pi/boot/battchk.py --__listen_button_exit")
+        self.enable()
 
     def do_4c(self):
         reset_wifi()
+        ButtonManager.ap_off_beep()
 
     def do_1H(self):
         TaskManager().close_all_registered()
@@ -393,22 +400,27 @@ class ActionMachine(statemachine.StateMachine):
             self.chassis.set_velocity(0, 0, 0)
         except BaseException:
             pass
+        os.system("sudo halt")
 
     def do_3H(self):
         subprocess.Popen("sudo python3 /home/pi/boot/hardware_test.py")
 
     def do_4H(self):
         start_ap()
+        ButtonManager.ap_beep()
 
     do_5c = do_6c = lambda self: None
 
 
 class ButtonManager:
+    beeps = True
+
     def __init__(self) -> None:
 
         GPIO.setmode(GPIO.BCM)
         GPIO.setup(KEY1_PIN, GPIO.IN, pull_up_down=GPIO.PUD_UP)
         GPIO.setup(KEY2_PIN, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+        GPIO.setup(BUZZER_PIN, GPIO.OUT)
 
         self.lock = threading.Lock()
         self.sequence = []
@@ -416,6 +428,7 @@ class ButtonManager:
 
         self.t_next = time.time_ns() + 100
         self.spin_period = 100E-3 * 1E9
+        self.bouncetime = 40
 
         self.key1_debouncer = None
         self.key2_debouncer = None
@@ -424,9 +437,22 @@ class ButtonManager:
         self.key2_sm = PushStateMachine()
         self.actionsm = ActionMachine()
         asm = self.actionsm
+        asm.disable = self.remove_edge_listeners
+        asm.enable = self.initialize_edge_listeners
         self.key2_sm.short_press = lambda: asm.send('b2_add_c')
         self.key2_sm.holding = lambda: asm.send('b2_add_H')
         self.key2_sm.done = lambda: asm.send('reset')
+
+    @staticmethod
+    def buzzer(value):
+        GPIO.output(BUZZER_PIN, int(bool(value)))
+
+    @classmethod
+    def buzzfor(cls, dton, dtoff=0.0):
+        cls.buzzer(1)
+        time.sleep(dton)
+        cls.buzzer(0)
+        time.sleep(dtoff)
 
     def btn_event(self, channel, state):
         t = time.time_ns()
@@ -437,7 +463,10 @@ class ButtonManager:
         self.lock.release()
         # print(f"Key {1 if channel == KEY1_PIN else 2} {'down' if state == KDN else 'up'}")
 
-    def initialize_edge_listeners(self, bouncetime=50):
+    def initialize_edge_listeners(self, bouncetime=None):
+        print("Adding edge listeners")
+        if bouncetime is None:
+            bouncetime = self.bouncetime
         self.key1_debouncer = ButtonDebouncer(KEY1_PIN, self.btn_event, bouncetime=bouncetime)
         self.key2_debouncer = ButtonDebouncer(KEY2_PIN, self.btn_event, bouncetime=bouncetime)
         self.key1_debouncer.start()
@@ -446,6 +475,7 @@ class ButtonManager:
         GPIO.add_event_detect(KEY2_PIN, GPIO.BOTH, callback=self.key2_debouncer)
 
     def remove_edge_listeners(self):
+        print("Removing edge listeners")
         GPIO.remove_event_detect(KEY1_PIN)
         GPIO.remove_event_detect(KEY2_PIN)
 
@@ -493,6 +523,7 @@ class ButtonManager:
             print("wifi reset triggered")
             # reset_wifi()
             start_ap()
+            self.ap_beep()
 
         self.sequence = []
         self.serviced = True
@@ -527,6 +558,20 @@ class ButtonManager:
         self.key2_sm.cycle(t=now)
 
         self.wait_cycle()
+
+    @classmethod
+    def ap_beep(cls):
+        cls.buzzfor(.1, .1)
+        cls.buzzfor(.1, .1)
+        cls.buzzfor(.1, .12)
+        cls.buzzfor(.3, .2)
+
+    @classmethod
+    def ap_off_beep(cls):
+        cls.buzzfor(.3, .08)
+        cls.buzzfor(.08, .06)
+        cls.buzzfor(.1, .13)
+        cls.buzzfor(.08, .2)
 
 
 if __name__ == "__main__":
