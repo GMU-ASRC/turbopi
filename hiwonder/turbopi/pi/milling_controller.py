@@ -121,10 +121,12 @@ class BinaryProgram:
 
     def btn1(self, channel, event):
         if event == KUP:
-            if self._run:
-                self.pause()
+            if self.dry_run or not self._run:
+                self.dry_run = False
+                self._run = True
             else:
-                self.resume()
+                self.dry_run = True
+                self.kill_motors()
 
     @staticmethod
     def can_show_windows():
@@ -154,6 +156,9 @@ class BinaryProgram:
 
     def load_servo_config(self, servo_cfg_path):
         self.servo_data = get_yaml_data(servo_cfg_path)
+
+    def kill_motors(self):
+        self.chassis.set_velocity(0, 0, 0)
 
     def pause(self):
         self._run = False
@@ -221,7 +226,7 @@ class BinaryProgram:
         threshold = (tuple(self.lab_data[self.target_color][key]) for key in ['min', 'max'])
         # breakpoint()
         # run contour detection
-        target_contours = color_contour_detection(
+        target_contours = self.color_contour_detection(
             frame_clean,
             tuple(threshold),
             **contour_args
@@ -280,14 +285,21 @@ class BinaryProgram:
             self.fps = 1 / frame_time
             # print(self.fps)
 
-        while True:
+        while (errors := 0) < 5:
             if self._run:
                 try:
                     loop()
                 except KeyboardInterrupt:
+                    print('Received KeyboardInterrupt')
                     self.stop()
                     break
-                except BaseException:
+                except BaseException as err:
+                    errors += 1
+                    suffix = ('th', 'st', 'nd', 'rd', 'th')
+                    heck = "An" if errors == 1 else f"A {errors}{suffix[min(errors, 4)]}"
+                    print(heck + " error occurred but we're going to ignore it and try again...")
+                    print(err)
+                    self.exit_on_stop = False
                     self.stop()
                     raise
             else:

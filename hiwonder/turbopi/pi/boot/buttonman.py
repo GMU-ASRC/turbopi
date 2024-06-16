@@ -60,6 +60,17 @@ def start_ap():
     os.system("systemctl restart hw_wifi.service > /dev/null 2>&1")
 
 
+def try_script(path):
+    if not os.path.isfile(path):
+        print(f"Tried to run script but it does not exist: {path}")
+        return
+    if not os.access(path, os.X_OK):
+        perms = 0o766
+        os.chmod(path, perms)
+    subprocess.Popen(path)
+
+
+
 class ProcessMismatchError(Exception):
     pass
 
@@ -122,6 +133,8 @@ class TaskManager:
 
     @classmethod
     def pid_matches_process(cls, pid, pid_info):
+        if not isinstance(pid_info, dict):
+            return None
         # return process if match, else None
         try:
             actual_process = psutil.Process(pid)
@@ -129,6 +142,12 @@ class TaskManager:
             return None
         with actual_process.oneshot():
             actual_process_info = cls.process_dict_excerpt(actual_process)
+        # for compatibility with programs that don't have access to psutil
+        if 'cmdline' not in pid_info or 'create_time' not in pid_info:
+            pid_info.pop('cmdline', None)
+            pid_info.pop('create_time', None)
+            actual_process_info.pop('cmdline')
+            actual_process_info.pop('create_time')
         if actual_process_info == pid_info:
             return actual_process
 
@@ -163,11 +182,9 @@ class TaskManager:
         def delete_record():
             fpath.unlink(missing_ok=True)
 
-        record = self.read_record(fpath)
-        if not isinstance(record, dict):
-            return record  # likely got an error if here.
+        record = self.read_record(fpath)  # may return error
 
-        if (process := self.pid_matches_process(pid, record)):
+        if (process := self.pid_matches_process(pid, record)):  # Falsy if error retrieving record
             process.terminate()  # ask nicely
             # if timeout is valid, BLOCK, wait, and then kill.
             if isinstance(timeout, (float, int)) and timeout > 0:
@@ -371,12 +388,12 @@ class ActionMachine(statemachine.StateMachine):
     enable = lambda: None  # noqa: E731
 
     def do_1c(self):
-        subprocess.Popen("/home/pi/program1.sh")
-        print("Started program1.")
+        try_script("/home/pi/program1.sh")
+        print("Started program1.sh")
 
     def do_2c(self):
-        subprocess.Popen("/home/pi/program2.sh")
-        print("Started program2.")
+        try_script("/home/pi/program2.sh")
+        print("Started program2.sh")
 
     def do_3c(self):
         # subprocess.Popen("sudo python3 /home/pi/boot/battchk.py".split(' '))
@@ -396,11 +413,21 @@ class ActionMachine(statemachine.StateMachine):
         try:
             sys.path.append('/home/pi/TurboPi/')
             import HiwonderSDK.mecanum as mecanum
+            import HiwonderSDK.Board as Board
+            import HiwonderSDK.Sonar as Sonar
             chassis = mecanum.MecanumChassis()
-            self.chassis.set_velocity(0, 0, 0)
+            chassis.set_velocity(0, 0, 0)
+            Board.setBuzzer(0)
+            s = Sonar.Sonar()
+            s.setRGBMode(0)
+            r, g, b = 0, 0, 0
+            for i in range(2):
+                Board.RGB.setPixelColor(i, Board.PixelColor(r, g, b))
+                s.setPixelColor(i, Board.PixelColor(r, g, b))
+            Board.RGB.show()
+            s.show()
         except BaseException:
             pass
-        os.system("sudo halt")
 
     def do_3H(self):
         subprocess.Popen("sudo python3 /home/pi/boot/hardware_test.py")
@@ -409,7 +436,13 @@ class ActionMachine(statemachine.StateMachine):
         start_ap()
         ButtonManager.ap_beep()
 
-    do_5c = do_6c = lambda self: None
+    def do_5c(self):
+        try_script("/home/pi/program5.sh")
+        print("Started program5.sh")
+
+    def do_6c(self):
+        try_script("/home/pi/program6.sh")
+        print("Started program6.sh")
 
 
 class ButtonManager:

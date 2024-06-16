@@ -78,6 +78,7 @@ def all_leds(r, g, b):
         Board.RGB.setPixelColor(i, Board.PixelColor(r, g, b))
         s.setPixelColor(i, Board.PixelColor(r, g, b))
     Board.RGB.show()
+    s.show()
 
 
 def ledbeepfor(rgbv, dton, dtoff=0.0):
