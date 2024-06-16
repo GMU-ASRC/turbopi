@@ -47,6 +47,8 @@ KEY2_PIN = 23
 BUZZER_PIN = 6
 KDN = GPIO.LOW
 KUP = GPIO.HIGH
+LED1_PIN = 16
+LED2_PIN = 26
 
 
 def reset_wifi():
@@ -58,6 +60,14 @@ def reset_wifi():
 def start_ap():
     os.system("rm /etc/Hiwonder/* -rf > /dev/null 2>&1")
     os.system("systemctl restart hw_wifi.service > /dev/null 2>&1")
+
+
+def led_setup():
+    GPIO.setmode(GPIO.BCM)
+    GPIO.setup(LED1_PIN, GPIO.OUT)
+    GPIO.output(LED1_PIN, 1)
+    GPIO.setup(LED2_PIN, GPIO.OUT)
+    GPIO.output(LED2_PIN, 0)
 
 
 def try_script(path):
@@ -403,6 +413,7 @@ class ActionMachine(statemachine.StateMachine):
 
     def do_4c(self):
         reset_wifi()
+        led_setup()
         ButtonManager.ap_off_beep()
 
     def do_1H(self):
@@ -430,7 +441,7 @@ class ActionMachine(statemachine.StateMachine):
             pass
 
     def do_3H(self):
-        subprocess.Popen("sudo python3 /home/pi/boot/hardware_test.py")
+        subprocess.Popen("sudo python3 /home/pi/boot/hardware_test.py".split(' '))
 
     def do_4H(self):
         start_ap()
