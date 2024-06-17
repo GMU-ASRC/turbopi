@@ -56,10 +56,23 @@ def decode_output(outputs):
 
 
 class SNNMillingProgram(BinaryProgram):
+    def __init__(self,
+        dry_run: bool = False,
+        board=None,
+        lab_cfg_path=milling_controller.THRESHOLD_CFG_PATH,
+        servo_cfg_path=milling_controller.SERVO_CFG_PATH,
+        pause=False,
+        startup_beep=True,
+        exit_on_stop=True
+    ) -> None:
+        super().__init__(dry_run, board, lab_cfg_path, servo_cfg_path, pause, False, exit_on_stop)
+
+        if startup_beep:
+            self.startup_beep()
 
     def startup_beep(self):
-        self.buzzfor(.03, .02)
-        self.buzzfor(.03, .02)
+        self.buzzfor(.03, .05)
+        self.buzzfor(.03, .05)
 
     def control(self):
         spikes_per_node = get_input_spikes(encoders, b2oh(self.detected))
@@ -87,5 +100,5 @@ if __name__ == '__main__':
     parser, subparser = get_parser(parser, None)
     args = parser.parse_args()
 
-    program = BinaryProgram(dry_run=args.dry_run, pause=args.startpaused)
+    program = SNNMillingProgram(dry_run=args.dry_run, pause=args.startpaused)
     program.main()
