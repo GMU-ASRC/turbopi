@@ -57,13 +57,16 @@ def decode_output(outputs):
 
 class SNNMillingProgram(BinaryProgram):
 
+    def startup_beep(self):
+        self.buzzfor(.03, .02)
+        self.buzzfor(.03, .02)
+
     def control(self):
         spikes_per_node = get_input_spikes(encoders, b2oh(self.detected))
         apply_spikes(network.inputs, spikes_per_node)
         casPYan.network.run(nodes, 5)
         casPYan.network.run(nodes, neuro_tpc)
         v0, v1, w0, w1 = decode_output(network.outputs)
-
 
         v = 100 * (v1 - v0)
         w = 2.0 * (w1 - w0)

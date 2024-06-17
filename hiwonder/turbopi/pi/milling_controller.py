@@ -37,11 +37,11 @@ except ImportError:
                   ImportWarning, stacklevel=2)
 
 
-KEY1_PIN = 33
+KEY1_PIN = 33  # board numbering
 KEY2_PIN = 16
 KDN = GPIO.LOW
 KUP = GPIO.HIGH
-
+BUZZER_PIN = 31
 # path = '/home/pi/TurboPi/'
 THRESHOLD_CFG_PATH = '/home/pi/TurboPi/lab_config.yaml'
 SERVO_CFG_PATH = '/home/pi/TurboPi/servo_config.yaml'
@@ -113,11 +113,12 @@ class BinaryProgram:
             GPIO.add_event_detect(KEY1_PIN, GPIO.BOTH, callback=self.key1_debouncer)
 
         if startup_beep:
-            Board.setBuzzer(1)
-            time.sleep(0.05)
-            Board.setBuzzer(0)
+            self.startup_beep()
 
         self.exit_on_stop = exit_on_stop
+
+    def startup_beep(self):
+        self.buzzfor(0.05)
 
     def btn1(self, channel, event):
         if event == KUP:
@@ -181,6 +182,17 @@ class BinaryProgram:
             buttonman.TaskManager.unregister()
         if self.exit_on_stop:
             sys.exit()  # exit the python script immediately
+
+    @staticmethod
+    def buzzer(value):
+        GPIO.output(BUZZER_PIN, int(bool(value)))
+
+    @classmethod
+    def buzzfor(cls, dton, dtoff=0.0):
+        cls.buzzer(1)
+        time.sleep(dton)
+        cls.buzzer(0)
+        time.sleep(dtoff)
 
     def set_rgb(self, color):
         # Set the RGB light color of the expansion board to match the color you want to track
