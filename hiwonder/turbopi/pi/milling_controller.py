@@ -233,7 +233,7 @@ class BinaryProgram:
         )
         # The output of color_contour_detection() is sorted highest to lowest
         biggest_contour, biggest_contour_area = target_contours[0] if target_contours else (None, 0)
-        self.detected: bool = biggest_contour_area > 10  # did we detect something of interest?
+        self.detected: bool = biggest_contour_area > 300  # did we detect something of interest?
 
         self.smoothed_detected = self.boolean_detection_averager(self.detected)  # feed the averager
 
@@ -353,10 +353,15 @@ class BinaryProgram:
             cv2.FONT_HERSHEY_SIMPLEX, 0.65, color, 2)
 
 
-if __name__ == '__main__':
-    parser = argparse.ArgumentParser()
+def get_parser(parser, subparser):
     parser.add_argument("--dry_run", action='store_true')
     parser.add_argument("--startpaused", action='store_true')
+    return parser, subparser
+
+
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser()
+    get_parser(parser, None)
     args = parser.parse_args()
 
     program = BinaryProgram(dry_run=args.dry_run, pause=args.startpaused)
