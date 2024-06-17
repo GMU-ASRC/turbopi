@@ -297,7 +297,8 @@ class BinaryProgram:
             self.fps = 1 / frame_time
             # print(self.fps)
 
-        while (errors := 0) < 5:
+        errors = 0
+        while errors < 5:
             if self._run:
                 try:
                     loop()
