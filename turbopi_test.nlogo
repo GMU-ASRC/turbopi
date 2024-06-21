@@ -80,6 +80,7 @@ globals [ tick-delta
           outer_radius_size
           rad_var
            alg-con
+          behave_name
          ]
 
 robots-own [
@@ -190,7 +191,7 @@ to setup
   random-seed seed-no
 
 
-  set tick-delta 0.016 ; 10 ticks in one second
+  set tick-delta 0.025 ; 40 ticks in one second
 
   initialize_lists
 
@@ -237,7 +238,7 @@ to setup
   ]
 
   if start_in_circle?
-    [start_outward_circle]
+    [start_circle]
 
 
 
@@ -441,9 +442,10 @@ to go
          ht
        ]
 
-;      find_adj_matrix
-;      find-metrics
+      find_adj_matrix
+      find-metrics
       do-plots ; updates plots
+      auto-classify-behavior
 ;
 
 
@@ -539,7 +541,7 @@ to mecanum_with_sensing_vis
 
   ifelse goal_seen_flag = 1 or seen_flag = 1 ; if agent or target is detected do whats within first set of brackets
    [
-     ifelse length detection_list > 9
+     ifelse length detection_list > 5
       [
        set detection_list remove-item 0 detection_list
       set detection_list lput 1 detection_list
@@ -550,7 +552,7 @@ to mecanum_with_sensing_vis
 
    ]
    [
-     ifelse length detection_list > 9
+     ifelse length detection_list > 5
       [
        set detection_list remove-item 0 detection_list
       set detection_list lput 0 detection_list
@@ -560,7 +562,7 @@ to mecanum_with_sensing_vis
       ]
    ]
 
-   ifelse sum detection_list >= 5 ; if agent or target is detected do whats within first set of brackets
+   ifelse sum detection_list >= 3 ; if agent or target is detected do whats within first set of brackets
    [
      set color blue
      set inputs (list forward_speed2 body_direction2 turning-rate2)
@@ -1414,13 +1416,14 @@ to add_robot
       st
 
       setxy 0.3 0
+      set detection_list (list )
 
       ifelse Goal_Searching_Mission?
       [
         set sr_patches patches with [(distancexy (max-pxcor * -0.75) (max-pycor * -0.75) < (number-of-robots * ([size] of robot (count goals)) / pi)) and pxcor != 0 and pycor != 0]
       ]
       [
-        set sr_patches patches with [(distancexy 0 0 < (number-of-robots * ([size] of robot (count goals)) / pi)) and pxcor != 0 and pycor != 0]
+        set sr_patches patches with [(distancexy 0 0 < (5 * ([size] of robot (count goals)) / pi)) and pxcor != 0 and pycor != 0]
       ]
 
       move-to one-of sr_patches with [(not any? other robots in-radius ([size] of robot (count goals)))]
@@ -1432,7 +1435,7 @@ to add_robot
 
 
 
-      set shape "circle 2"
+      set shape "mecanum"
       set color red
       set size 1.7 ; sets size to 0.1m
 
@@ -1451,6 +1454,9 @@ to add_robot
     ]
 
     set number-of-robots (number-of-robots + 1)
+    set DM matrix:make-constant number-of-robots number-of-robots 0
+    set AM matrix:make-constant number-of-robots number-of-robots 0
+    set GM matrix:make-constant number-of-robots number-of-robots number-of-robots
 end
 
 to remove_robot
@@ -1460,6 +1466,9 @@ ask robot (number-of-robots - 1)
     ht
   ]
   set number-of-robots (number-of-robots - 1)
+  set DM matrix:make-constant number-of-robots number-of-robots 0
+  set AM matrix:make-constant number-of-robots number-of-robots 0
+  set GM matrix:make-constant number-of-robots number-of-robots number-of-robots
 
 end
 
@@ -2418,9 +2427,16 @@ to find-metrics
     ]
 
 
+end
 
+to auto-classify-behavior
+    if circliness < 0.1
+    [
+      set behave_name "Milling"
+    ]
 
 end
+
 
 
 to find-chance
@@ -3298,11 +3314,11 @@ end
 GRAPHICS-WINDOW
 977
 12
-1733
-769
+1471
+507
 -1
 -1
-7.41
+9.53
 1
 10
 1
@@ -3312,10 +3328,10 @@ GRAPHICS-WINDOW
 1
 1
 1
--50
-50
--50
-50
+-25
+25
+-25
+25
 1
 1
 1
@@ -3330,8 +3346,8 @@ SLIDER
 number-of-robots
 number-of-robots
 0
-20
-6.0
+12
+10.0
 1
 1
 NIL
@@ -3360,7 +3376,7 @@ SLIDER
 vision-distance
 vision-distance
 0
-1.12
+1.1
 1.1
 0.1
 1
@@ -3383,15 +3399,15 @@ deg
 HORIZONTAL
 
 SLIDER
-38
-226
-247
-259
+26
+232
+235
+265
 forward_speed1
 forward_speed1
--0.35
-0.28
-0.28
+0
+0.25
+0.25
 0.05
 1
 m/s
@@ -3404,9 +3420,9 @@ SLIDER
 346
 turning-rate1
 turning-rate1
--25
-25
-0.0
+-150
+150
+5.0
 5
 1
 deg/s
@@ -3499,10 +3515,10 @@ NIL
 1
 
 BUTTON
-2943
-393
-3041
-428
+606
+229
+704
+264
 NIL
 add_robot
 NIL
@@ -3516,10 +3532,10 @@ NIL
 1
 
 BUTTON
-3044
-394
-3165
-429
+706
+229
+827
+264
 NIL
 remove_robot
 NIL
@@ -3636,7 +3652,7 @@ SWITCH
 868
 delay?
 delay?
-1
+0
 1
 -1000
 
@@ -3649,7 +3665,7 @@ delay-length
 delay-length
 0
 30
-5.0
+14.0
 1
 1
 NIL
@@ -3735,7 +3751,7 @@ turning-rate2
 turning-rate2
 0
 180
-0.0
+-25.0
 5
 1
 deg/s
@@ -3753,10 +3769,10 @@ mode_switching?
 -1000
 
 SLIDER
-569
-337
-741
-370
+795
+1021
+967
+1054
 number-of-group1
 number-of-group1
 0
@@ -3865,7 +3881,7 @@ environment_size
 environment_size
 0
 max-pxcor - min-pxcor
-100.0
+50.0
 1
 1
 NIL
@@ -4366,10 +4382,10 @@ non-target-detection-response
 1
 
 BUTTON
-183
-560
-266
-594
+320
+1606
+403
+1640
 Forward
 ask robots with [group_type = 1][ set inputs (list 1 1 1 1 )]
 NIL
@@ -4383,10 +4399,10 @@ NIL
 1
 
 BUTTON
-184
-610
-264
-644
+320
+1656
+400
+1690
 Reverse
 ask robots with [group_type = 1][ set inputs (list -1 -1 -1 -1 )]
 NIL
@@ -4400,10 +4416,10 @@ NIL
 1
 
 BUTTON
-274
-610
-378
-644
+410
+1656
+514
+1690
 Strafe Right
 ask robots with [group_type = 1][ set inputs (list 1 -1 -1 1 )]
 NIL
@@ -4417,10 +4433,10 @@ NIL
 1
 
 BUTTON
-82
-609
-177
-643
+219
+1656
+314
+1690
 Strafe Left
 ask robots with [group_type = 1][ set inputs (list -1 1 1 -1 )]
 NIL
@@ -4434,10 +4450,10 @@ NIL
 1
 
 BUTTON
-288
-565
-410
-599
+425
+1612
+547
+1646
 Diagonal Right
 ask robots with [group_type = 1][ set inputs (list 1 0 0 1 )]
 NIL
@@ -4451,10 +4467,10 @@ NIL
 1
 
 BUTTON
-58
-564
-171
-598
+195
+1610
+308
+1644
 Diagonal Left
 ask robots with [group_type = 1][ set inputs (list 0 1 1 0 )]
 NIL
@@ -4468,10 +4484,10 @@ NIL
 1
 
 BUTTON
-69
-504
-173
-538
+206
+1550
+310
+1584
 Rotate CCW
 ask robots with [group_type = 1][ set inputs (list -1 1 -1 1 )]
 NIL
@@ -4485,10 +4501,10 @@ NIL
 1
 
 BUTTON
-292
-515
-387
-549
+429
+1562
+524
+1596
 Rotate CW
 ask robots with [group_type = 1][ set inputs (list 1 -1 1 -1 )]
 NIL
@@ -4512,10 +4528,10 @@ mecanum_procedure
 1
 
 BUTTON
-439
-570
-503
-604
+576
+1616
+640
+1650
 stop
 ask robots with [group_type = 1][ set inputs (list 0 0 0 0)]
 NIL
@@ -4529,10 +4545,10 @@ NIL
 1
 
 BUTTON
-452
-613
-565
-647
+589
+1660
+702
+1694
 normal circle
 ask robots [set inputs (list  1.5 1 1.5 1)]
 NIL
@@ -4597,13 +4613,13 @@ HORIZONTAL
 SLIDER
 318
 230
-498
+513
 263
 forward_speed2
 forward_speed2
--0.35
-0.28
-0.28
+0
+0.25
+0.25
 0.05
 1
 m/s
@@ -4618,7 +4634,7 @@ body_direction2
 body_direction2
 0
 360
-90.0
+50.0
 10
 1
 deg
@@ -4627,13 +4643,13 @@ HORIZONTAL
 SLIDER
 307
 317
-487
+495
 350
 turning-rate2
 turning-rate2
--25
-25
-0.0
+-150
+150
+-25.0
 5
 1
 deg/s
@@ -4676,10 +4692,10 @@ sensing_type
 1
 
 TEXTBOX
-577
-315
-827
-345
+802
+999
+1052
+1029
 Controllable Agents using controls below
 11
 0.0
@@ -4799,6 +4815,27 @@ false
 "" ""
 PENS
 "detect_flag" 1.0 0 -16777216 true "" ""
+
+MONITOR
+926
+793
+1094
+838
+Auto-Classified Behavior
+behave_name
+17
+1
+11
+
+TEXTBOX
+210
+129
+425
+158
+Keep vision-distance and vision-cone the same for now
+11
+0.0
+1
 
 @#$#@#$#@
 ## WHAT IS IT?
