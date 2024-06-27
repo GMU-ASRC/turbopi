@@ -241,6 +241,11 @@ to setup
     [start_circle]
 
 
+;  ask robot 0
+;  [
+;    setxy -32 0
+;    set heading 0
+;  ]
 
   if walls_on?
      [
@@ -407,6 +412,11 @@ to go
     ]
   ]
 
+;  ask robot 0
+;  [
+;    if (heading < 0.1 and heading > -0.1) or (heading < 180.1 and heading > 179.9)
+;    [print xcor]
+;  ]
   ask robots
     [
       ifelse group_type = 1
@@ -565,12 +575,12 @@ to mecanum_with_sensing_vis
    ifelse sum detection_list >= 3 ; if agent or target is detected do whats within first set of brackets
    [
      set color blue
-     set inputs (list forward_speed2 body_direction2 turning-rate2)
+     set inputs (list (forward_speed2 * 10) body_direction2 turning-rate2)
 
    ]
    [
      set color red
-     set inputs (list forward_speed1 body_direction1 turning-rate1)
+     set inputs (list (forward_speed1 * 10) body_direction1 turning-rate1)
    ]
 
 
@@ -2210,7 +2220,7 @@ to make_robot1
       set velocity [ 0 0]
       set angular-velocity 0
       set inputs [0 0 0 0]
-      set size 3.4; 0.1m
+      set size 1 ;3.4; 0.1m
 
       let sr (range ((150  )) ((- 150 )) -.5)
       let pr (range ((max-pxcor * .35 )) ((- (max-pxcor * .35)  )) -.5)
@@ -2236,7 +2246,7 @@ to make_robot1
           setxy (xcor + .01) (ycor + .01)
         ]
 
-      set shape "mecanum"
+      set shape "circle 2"
       set color red
       set mass size
 
@@ -3312,13 +3322,13 @@ to-report normalize_angle [ v1 ]
 end
 @#$#@#$#@
 GRAPHICS-WINDOW
-977
-12
-1471
-507
+1049
+33
+1548
+534
 -1
 -1
-9.53
+9.65
 1
 10
 1
@@ -3347,7 +3357,7 @@ number-of-robots
 number-of-robots
 0
 12
-10.0
+7.0
 1
 1
 NIL
@@ -3362,7 +3372,7 @@ seed-no
 seed-no
 1
 100
-1.0
+9.0
 1
 1
 NIL
@@ -3769,10 +3779,10 @@ mode_switching?
 -1000
 
 SLIDER
-795
-1021
-967
-1054
+352
+565
+524
+598
 number-of-group1
 number-of-group1
 0
@@ -4619,7 +4629,7 @@ forward_speed2
 forward_speed2
 0
 0.25
-0.25
+0.1
 0.05
 1
 m/s
@@ -4634,7 +4644,7 @@ body_direction2
 body_direction2
 0
 360
-50.0
+90.0
 10
 1
 deg
@@ -4692,10 +4702,10 @@ sensing_type
 1
 
 TEXTBOX
-802
-999
-1052
-1029
+359
+543
+609
+573
 Controllable Agents using controls below
 11
 0.0
