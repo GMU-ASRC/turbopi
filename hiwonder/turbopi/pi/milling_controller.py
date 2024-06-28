@@ -207,10 +207,10 @@ class BinaryProgram:
         self.set_rgb('green' if bool(self.smoothed_detected) else 'red')
         if not self.dry_run:
             if self.smoothed_detected:
-                self.chassis.set_velocity(100, 90, -0.5)  # Control robot movement function
+                self.chassis.set_velocity(0, 90, 0.27)  # Control robot movement function
                 # linear speed 50 (0~100), direction angle 90 (0~360), yaw angular speed 0 (-2~2)
             else:
-                self.chassis.set_velocity(100, 90, 0.5)
+                self.chassis.set_velocity(10, 90, 0.33)
 
     def main_loop(self):
         avg_fps = self.fps_averager(self.fps)  # feed the averager
