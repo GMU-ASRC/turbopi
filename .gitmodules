@@ -1,0 +1,3 @@
+[submodule "hiwonder/turbopi/pi"]
+	path = hiwonder/turbopi/pi
+	url = https://github.com/kenblu24/turbopi-root.git
