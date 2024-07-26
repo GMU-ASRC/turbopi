@@ -92,6 +92,7 @@ robots-own [
            impact-x
            impact-y
            angle
+           angle2
            impact-angle
            rand-x
            rand-y
@@ -148,6 +149,9 @@ robots-own [
            V
            scatter_indiv
            detection_list
+           closest-targets
+           closest-target2
+           coll_angle2
           ]
 
 patches-own [
@@ -191,7 +195,7 @@ to setup
   random-seed seed-no
 
 
-  set tick-delta 0.025 ; 40 ticks in one second
+  set tick-delta 0.01666 ; 40 ticks in one second
 
   initialize_lists
 
@@ -303,7 +307,7 @@ end
 to start_circle
 ;let irr  (34 * ([size] of robot 0) / (2 * pi) ) + 1
 ;let irr  10 * ((0.1583 * number-of-robots + 0.043)* vision-distance - 0.05)
-let irr 10 * (vision-distance / (2 * sin (180 / number-of-robots)))
+let irr 2 * (vision-distance / (2 * sin (180 / number-of-robots)))
 ;let irr 10
 set j 0
 let heading_num 360 / number-of-robots
@@ -452,11 +456,14 @@ to go
          ht
        ]
 
+      if count robots > 1
+      [
       find_adj_matrix
       find-metrics
-      do-plots ; updates plots
       auto-classify-behavior
+      ]
 ;
+      do-plots ; updates plots
 
 
       if time-to-first-see = 0
@@ -549,38 +556,38 @@ to mecanum_with_sensing_vis
 
 
 
-  ifelse goal_seen_flag = 1 or seen_flag = 1 ; if agent or target is detected do whats within first set of brackets
-   [
-     ifelse length detection_list > 5
-      [
-       set detection_list remove-item 0 detection_list
-      set detection_list lput 1 detection_list
-       ]
-      [
-        set detection_list lput 1 detection_list
-      ]
+;  ifelse goal_seen_flag = 1 or seen_flag = 1 ; if agent or target is detected do whats within first set of brackets
+;   [
+;     ifelse length detection_list > filter-val
+;      [
+;       set detection_list remove-item 0 detection_list
+;      set detection_list lput 1 detection_list
+;       ]
+;      [
+;        set detection_list lput 1 detection_list
+;      ]
+;
+;   ]
+;   [
+;     ifelse length detection_list > filter-val
+;      [
+;       set detection_list remove-item 0 detection_list
+;      set detection_list lput 0 detection_list
+;       ]
+;      [
+;        set detection_list lput 0 detection_list
+;      ]
+;   ]
 
-   ]
-   [
-     ifelse length detection_list > 5
-      [
-       set detection_list remove-item 0 detection_list
-      set detection_list lput 0 detection_list
-       ]
-      [
-        set detection_list lput 0 detection_list
-      ]
-   ]
-
-   ifelse sum detection_list >= 3 ; if agent or target is detected do whats within first set of brackets
+   ifelse sum detection_list >= (filter-val / 2) ; if agent or target is detected do whats within first set of brackets
    [
      set color blue
-     set inputs (list (forward_speed2 * 10) body_direction2 turning-rate2)
+     set inputs (list (10 * random-normal (forward_speed2 ) noise-actuating-speed) body_direction2 (random-normal turning-rate2  noise-actuating-turning))
 
    ]
    [
      set color red
-     set inputs (list (forward_speed1 * 10) body_direction1 turning-rate1)
+     set inputs (list (10 * random-normal (forward_speed1 ) noise-actuating-speed) body_direction1 (random-normal turning-rate1  noise-actuating-turning))
    ]
 
 
@@ -1142,6 +1149,30 @@ to do_sensing
                [ set goal_seen_flag 1]
                [set goal_seen_flag 0]
             ]
+
+         ifelse goal_seen_flag = 1 or seen_flag = 1 ; if agent or target is detected do whats within first set of brackets
+            [
+              ifelse length detection_list > filter-val
+               [
+                set detection_list remove-item 0 detection_list
+               set detection_list lput 1 detection_list
+                ]
+               [
+                 set detection_list lput 1 detection_list
+               ]
+
+            ]
+            [
+              ifelse length detection_list > filter-val
+               [
+                set detection_list remove-item 0 detection_list
+               set detection_list lput 0 detection_list
+                ]
+               [
+                 set detection_list lput 0 detection_list
+               ]
+            ]
+
         ]
     ]
     [
@@ -1447,7 +1478,7 @@ to add_robot
 
       set shape "mecanum"
       set color red
-      set size 1.7 ; sets size to 0.1m
+      set size 2.0 ; sets size to 0.1m
 
       set mass size
 
@@ -2161,7 +2192,7 @@ to make_robot0
       set velocity [ 0 0]
       set angular-velocity 0
       set inputs [0 0 0 0]
-      set size 1.7 ; 0.1m
+      set size 2 ; 0.1m
 
       let sr (range ((150  )) ((- 150 )) -.5)
       let pr (range ((max-pxcor * .35 )) ((- (max-pxcor * .35)  )) -.5)
@@ -2181,7 +2212,7 @@ to make_robot0
       ]
       [
         ;set sr_patches patches with [(distancexy 0 0 < ((0.9 * number-of-robots * ([size] of robot (count goals)) / pi) + 2)) and pxcor != 0 and pycor != 0]
-        set sr_patches patches with [(distancexy (0) (0) < (4 * number-of-robots * ([size] of robot (count goals)) / (2 * pi) ) + 1) and pxcor != 0 and pycor != 0]
+        set sr_patches patches with [(distancexy (0) (0) < (2 * number-of-robots * ([size] of robot (count goals)) / (2 * pi) ) + 1) and pxcor != 0 and pycor != 0]
       ]
 
       if spawn_semi_randomly?
@@ -2194,7 +2225,7 @@ to make_robot0
       set color red
       set mass size
       set sound_timer round random-normal 60 2
-      ;set heading (towardsxy 0 0) + 180
+      set heading (towardsxy 0 0) + 180
 
       set speed forward_speed1
       set speed_2 speed2
@@ -2220,7 +2251,7 @@ to make_robot1
       set velocity [ 0 0]
       set angular-velocity 0
       set inputs [0 0 0 0]
-      set size 1 ;3.4; 0.1m
+      set size 2 ;3.4; 0.1m
 
       let sr (range ((150  )) ((- 150 )) -.5)
       let pr (range ((max-pxcor * .35 )) ((- (max-pxcor * .35)  )) -.5)
@@ -2303,6 +2334,11 @@ to do-plots
   set-current-plot "Detection (post filter) Flag of Robot 0"
   set-current-plot-pen "detect_flag"
   plot [mean (modes detection_list)] of robot 0
+
+  set-current-plot "Circliness"
+  set-current-plot-pen "circliness_pen"
+  plot circliness
+
 
 ; find-metrics
 
@@ -2541,15 +2577,28 @@ if count other turtles > 0
         let closest-target1 (max-one-of place-holders [distance myself])
 
         if count robots > 1
-        [set closest-target1 (min-one-of other robots [distance myself])]
+        [
+          ifelse count robots > 3
+          [
+            set closest-targets (min-n-of 2 other robots [distance myself])
+
+            set closest-target1 (min-one-of closest-targets [distance myself])
+            set closest-target2 (max-one-of closest-targets [distance myself])
+          ]
+          [
+            set closest-target1 (min-one-of other robots [distance myself])
+          ]
+          ;set closest-target1 (min-one-of other robots [distance myself])
+        ]
+
 
 
         ifelse walls_on?
           [
-            let closest-target2 (min-one-of walls [distance myself])
+            let closest-target3 (min-one-of walls [distance myself])
 
-            ifelse distance closest-target1 > distance closest-target2
-              [set closest-target closest-target2]
+            ifelse distance closest-target1 > distance closest-target3
+              [set closest-target closest-target3]
               [set closest-target closest-target1]
           ]
           [
@@ -2560,8 +2609,28 @@ if count other turtles > 0
            [
               let xdiff item 0 target-diff
               let ydiff item 1 target-diff
+
+
+              if closest-target2 != 0
+              [
+                let xdiff2 item 0 target-diff2
+                let ydiff2 item 1 target-diff2
+                set coll_angle2 (rel-bearing2 - (body_direct2))
+                ifelse coll_angle2 < -180
+                  [
+                    set coll_angle2 coll_angle2 + 360
+                   ]
+                  [
+                    ifelse coll_angle2 > 180
+                    [set coll_angle2 coll_angle2 - 360]
+                    [set coll_angle2 coll_angle2]
+                  ]
+              ]
               set body_direct2 (360 - body_direct)
               let coll_angle (rel-bearing - (body_direct2))
+
+
+
 
               if body_direct2 > 180
               [
@@ -2580,12 +2649,13 @@ if count other turtles > 0
 
 
 
+
               ifelse collision_stop?
               [
                 ifelse member? closest-target walls
                   [
 
-                    ifelse abs(coll_angle) < 90
+                    ifelse abs(coll_angle) < 120
                     [
                       set impact-x  (-1 * item 0 velocity)
                       set impact-y  (-1 * item 1 velocity)
@@ -2599,7 +2669,7 @@ if count other turtles > 0
                   ]
 
                   [
-                    ifelse abs(coll_angle) < 90
+                    ifelse abs(coll_angle) < 120
                     [
                       set impact-x  (-1 * item 0 velocity)
                       set impact-y  (-1 * item 1 velocity)
@@ -2610,6 +2680,20 @@ if count other turtles > 0
                      set impact-y 0
                      set impact-angle 0
                     ]
+
+                    if closest-target2 != 0
+                    [
+                      if (distance closest-target2 ) < (size + ([size] of closest-target)) / 2
+                      [
+                         if abs(coll_angle2) < 120
+                         [
+                           set impact-x  (-1 * item 0 velocity)
+                           set impact-y  (-1 * item 1 velocity)
+                           ;set impact-angle (- angular-velocity)
+                         ]
+                      ]
+                     ]
+
                    ]
                 ]
                 [
@@ -2990,6 +3074,19 @@ to-report target-diff  ;; robot reporter
 
 end
 
+to-report target-diff2  ;; robot reporter
+     report
+    (   map
+        [ [a q] -> a - q]
+        (list
+          [xcor] of closest-target2
+          [ycor] of closest-target2)
+        (list
+          xcor
+          ycor))
+
+end
+
 to-report mean-target-diff  ;; robot reporter
      report
     (   map
@@ -3026,6 +3123,30 @@ to-report rel-bearing
   if bearing < -180
     [set bearing bearing + 360]
   report( bearing )
+end
+
+to-report rel-bearing2
+  let xdiff2 item 0 target-diff2
+  let ydiff2 item 1 target-diff2
+
+  let cart-heading2 (90 - heading)
+
+  ifelse cart-heading2 < 0
+    [set cart-heading2 cart-heading2 + 360]
+    [set cart-heading2 cart-heading2]
+
+  ifelse cart-heading2 > 180
+    [set cart-heading2 cart-heading2 - 360]
+    [set cart-heading2 cart-heading2]
+
+  if xdiff2 != 0 and ydiff2 != 0
+    [set angle2 (atan ydiff2 xdiff2)]
+
+
+  let bearing2 cart-heading2 - angle2
+  if bearing2 < -180
+    [set bearing2 bearing2 + 360]
+  report( bearing2 )
 end
 
 to-report rel-bearing-mean
@@ -3273,7 +3394,14 @@ while [ee < length groups]
 ]
 
 set LapM matrix:minus DM AM
-set alg-con item 1 sort (matrix:real-eigenvalues LapM)
+
+ifelse count robots > 1
+  [
+    set alg-con item 1 sort (matrix:real-eigenvalues LapM)
+  ]
+  [
+    set alg-con 1
+  ]
 
 
 ifelse old-num-of-groups = num-of-groups
@@ -3324,7 +3452,7 @@ end
 GRAPHICS-WINDOW
 1049
 33
-1548
+1549
 534
 -1
 -1
@@ -3372,7 +3500,7 @@ seed-no
 seed-no
 1
 100
-9.0
+11.0
 1
 1
 NIL
@@ -3400,9 +3528,9 @@ SLIDER
 176
 vision-cone
 vision-cone
-48
-49
-49.0
+0
+360
+50.0
 1
 1
 deg
@@ -3432,7 +3560,7 @@ turning-rate1
 turning-rate1
 -150
 150
-5.0
+75.0
 5
 1
 deg/s
@@ -3559,25 +3687,25 @@ NIL
 1
 
 SLIDER
-2630
-690
-2828
-723
+525
+496
+731
+529
 noise-actuating-speed
 noise-actuating-speed
 0
-2
+0.5
 0.0
-0.05
+0.01
 1
-NIL
+m/s
 HORIZONTAL
 
 SLIDER
-2633
-650
-2829
-683
+533
+450
+727
+483
 noise-actuating-turning
 noise-actuating-turning
 0
@@ -3585,7 +3713,7 @@ noise-actuating-turning
 0.0
 1
 1
-NIL
+deg/s
 HORIZONTAL
 
 SWITCH
@@ -3656,10 +3784,10 @@ see_walls?
 -1000
 
 SWITCH
-2478
-835
-2581
-868
+0
+531
+103
+564
 delay?
 delay?
 0
@@ -3667,15 +3795,15 @@ delay?
 -1000
 
 SLIDER
-2590
-835
-2682
-868
+112
+531
+204
+564
 delay-length
 delay-length
 0
 30
-14.0
+1.0
 1
 1
 NIL
@@ -3697,10 +3825,10 @@ NIL
 HORIZONTAL
 
 SLIDER
-2483
-875
-2655
-908
+545
+536
+717
+569
 false_negative_rate
 false_negative_rate
 0
@@ -3723,10 +3851,10 @@ collision_stop?
 -1000
 
 SLIDER
-2658
-875
-2830
-908
+544
+572
+716
+605
 false_positive_rate
 false_positive_rate
 0
@@ -3761,7 +3889,7 @@ turning-rate2
 turning-rate2
 0
 180
--25.0
+-75.0
 5
 1
 deg/s
@@ -3779,10 +3907,10 @@ mode_switching?
 -1000
 
 SLIDER
-352
-565
-524
-598
+296
+457
+468
+490
 number-of-group1
 number-of-group1
 0
@@ -4629,7 +4757,7 @@ forward_speed2
 forward_speed2
 0
 0.25
-0.1
+0.25
 0.05
 1
 m/s
@@ -4659,7 +4787,7 @@ turning-rate2
 turning-rate2
 -150
 150
--25.0
+-75.0
 5
 1
 deg/s
@@ -4702,10 +4830,10 @@ sensing_type
 1
 
 TEXTBOX
-359
-543
-609
-573
+303
+435
+553
+465
 Controllable Agents using controls below
 11
 0.0
@@ -4809,10 +4937,10 @@ precision alg-con 4
 11
 
 PLOT
-113
-750
-682
-1035
+103
+1088
+672
+1373
 Detection (post filter) Flag of Robot 0
 NIL
 NIL
@@ -4846,6 +4974,59 @@ Keep vision-distance and vision-cone the same for now
 11
 0.0
 1
+
+TEXTBOX
+229
+534
+379
+590
+this is \"sampling period\" - (30 would mean that it takes 30 ticks (0.5 seconds) to take a new measurement)
+11
+0.0
+1
+
+SLIDER
+106
+629
+211
+662
+filter-val
+filter-val
+0
+50
+1.0
+1
+1
+NIL
+HORIZONTAL
+
+TEXTBOX
+244
+627
+394
+711
+this is the \"window length\" of the filter - (10 means that it saves 10 values and then decides what to do for the next actuation period based on the majority vote)
+11
+0.0
+1
+
+PLOT
+91
+811
+576
+1063
+Circliness
+NIL
+NIL
+0.0
+10.0
+0.0
+1.0
+true
+false
+"" ""
+PENS
+"circliness_pen" 1.0 0 -16777216 true "" ""
 
 @#$#@#$#@
 ## WHAT IS IT?
