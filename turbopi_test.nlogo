@@ -195,7 +195,7 @@ to setup
   random-seed seed-no
 
 
-  set tick-delta 0.01666 ; 40 ticks in one second
+  set tick-delta 0.01666 ; 60 ticks in one second
 
   initialize_lists
 
@@ -220,17 +220,25 @@ to setup
     ]
 
   ;creates robots of either species 1 or 2
-  set n number-of-robots
+  set n number-of-robots + number-of-group2 + number-of-group1
+
+
   ;set number-of-group1 round (percent-of-second-species * 0.01 * number-of-robots)
-  while [n > (number-of-group1)]
+  while [n > (number-of-group1 + number-of-group2)]
   [
    make_robot0
    set n (n - 1)
   ]
 
-  while [n > 0]
+  while [n > (number-of-group1)]
   [
    make_robot1
+   set n (n - 1)
+  ]
+
+    while [n > (0)]
+  [
+   make_robot2
    set n (n - 1)
   ]
 
@@ -298,9 +306,11 @@ to initialize_lists
   set group-stability_list (list )
   set v_avg_list (list )
 
+  let num-num (number-of-robots + number-of-group2)
 
-  set DM matrix:make-constant number-of-robots number-of-robots 0
-  set AM matrix:make-constant number-of-robots number-of-robots 0
+
+  set DM matrix:make-constant num-num num-num 0
+  set AM matrix:make-constant num-num num-num 0
   set GM matrix:make-constant number-of-robots number-of-robots number-of-robots
 
 end
@@ -423,13 +433,20 @@ to go
 ;  ]
   ask robots
     [
-      ifelse group_type = 1
+      ifelse group_type = 2
       [
         manual_drive
       ]
       [
-        select_alg_mecanum
+        ifelse group_type = 1
+        [
+          mecanum_with_sensing_vis2
+        ]
+        [
+          mecanum_with_sensing_vis
+        ]
       ]
+
 
         ifelse draw_path?
         [
@@ -441,7 +458,7 @@ to go
 
         if paint_fov?
           [
-            ask robot 0
+            ask robots
               [
                 paint-patches-in-new-FOV
               ]
@@ -541,7 +558,7 @@ end
 
 to manual_drive
    ;set inputs ( list 1 -1 1 -1)
-   update_agent_state_mecanum
+   update_agent_state_mecanum2
 
 end
 
@@ -550,34 +567,6 @@ to mecanum_with_sensing_vis
   set_actuating_and_extra_variables
   do_sensing
 
-
-
-  ;inputs is list of wheel velocities (rad/s) =  (front_right front_left back_left back_right)
-
-
-
-;  ifelse goal_seen_flag = 1 or seen_flag = 1 ; if agent or target is detected do whats within first set of brackets
-;   [
-;     ifelse length detection_list > filter-val
-;      [
-;       set detection_list remove-item 0 detection_list
-;      set detection_list lput 1 detection_list
-;       ]
-;      [
-;        set detection_list lput 1 detection_list
-;      ]
-;
-;   ]
-;   [
-;     ifelse length detection_list > filter-val
-;      [
-;       set detection_list remove-item 0 detection_list
-;      set detection_list lput 0 detection_list
-;       ]
-;      [
-;        set detection_list lput 0 detection_list
-;      ]
-;   ]
 
    ifelse sum detection_list >= (filter-val / 2) ; if agent or target is detected do whats within first set of brackets
    [
@@ -588,6 +577,27 @@ to mecanum_with_sensing_vis
    [
      set color red
      set inputs (list (10 * random-normal (forward_speed1 ) noise-actuating-speed) body_direction1 (random-normal turning-rate1  noise-actuating-turning))
+   ]
+
+
+
+  update_agent_state_mecanum2
+end
+
+to mecanum_with_sensing_vis2
+  set_actuating_and_extra_variables
+  do_sensing
+
+
+   ifelse sum detection_list >= (filter-val / 2) ; if agent or target is detected do whats within first set of brackets
+   [
+     set color blue
+     set inputs (list (10 * random-normal (forward_speed2_B ) noise-actuating-speed) body_direction2_B (random-normal turning-rate2_B  noise-actuating-turning))
+
+   ]
+   [
+     set color red
+     set inputs (list (10 * random-normal (forward_speed1_B ) noise-actuating-speed) body_direction1_B (random-normal turning-rate1_B  noise-actuating-turning))
    ]
 
 
@@ -1094,13 +1104,23 @@ to set_actuating_and_extra_variables
   set rand-x random-normal 0 state-disturbance
   set rand-y random-normal 0 state-disturbance
 
+;  ifelse group_type = 0
+;  [
+;    set speed-w-noise (forward_speed1 * 10) + random-normal 0 noise-actuating-speed
+;    set turning-w-noise (turning-rate1) + random-normal 0 noise-actuating-turning
+;  ]
+;  [
+;    set speed-w-noise (speed2 * 10) + random-normal 0 noise-actuating-speed
+;    set turning-w-noise (turning-rate2) + random-normal 0 noise-actuating-turning
+;  ]
+
   ifelse group_type = 0
   [
     set speed-w-noise (forward_speed1 * 10) + random-normal 0 noise-actuating-speed
     set turning-w-noise (turning-rate1) + random-normal 0 noise-actuating-turning
   ]
   [
-    set speed-w-noise (speed2 * 10) + random-normal 0 noise-actuating-speed
+    set speed-w-noise (forward_speed2 * 10) + random-normal 0 noise-actuating-speed
     set turning-w-noise (turning-rate2) + random-normal 0 noise-actuating-turning
   ]
 end
@@ -1483,7 +1503,7 @@ to add_robot
       set mass size
 
       set speed forward_speed1
-      set speed2 speed2
+
 
       set turn-r turning-rate1
       set turn-r2 turning-rate2
@@ -2192,7 +2212,7 @@ to make_robot0
       set velocity [ 0 0]
       set angular-velocity 0
       set inputs [0 0 0 0]
-      set size 2 ; 0.1m
+      set size 2 ; 0.2m
 
       let sr (range ((150  )) ((- 150 )) -.5)
       let pr (range ((max-pxcor * .35 )) ((- (max-pxcor * .35)  )) -.5)
@@ -2212,7 +2232,7 @@ to make_robot0
       ]
       [
         ;set sr_patches patches with [(distancexy 0 0 < ((0.9 * number-of-robots * ([size] of robot (count goals)) / pi) + 2)) and pxcor != 0 and pycor != 0]
-        set sr_patches patches with [(distancexy (0) (0) < (2 * number-of-robots * ([size] of robot (count goals)) / (2 * pi) ) + 1) and pxcor != 0 and pycor != 0]
+        set sr_patches patches with [(distancexy (0) (0) < (2 * (number-of-robots + number-of-group2) * ([size] of robot (count goals)) / (2 * pi) ) + 1) and pxcor != 0 and pycor != 0]
       ]
 
       if spawn_semi_randomly?
@@ -2228,7 +2248,7 @@ to make_robot0
       set heading (towardsxy 0 0) + 180
 
       set speed forward_speed1
-      set speed_2 speed2
+
 
       set turn-r turning-rate1
       set turn-r2 turning-rate2
@@ -2251,11 +2271,12 @@ to make_robot1
       set velocity [ 0 0]
       set angular-velocity 0
       set inputs [0 0 0 0]
-      set size 2 ;3.4; 0.1m
+      set size 2 ;0.2m
 
       let sr (range ((150  )) ((- 150 )) -.5)
       let pr (range ((max-pxcor * .35 )) ((- (max-pxcor * .35)  )) -.5)
       setxy (one-of pr) (one-of pr)
+    set detection_list (list )
 
       ifelse Goal_Searching_Mission?
       [
@@ -2268,7 +2289,7 @@ to make_robot1
           ]
       ]
       [
-        set sr_patches patches with [(distancexy 0 0 < ((0.9 * number-of-robots * ([size] of robot (count goals)) / pi) + 2)) and pxcor != 0 and pycor != 0]
+        set sr_patches patches with [(distancexy 0 0 < ((0.9 * (number-of-robots + number-of-group2) * ([size] of robot (count goals)) / pi) + 2)) and pxcor != 0 and pycor != 0]
       ]
 
       if spawn_semi_randomly?
@@ -2282,7 +2303,7 @@ to make_robot1
       set mass size
 
       set speed forward_speed1
-      set speed_2 speed2
+
 
       set turn-r turning-rate1
       set turn-r2 turning-rate2
@@ -2299,6 +2320,62 @@ to make_robot1
     ]
 end
 
+
+to make_robot2
+  create-robots 1
+    [
+      set velocity [ 0 0]
+      set angular-velocity 0
+      set inputs [0 0 0 0]
+      set size 2 ;0.2m
+
+      let sr (range ((150  )) ((- 150 )) -.5)
+      let pr (range ((max-pxcor * .35 )) ((- (max-pxcor * .35)  )) -.5)
+      setxy (one-of pr) (one-of pr)
+    set detection_list (list )
+
+      ifelse Goal_Searching_Mission?
+      [
+        ifelse random_start_region?
+          [
+            set sr_patches patches with [(distancexy rand-xcor rand-ycor < (34 * ([size] of robot (count goals)) / (2 * pi) ) + 1) and pxcor != 0 and pycor != 0]
+          ]
+          [
+            set sr_patches patches with [(distancexy (max-pxcor * -0.55) (max-pycor * -0.55) < (34 * ([size] of robot (count goals)) / (2 * pi) ) + 1) and pxcor != 0 and pycor != 0]
+          ]
+      ]
+      [
+        set sr_patches patches with [(distancexy 0 0 < ((0.9 * (number-of-robots + number-of-group2) * ([size] of robot (count goals)) / pi) + 2)) and pxcor != 0 and pycor != 0]
+      ]
+
+      if spawn_semi_randomly?
+        [
+          move-to one-of sr_patches with [(not any? other robots in-radius ([size] of robot (count goals)))]
+          setxy (xcor + .01) (ycor + .01)
+        ]
+
+      set shape "turtle"
+      set color red
+      set mass size
+
+      set speed forward_speed1
+
+
+      set turn-r turning-rate1
+      set turn-r2 turning-rate2
+
+     set levy_time round (100 * (1 / (random-gamma 0.5 (c / 2  ))))
+     while [levy_time > (max_levy_time / tick-delta)]
+     [set levy_time round (100 * (1 / (random-gamma 0.5 (.5  ))))]
+     set pre_flight_time round (random-normal 400 10) + 10
+
+     set flight_time round (random-normal 200 10) + 10
+
+     set group_type 2
+     set color red
+    set heading 0
+    ]
+end
 
 to clear-paint
 ask patches
@@ -2355,6 +2432,8 @@ to find-metrics
   ;set static_area (count patches with [pcolor = yellow] + count patches with [pcolor = orange]) / (count patches with [pcolor != black])
   ;set dynamic_area (count patches with [pcolor = orange]) / (count patches with [pcolor != black])
 
+  let num-num (number-of-robots + number-of-group2)
+
   ask robots
   [ ;find_resultant_angle
     set V sqrt ((item 0 velocity * item 0 velocity) + (item 1 velocity * item 1 velocity))
@@ -2389,17 +2468,17 @@ to find-metrics
 
 
 
-   set avg-speeds (V-sum / number-of-robots)
-   set scatter (scatter-sum / (number-of-robots * (sqrt(2)* max-pxcor) ^ 2))
-   set ang-momentum (momentum-sum / (number-of-robots * (sqrt(2)* max-pxcor)))
-   set group-rot (group-rot-sum / number-of-robots)
+   set avg-speeds (V-sum / num-num)
+   set scatter (scatter-sum / (num-num * (sqrt(2)* max-pxcor) ^ 2))
+   set ang-momentum (momentum-sum / (num-num * (sqrt(2)* max-pxcor)))
+   set group-rot (group-rot-sum / num-num)
    set circliness (mean[cc-rad] of circums - mean [ic-rad] of circums )/ mean [ic-rad] of circums
 
    set outer_radius_size (mean [cc-rad] of circums )
-   set rad_var_comp1_mean (rad_var_comp1_sum / number-of-robots)
+   set rad_var_comp1_mean (rad_var_comp1_sum / num-num)
    set rad_var_comp1_mean_sub rad_var_comp1_mean
 
-   set rad_var (rad_var_comp_sum / (number-of-robots * (sqrt(2)* max-pxcor) ^ 2))
+   set rad_var (rad_var_comp_sum / (num-num * (sqrt(2)* max-pxcor) ^ 2))
 
    set V-sum 0
    set scatter-sum 0
@@ -2982,13 +3061,15 @@ to paint-patches-in-new-FOV
   set i 0
 
 
-  ifelse group_type = 0
-    [
-      set fov-list-patches patches in-cone (vision-distance * 10) (vision-cone + (2 * abs(vision-cone-offset))) with [(distancexy-nowrap ([xcor] of myself) ([ycor] of myself) <= (vision-distance * 10))  and pcolor != black]
-    ]
-    [
-      set fov-list-patches patches in-cone (vision-distance2 * 10) (vision-cone2 + (2 * abs(vision-cone-offset2))) with [(distancexy-nowrap ([xcor] of myself) ([ycor] of myself) <= (vision-distance * 10)) and pcolor != black]
-    ]
+;  ifelse group_type = 0
+;    [
+;      set fov-list-patches patches in-cone (vision-distance * 10) (vision-cone + (2 * abs(vision-cone-offset))) with [(distancexy-nowrap ([xcor] of myself) ([ycor] of myself) <= (vision-distance * 10))  and pcolor != black]
+;    ]
+;    [
+;      set fov-list-patches patches in-cone (vision-distance2 * 10) (vision-cone2 + (2 * abs(vision-cone-offset2))) with [(distancexy-nowrap ([xcor] of myself) ([ycor] of myself) <= (vision-distance * 10)) and pcolor != black]
+;    ]
+
+  set fov-list-patches patches in-cone (vision-distance * 10) (vision-cone + (2 * abs(vision-cone-offset))) with [(distancexy-nowrap ([xcor] of myself) ([ycor] of myself) <= (vision-distance * 10))  and pcolor != black]
 
 
   ask fov-list-patches
@@ -3203,18 +3284,20 @@ to find_adj_matrix
 
   set old-num-of-groups (num-of-groups)
 
+  let num-num (number-of-robots + number-of-group2)
+
   set groups (list )
-  set GM matrix:make-constant number-of-robots number-of-robots number-of-robots
+  set GM matrix:make-constant num-num num-num num-num
 
 
-  while [i < number-of-robots]
+  while [i < num-num]
   [
     ask robot (i)
     [
       set j 0
       set n 0
       set deg 0
-      while [j < number-of-robots]
+      while [j < num-num]
       [
         ;set val j
         set val distance (robot (j))
@@ -3231,7 +3314,7 @@ to find_adj_matrix
           matrix:set GM i n j
           set n (n + 1)
         ]
-        [ matrix:set GM i j number-of-robots]
+        [ matrix:set GM i j num-num]
 
 
         set j (j + 1)
@@ -3246,85 +3329,85 @@ to find_adj_matrix
  set rank matrix:rank AM
 
 
- while [k < number-of-robots]
+ while [k < num-num]
  [
    set b 0
    set group1 (list )
-   while [b < number-of-robots]
+   while [b < num-num]
    [
      let point matrix:get GM k b
-     if not member? point group1 and point < number-of-robots
+     if not member? point group1 and point < num-num
      [
        set group1 fput point group1
        ;]
        set h 0
-       while [h < number-of-robots]
+       while [h < num-num]
        [
          let point1 matrix:get GM point h
-         if not member? point1 group1 and point1 < number-of-robots
+         if not member? point1 group1 and point1 < num-num
            [
              set group1 fput point1 group1
              set g 0
-             while [g < number-of-robots]
+             while [g < num-num]
                [
                  let point2 matrix:get GM point1 g
-                 if not member? point2 group1 and point2 < number-of-robots
+                 if not member? point2 group1 and point2 < num-num
                    [
                      set group1 fput point2 group1
                      set s 0
-                     while [s < number-of-robots]
+                     while [s < num-num]
                        [
                          let point3 matrix:get GM point2 s
-                         if not member? point3 group1 and point3 < number-of-robots
+                         if not member? point3 group1 and point3 < num-num
                            [
                              set group1 fput point3 group1
                              set c-mat 0
-                             while [c-mat < number-of-robots]
+                             while [c-mat < num-num]
                                [
                                  let point4 matrix:get GM point3 c-mat
-                                 if not member? point4 group1 and point4 < number-of-robots
+                                 if not member? point4 group1 and point4 < num-num
                                    [
                                      set group1 fput point4 group1
                                      set tr 0
-                                     while [tr < number-of-robots]
+                                     while [tr < num-num]
                                        [
                                          let point5 matrix:get GM point4 tr
-                                         if not member? point5 group1 and point5 < number-of-robots
+                                         if not member? point5 group1 and point5 < num-num
                                            [
                                              set group1 fput point5 group1
                                              set t1 0
-                                             while [t1 < number-of-robots]
+                                             while [t1 < num-num]
                                                [
                                                  let point6 matrix:get GM point5 t1
-                                                 if not member? point6 group1 and point6 < number-of-robots
+                                                 if not member? point6 group1 and point6 < num-num
                                                    [
                                                      set group1 fput point6 group1
                                                      set t2 0
-                                                     while [t2 < number-of-robots]
+                                                     while [t2 < num-num]
                                                        [
                                                          let point7 matrix:get GM point6 t2
-                                                         if not member? point7 group1 and point7 < number-of-robots
+                                                         if not member? point7 group1 and point7 < num-num
                                                            [
                                                              set group1 fput point7 group1
                                                              set t3 0
-                                                             while [t3 < number-of-robots]
+                                                             while [t3 < num-num]
                                                                [
                                                                  let point8 matrix:get GM point7 t3
-                                                                 if not member? point8 group1 and point8 < number-of-robots
+                                                                 if not member? point8 group1 and point8 < num-num
                                                                  [
                                                                    set group1 fput point8 group1
                                                                    set t4 0
-                                                                   while [t4 < number-of-robots]
+                                                                   while [t4 < num-num]
                                                                      [
                                                                        let point9 matrix:get GM point8 t4
-                                                                       if not member? point9 group1 and point9 < number-of-robots
+                                                                       if not member? point9 group1 and point9 < num-num
                                                                        [
                                                                          set group1 fput point9 group1
                                                                          set t5 0
-                                                                         while [t5 < number-of-robots]
+                                                                         while [t5 < num-num]
                                                                            [
                                                                              let point10 matrix:get GM point9 t5
-                                                                             if not member? point10 group1 and point10 < number-of-robots
+                                                                             if not member? point10 group1 and point10 < num-num
                                                                              [
                                                                                set group1 fput point10 group1
 
@@ -3387,7 +3470,7 @@ let ee 0
 
 while [ee < length groups]
 [
-  if length item ee groups = number-of-robots
+  if length item ee groups = num-num
   [ set num-of-groups 1]
 
   set ee (ee + 1)
@@ -3452,8 +3535,8 @@ end
 GRAPHICS-WINDOW
 1049
 33
-1549
-534
+1838
+823
 -1
 -1
 9.65
@@ -3466,10 +3549,10 @@ GRAPHICS-WINDOW
 1
 1
 1
--25
-25
--25
-25
+-40
+40
+-40
+40
 1
 1
 1
@@ -3485,7 +3568,7 @@ number-of-robots
 number-of-robots
 0
 12
-7.0
+2.0
 1
 1
 NIL
@@ -3500,7 +3583,7 @@ seed-no
 seed-no
 1
 100
-11.0
+4.0
 1
 1
 NIL
@@ -3544,8 +3627,8 @@ SLIDER
 forward_speed1
 forward_speed1
 0
-0.25
-0.25
+0.3
+0.3
 0.05
 1
 m/s
@@ -3560,7 +3643,7 @@ turning-rate1
 turning-rate1
 -150
 150
-75.0
+55.0
 5
 1
 deg/s
@@ -3594,9 +3677,9 @@ spawn_semi_randomly?
 
 SWITCH
 530
-64
+20
 645
-97
+53
 walls_on?
 walls_on?
 0
@@ -3653,10 +3736,10 @@ NIL
 1
 
 BUTTON
-606
-229
-704
-264
+823
+83
+921
+118
 NIL
 add_robot
 NIL
@@ -3670,10 +3753,10 @@ NIL
 1
 
 BUTTON
-706
-229
-827
-264
+924
+79
+1046
+114
 NIL
 remove_robot
 NIL
@@ -3687,30 +3770,30 @@ NIL
 1
 
 SLIDER
-525
-496
-731
-529
+533
+609
+739
+642
 noise-actuating-speed
 noise-actuating-speed
 0
 0.5
-0.0
+0.1
 0.01
 1
 m/s
 HORIZONTAL
 
 SLIDER
-533
-450
-727
-483
+542
+562
+736
+595
 noise-actuating-turning
 noise-actuating-turning
 0
 20
-0.0
+5.0
 1
 1
 deg/s
@@ -3803,7 +3886,7 @@ delay-length
 delay-length
 0
 30
-1.0
+5.0
 1
 1
 NIL
@@ -3825,10 +3908,10 @@ NIL
 HORIZONTAL
 
 SLIDER
-545
-536
-717
-569
+553
+649
+725
+682
 false_negative_rate
 false_negative_rate
 0
@@ -3851,48 +3934,18 @@ collision_stop?
 -1000
 
 SLIDER
-544
-572
-716
-605
+552
+685
+724
+718
 false_positive_rate
 false_positive_rate
 0
 100
-0.0
+5.0
 1
 1
 NIL
-HORIZONTAL
-
-SLIDER
-2460
-1045
-2633
-1078
-speed2
-speed2
-0
-2
-0.4
-0.1
-1
-m/s
-HORIZONTAL
-
-SLIDER
-2458
-1083
-2646
-1116
-turning-rate2
-turning-rate2
-0
-180
--75.0
-5
-1
-deg/s
 HORIZONTAL
 
 SWITCH
@@ -3907,15 +3960,15 @@ mode_switching?
 -1000
 
 SLIDER
-296
-457
-468
-490
+168
+816
+340
+849
 number-of-group1
 number-of-group1
 0
 300
-0.0
+1.0
 1
 1
 NIL
@@ -4000,10 +4053,10 @@ NIL
 HORIZONTAL
 
 SWITCH
-645
-64
-817
-97
+646
+20
+818
+53
 circular_environment?
 circular_environment?
 1
@@ -4019,7 +4072,7 @@ environment_size
 environment_size
 0
 max-pxcor - min-pxcor
-50.0
+80.0
 1
 1
 NIL
@@ -4082,10 +4135,10 @@ Type 1 switches randomly with probability \"rand_count_prob\"\n\nType 2 switches
 1
 
 SLIDER
-2653
-1005
-2829
-1038
+2602
+912
+2778
+945
 vision-distance2
 vision-distance2
 0
@@ -4097,10 +4150,10 @@ m
 HORIZONTAL
 
 SLIDER
-2650
-1043
-2823
-1076
+2598
+951
+2771
+984
 vision-cone2
 vision-cone2
 0
@@ -4112,10 +4165,10 @@ deg
 HORIZONTAL
 
 SLIDER
-2665
-1085
-2838
-1118
+2613
+992
+2786
+1025
 mode2
 mode2
 -1
@@ -4127,10 +4180,10 @@ NIL
 HORIZONTAL
 
 SLIDER
-2840
-1010
-3025
-1043
+2812
+1072
+2997
+1105
 vision-cone-offset2
 vision-cone-offset2
 -90
@@ -4250,10 +4303,10 @@ time-to-first-see
 11
 
 SWITCH
-1101
-897
-1289
-930
+3019
+935
+3207
+968
 start_in_outward_circle?
 start_in_outward_circle?
 1
@@ -4342,13 +4395,13 @@ off for now, to do levy, switch number-of-group1\n
 1
 
 SWITCH
-2473
-1005
-2610
-1038
+2422
+912
+2559
+945
 species_levy?
 species_levy?
-0
+1
 1
 -1000
 
@@ -4364,10 +4417,10 @@ show_detection?
 -1000
 
 PLOT
-1330
-1200
-2044
-1649
+1320
+1498
+2034
+1947
 Number of Agents Detecting Target
 NIL
 NIL
@@ -4490,10 +4543,10 @@ distribution_for_direction
 0
 
 CHOOSER
-2874
-1077
-3030
-1122
+2823
+985
+2979
+1030
 selected_algorithm2
 selected_algorithm2
 "Mill" "Dispersal" "Levy" "VNQ" "VQN" "Standard Random" "RRR"
@@ -4520,12 +4573,12 @@ non-target-detection-response
 1
 
 BUTTON
-320
-1606
-403
-1640
+306
+860
+389
+894
 Forward
-ask robots with [group_type = 1][ set inputs (list 1 1 1 1 )]
+ask robots with [group_type = 2][ set inputs (list (10 * leader_speed) 90 0)]
 NIL
 1
 T
@@ -4537,12 +4590,12 @@ NIL
 1
 
 BUTTON
-320
-1656
-400
-1690
+306
+911
+386
+945
 Reverse
-ask robots with [group_type = 1][ set inputs (list -1 -1 -1 -1 )]
+ask robots with [group_type = 2][ set inputs (list (10 * leader_speed) 270 0)]
 NIL
 1
 T
@@ -4554,12 +4607,12 @@ NIL
 1
 
 BUTTON
-410
-1656
-514
-1690
+396
+911
+500
+945
 Strafe Right
-ask robots with [group_type = 1][ set inputs (list 1 -1 -1 1 )]
+ask robots with [group_type = 2][ set inputs (list (10 * leader_speed) 0 0)]
 NIL
 1
 T
@@ -4571,12 +4624,12 @@ NIL
 1
 
 BUTTON
-219
-1656
-314
-1690
+206
+911
+301
+945
 Strafe Left
-ask robots with [group_type = 1][ set inputs (list -1 1 1 -1 )]
+ask robots with [group_type = 2][ set inputs (list (10 * leader_speed) 180 0)]
 NIL
 1
 T
@@ -4588,12 +4641,12 @@ NIL
 1
 
 BUTTON
-425
-1612
-547
-1646
+400
+863
+522
+897
 Diagonal Right
-ask robots with [group_type = 1][ set inputs (list 1 0 0 1 )]
+ask robots with [group_type = 2][ set inputs (list (10 * leader_speed) 45 0)]
 NIL
 1
 T
@@ -4605,12 +4658,12 @@ NIL
 1
 
 BUTTON
-195
-1610
-308
-1644
+182
+863
+295
+897
 Diagonal Left
-ask robots with [group_type = 1][ set inputs (list 0 1 1 0 )]
+ask robots with [group_type = 2][ set inputs (list (10 * leader_speed) 135 0)]
 NIL
 1
 T
@@ -4622,10 +4675,10 @@ NIL
 1
 
 BUTTON
-206
-1550
-310
-1584
+569
+1469
+673
+1503
 Rotate CCW
 ask robots with [group_type = 1][ set inputs (list -1 1 -1 1 )]
 NIL
@@ -4639,10 +4692,10 @@ NIL
 1
 
 BUTTON
-429
-1562
-524
-1596
+709
+1476
+804
+1510
 Rotate CW
 ask robots with [group_type = 1][ set inputs (list 1 -1 1 -1 )]
 NIL
@@ -4666,10 +4719,10 @@ mecanum_procedure
 1
 
 BUTTON
-576
-1616
-640
-1650
+856
+1530
+920
+1564
 stop
 ask robots with [group_type = 1][ set inputs (list 0 0 0 0)]
 NIL
@@ -4683,10 +4736,10 @@ NIL
 1
 
 BUTTON
-589
-1660
-702
-1694
+869
+1573
+982
+1607
 normal circle
 ask robots [set inputs (list  1.5 1 1.5 1)]
 NIL
@@ -4749,25 +4802,25 @@ deg
 HORIZONTAL
 
 SLIDER
-318
+272
 230
-513
+467
 263
 forward_speed2
 forward_speed2
 0
-0.25
-0.25
+0.3
+0.2
 0.05
 1
 m/s
 HORIZONTAL
 
 SLIDER
-305
-273
-503
-306
+258
+274
+456
+307
 body_direction2
 body_direction2
 0
@@ -4779,15 +4832,15 @@ deg
 HORIZONTAL
 
 SLIDER
-307
-317
-495
-350
+260
+318
+448
+351
 turning-rate2
 turning-rate2
 -150
 150
--75.0
+0.0
 5
 1
 deg/s
@@ -4830,10 +4883,10 @@ sensing_type
 1
 
 TEXTBOX
-303
-435
-553
-465
+173
+793
+423
+823
 Controllable Agents using controls below
 11
 0.0
@@ -4850,20 +4903,20 @@ Inputs for when nothing is detected
 1
 
 TEXTBOX
-328
-197
-516
-225
+282
+198
+470
+226
 Inputs for when something is detected
 11
 0.0
 1
 
 MONITOR
-763
-404
-905
-449
+772
+516
+914
+561
 Average velocity
 precision avg-speeds 4
 17
@@ -4871,10 +4924,10 @@ precision avg-speeds 4
 11
 
 MONITOR
-764
-465
-908
-510
+772
+578
+916
+623
 Group Rotation
 precision group-rot 4
 17
@@ -4882,10 +4935,10 @@ precision group-rot 4
 11
 
 MONITOR
-761
-580
-911
-625
+769
+692
+919
+737
 Scatter
 precision scatter 4
 17
@@ -4893,10 +4946,10 @@ precision scatter 4
 11
 
 MONITOR
-764
-635
-916
-680
+772
+748
+924
+793
 Radial Variance
 precision rad_var 4
 17
@@ -4904,10 +4957,10 @@ precision rad_var 4
 11
 
 MONITOR
-764
-524
-911
-569
+772
+636
+919
+681
 Angular Momentum
 precision ang-momentum 4
 17
@@ -4915,10 +4968,10 @@ precision ang-momentum 4
 11
 
 MONITOR
-766
-694
-919
-739
+775
+806
+928
+851
 Circliness
 precision circliness 4
 17
@@ -4926,10 +4979,10 @@ precision circliness 4
 11
 
 MONITOR
-766
-753
-919
-798
+775
+866
+928
+911
 Algebraic Connectivity
 precision alg-con 4
 17
@@ -4937,10 +4990,10 @@ precision alg-con 4
 11
 
 PLOT
-103
-1088
-672
-1373
+1488
+1184
+2057
+1469
 Detection (post filter) Flag of Robot 0
 NIL
 NIL
@@ -4955,10 +5008,10 @@ PENS
 "detect_flag" 1.0 0 -16777216 true "" ""
 
 MONITOR
-926
-793
-1094
-838
+935
+906
+1103
+951
 Auto-Classified Behavior
 behave_name
 17
@@ -4994,7 +5047,7 @@ filter-val
 filter-val
 0
 50
-1.0
+10.0
 1
 1
 NIL
@@ -5011,10 +5064,10 @@ this is the \"window length\" of the filter - (10 means that it saves 10 values 
 1
 
 PLOT
-91
-811
-576
-1063
+1476
+908
+1961
+1160
 Circliness
 NIL
 NIL
@@ -5027,6 +5080,126 @@ false
 "" ""
 PENS
 "circliness_pen" 1.0 0 -16777216 true "" ""
+
+SLIDER
+685
+270
+858
+303
+number-of-group2
+number-of-group2
+0
+20
+5.0
+1
+1
+NIL
+HORIZONTAL
+
+SLIDER
+783
+309
+983
+342
+forward_speed2_B
+forward_speed2_B
+0
+0.3
+0.2
+0.05
+1
+m/s
+HORIZONTAL
+
+SLIDER
+575
+313
+775
+346
+forward_speed1_B
+forward_speed1_B
+0
+0.3
+0.3
+0.05
+1
+m/s
+HORIZONTAL
+
+SLIDER
+785
+405
+985
+438
+turning-rate2_B
+turning-rate2_B
+-100
+100
+51.0
+5
+1
+deg/s
+HORIZONTAL
+
+SLIDER
+568
+398
+768
+431
+turning-rate1_B
+turning-rate1_B
+-100
+100
+20.0
+5
+1
+deg/s
+HORIZONTAL
+
+SLIDER
+575
+363
+773
+396
+body_direction1_B
+body_direction1_B
+0
+359
+90.0
+10
+1
+deg
+HORIZONTAL
+
+SLIDER
+794
+364
+990
+399
+body_direction2_B
+body_direction2_B
+0
+359
+90.0
+10
+1
+deg
+HORIZONTAL
+
+SLIDER
+365
+819
+538
+854
+leader_speed
+leader_speed
+0
+0.3
+0.15
+0.05
+1
+m/s
+HORIZONTAL
 
 @#$#@#$#@
 ## WHAT IS IT?
