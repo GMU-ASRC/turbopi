@@ -306,7 +306,7 @@ to initialize_lists
   set group-stability_list (list )
   set v_avg_list (list )
 
-  let num-num (number-of-robots + number-of-group2)
+  let num-num (number-of-robots + number-of-group2 + number-of-group1)
 
 
   set DM matrix:make-constant num-num num-num 0
@@ -1515,9 +1515,12 @@ to add_robot
     ]
 
     set number-of-robots (number-of-robots + 1)
-    set DM matrix:make-constant number-of-robots number-of-robots 0
-    set AM matrix:make-constant number-of-robots number-of-robots 0
-    set GM matrix:make-constant number-of-robots number-of-robots number-of-robots
+    let num-num (number-of-robots + number-of-group2 + number-of-group1)
+
+
+  set DM matrix:make-constant num-num num-num 0
+  set AM matrix:make-constant num-num num-num 0
+  set GM matrix:make-constant number-of-robots number-of-robots number-of-robots
 end
 
 to remove_robot
@@ -1526,9 +1529,11 @@ ask robot (number-of-robots - 1)
     set breed place-holders
     ht
   ]
-  set number-of-robots (number-of-robots - 1)
-  set DM matrix:make-constant number-of-robots number-of-robots 0
-  set AM matrix:make-constant number-of-robots number-of-robots 0
+  let num-num (number-of-robots + number-of-group2 + number-of-group1)
+
+
+  set DM matrix:make-constant num-num num-num 0
+  set AM matrix:make-constant num-num num-num 0
   set GM matrix:make-constant number-of-robots number-of-robots number-of-robots
 
 end
@@ -2432,7 +2437,7 @@ to find-metrics
   ;set static_area (count patches with [pcolor = yellow] + count patches with [pcolor = orange]) / (count patches with [pcolor != black])
   ;set dynamic_area (count patches with [pcolor = orange]) / (count patches with [pcolor != black])
 
-  let num-num (number-of-robots + number-of-group2)
+  let num-num (number-of-robots + number-of-group2 + number-of-group1)
 
   ask robots
   [ ;find_resultant_angle
@@ -2950,7 +2955,12 @@ end
 
 to find-robots-in-new-FOV
   find-closest-robots
+
+
   let vision-dd vision-distance
+  let vision-cc vision-cone
+
+
   set fov-list (list )
   set i (count goals)
 
@@ -3284,7 +3294,7 @@ to find_adj_matrix
 
   set old-num-of-groups (num-of-groups)
 
-  let num-num (number-of-robots + number-of-group2)
+  let num-num (number-of-robots + number-of-group2 + number-of-group1)
 
   set groups (list )
   set GM matrix:make-constant num-num num-num num-num
@@ -3568,7 +3578,7 @@ number-of-robots
 number-of-robots
 0
 12
-2.0
+1.0
 1
 1
 NIL
@@ -3583,7 +3593,7 @@ seed-no
 seed-no
 1
 100
-4.0
+12.0
 1
 1
 NIL
@@ -3620,30 +3630,30 @@ deg
 HORIZONTAL
 
 SLIDER
-26
-232
-235
-265
+28
+318
+237
+351
 forward_speed1
 forward_speed1
 0
 0.3
-0.3
+0.0
 0.05
 1
 m/s
 HORIZONTAL
 
 SLIDER
-25
-313
-228
-346
+27
+399
+230
+432
 turning-rate1
 turning-rate1
 -150
 150
-55.0
+140.0
 5
 1
 deg/s
@@ -3800,10 +3810,10 @@ deg/s
 HORIZONTAL
 
 SWITCH
-23
-414
-143
-447
+319
+179
+439
+212
 paint_fov?
 paint_fov?
 1
@@ -3811,21 +3821,21 @@ paint_fov?
 -1000
 
 SWITCH
-23
-452
-144
-485
+319
+217
+440
+250
 draw_path?
 draw_path?
-1
+0
 1
 -1000
 
 BUTTON
-145
-452
-248
-485
+441
+217
+544
+250
 clear-paths
 clear-drawing
 NIL
@@ -3839,10 +3849,10 @@ NIL
 1
 
 BUTTON
-145
-410
-245
-443
+441
+175
+541
+208
 NIL
 clear-paint
 NIL
@@ -3856,10 +3866,10 @@ NIL
 1
 
 SWITCH
-682
-147
-802
-180
+678
+102
+798
+135
 see_walls?
 see_walls?
 1
@@ -3886,7 +3896,7 @@ delay-length
 delay-length
 0
 30
-5.0
+2.0
 1
 1
 NIL
@@ -3942,7 +3952,7 @@ false_positive_rate
 false_positive_rate
 0
 100
-5.0
+0.0
 1
 1
 NIL
@@ -3968,7 +3978,7 @@ number-of-group1
 number-of-group1
 0
 300
-1.0
+0.0
 1
 1
 NIL
@@ -4027,10 +4037,10 @@ start_in_circle?
 -1000
 
 SWITCH
-548
-152
-667
-185
+544
+107
+663
+140
 collisions?
 collisions?
 0
@@ -4115,10 +4125,10 @@ For Levy Distribution
 1
 
 TEXTBOX
-32
-399
-247
-425
+328
+164
+543
+190
 Turn off to speed up sim\n
 11
 0.0
@@ -4787,55 +4797,55 @@ NIL
 1
 
 SLIDER
-24
-270
-227
-303
+26
+356
+229
+389
 body_direction1
 body_direction1
 0
 360
-90.0
+270.0
 10
 1
 deg
 HORIZONTAL
 
 SLIDER
-272
-230
-467
-263
+274
+316
+469
+349
 forward_speed2
 forward_speed2
 0
 0.3
-0.2
+0.3
 0.05
 1
 m/s
 HORIZONTAL
 
 SLIDER
-258
-274
-456
-307
+260
+360
+458
+393
 body_direction2
 body_direction2
 0
 360
-90.0
+270.0
 10
 1
 deg
 HORIZONTAL
 
 SLIDER
-260
-318
-448
-351
+262
+404
+450
+437
 turning-rate2
 turning-rate2
 -150
@@ -4847,10 +4857,10 @@ deg/s
 HORIZONTAL
 
 SWITCH
-547
-402
-696
-435
+579
+62
+728
+95
 start_in_circle?
 start_in_circle?
 1
@@ -4893,20 +4903,20 @@ Controllable Agents using controls below
 1
 
 TEXTBOX
-35
-195
-223
-223
+37
+281
+225
+309
 Inputs for when nothing is detected
 11
 0.0
 1
 
 TEXTBOX
-282
-198
-470
-226
+284
+284
+472
+312
 Inputs for when something is detected
 11
 0.0
@@ -5047,7 +5057,7 @@ filter-val
 filter-val
 0
 50
-10.0
+5.0
 1
 1
 NIL
@@ -5090,7 +5100,7 @@ number-of-group2
 number-of-group2
 0
 20
-5.0
+4.0
 1
 1
 NIL
@@ -5105,7 +5115,7 @@ forward_speed2_B
 forward_speed2_B
 0
 0.3
-0.2
+0.3
 0.05
 1
 m/s
@@ -5135,7 +5145,7 @@ turning-rate2_B
 turning-rate2_B
 -100
 100
-51.0
+-55.0
 5
 1
 deg/s
@@ -5150,7 +5160,7 @@ turning-rate1_B
 turning-rate1_B
 -100
 100
-20.0
+55.0
 5
 1
 deg/s
@@ -5175,7 +5185,7 @@ SLIDER
 794
 364
 990
-399
+397
 body_direction2_B
 body_direction2_B
 0
@@ -5190,7 +5200,7 @@ SLIDER
 365
 819
 538
-854
+852
 leader_speed
 leader_speed
 0
@@ -5200,6 +5210,40 @@ leader_speed
 1
 m/s
 HORIZONTAL
+
+BUTTON
+602
+173
+680
+206
+Mode A
+ask robots [set group_type 0]
+NIL
+1
+T
+OBSERVER
+NIL
+NIL
+NIL
+NIL
+1
+
+BUTTON
+619
+228
+694
+261
+Mode B
+ask robots [set group_type 1]
+NIL
+1
+T
+OBSERVER
+NIL
+NIL
+NIL
+NIL
+1
 
 @#$#@#$#@
 ## WHAT IS IT?
