@@ -295,6 +295,11 @@ to setup
       set lamda_sum (list )
     ]
 
+  ask patches
+  [if pycor > 30 and pxcor > 30
+    [set pcolor green]
+
+    ]
 
   reset-ticks
 end
@@ -553,14 +558,22 @@ to select_alg_mecanum
   if mecanum_procedure = "manual"
   [manual_drive]
 
-  if mecanum_procedure = "binary_control"
+  if mecanum_procedure = "Sliders_1"
   [
-    if sensing_type = "visual"
-      [mecanum_with_sensing_vis]
+    set inputs (list (10 * random-normal (forward_speed1 ) noise-actuating-speed) body_direction1 (random-normal turning-rate1  noise-actuating-turning))
+  ]
 
-    if sensing_type = "sound"
-      [mecanum_with_sensing_sound]
-    ]
+  if mecanum_procedure = "VNQ"
+  [vnq]
+
+  if mecanum_procedure = "VQN"
+  [vqn]
+
+  if mecanum_procedure = "Standard Random"
+  [standard_random_walk]
+
+  if mecanum_procedure = "Levy"
+  [real_levy]
 
 
 end
@@ -594,7 +607,7 @@ to mecanum_with_sensing_vis
       ifelse sum detection_list_2 >= (filter-val / 2) ; if agent or target is detected do whats within first set of brackets
       [
         set color green
-        set inputs (list (10 * random-normal (forward_speed2 ) noise-actuating-speed) body_direction2 (random-normal turning-rate2  noise-actuating-turning))
+        set inputs (list (10 * random-normal (forward_speed3 ) noise-actuating-speed) body_direction3 (random-normal turning-rate3  noise-actuating-turning))
 
       ]
       [
@@ -605,7 +618,12 @@ to mecanum_with_sensing_vis
         ]
         [
           set color red
-          set inputs (list (10 * random-normal (forward_speed1 ) noise-actuating-speed) body_direction1 (random-normal turning-rate1  noise-actuating-turning))
+
+          select_alg_mecanum
+          ;set inputs (list (10 * random-normal (forward_speed1 ) noise-actuating-speed) body_direction1 (random-normal turning-rate1  noise-actuating-turning))
+
+
+
         ]
       ]
    ]
@@ -864,14 +882,14 @@ end
 
 to vnq  ;; robot procedure for Q's algorithm. Forces agents to take long flights as well as forces them to search locally for a certain amount
         ;; of time (can't take two flights back to back)
-  set_actuating_and_extra_variables
-  do_sensing
+;  set_actuating_and_extra_variables
+;  do_sensing
 
-    ifelse goal_seen_flag = 1
-      [
-       goal_detected_procedure
-      ]
-      [
+;    ifelse goal_seen_flag = 1
+;      [
+;       goal_detected_procedure
+;      ]
+;      [
         ifelse pre_flight_count < pre_flight_time
           [
             ifelse step_count < step_time;
@@ -879,25 +897,18 @@ to vnq  ;; robot procedure for Q's algorithm. Forces agents to take long flights
 
                 ifelse step_count < (1 / tick-delta);10
                  [
-                   set color blue
-                   set inputs (list (0) rand_turn)
+                   set inputs (list (0) 90 rand_turn)
                  ]
                  [
-                   ifelse seen_flag = 1
-                     [
-                       non_target_detection_procedure
-                     ]
-                     [
-                       set color red
-                       set inputs (list speed-w-noise 0)
-                     ]
+                     set inputs (list speed-w-noise 90 0)
+
                    ]
               set step_count step_count + 1
             ]
             [
-              set step_time round (random-normal 20 5) + 10
+              set step_time round (random-normal 120 5) + 10
               while [step_time <= 0]
-                [set step_time round (random-normal 20 5) + 10]
+                [set step_time round (random-normal 120 5) + 10]
 
               choose_rand_turn
               set step_count 0
@@ -907,16 +918,16 @@ to vnq  ;; robot procedure for Q's algorithm. Forces agents to take long flights
         [
           ifelse flight_count < flight_time
           [
-            set inputs (list speed-w-noise 0)
+            set inputs (list speed-w-noise 90 0)
             set flight_count flight_count + 1
             set color green
           ]
           [
-            set pre_flight_time round (random-normal 400 10) + 10
+            set pre_flight_time round (random-normal 1200 10) + 10
 
-            set flight_time round (random-normal 200 10) + 10
+            set flight_time round (random-normal 600 10) + 10
             while [pre_flight_time <= 0]
-            [set pre_flight_time round (random-normal 400 10) + 10]
+            [set pre_flight_time round (random-normal 600 10) + 10]
 
             set flight_count 0
 
@@ -924,14 +935,8 @@ to vnq  ;; robot procedure for Q's algorithm. Forces agents to take long flights
             set pre_flight_count 0
           ]
         ]
-     ]
 
-  update_agent_state
 
-  if mode_switching?
-    [
-     do_mode_switching
-    ]
 end
 
 to vqn    ;; robot procedure for cameron's algorithm. Forces agents to take long flights (where they move in an arc rather than a straight line)
@@ -1119,10 +1124,10 @@ end
 
 to choose_rand_turn
   if distribution_for_direction = "uniform"
-  [set rand_turn (- turning-rate1) + ((random turning-rate1) * 2) ]
+  [set rand_turn (- turning-rate_range) + ((random turning-rate_range) * 2) ]
 
   if distribution_for_direction = "gaussian"
-  [ set rand_turn round (random-normal 0 (turning-rate1 / 6))]
+  [ set rand_turn round (random-normal 0 (turning-rate_range / 6))]
 
   if distribution_for_direction = "triangle"
   [set rand_turn (random turning-rate1) - (random turning-rate1) ]
@@ -2506,25 +2511,28 @@ to make_robot2
       set detection_list_1 (list )
       set detection_list_2 (list )
 
-      ifelse Goal_Searching_Mission?
-      [
-        ifelse random_start_region?
-          [
-            set sr_patches patches with [(distancexy rand-xcor rand-ycor < (34 * ([size] of robot (count goals)) / (2 * pi) ) + 1) and pxcor != 0 and pycor != 0]
-          ]
-          [
-            set sr_patches patches with [(distancexy (max-pxcor * -0.55) (max-pycor * -0.55) < (34 * ([size] of robot (count goals)) / (2 * pi) ) + 1) and pxcor != 0 and pycor != 0]
-          ]
-      ]
-      [
-        set sr_patches patches with [(distancexy 0 0 < ((0.9 * (number-of-robots + number-of-group2) * ([size] of robot (count goals)) / pi) + 2)) and pxcor != 0 and pycor != 0]
-      ]
+;      ifelse Goal_Searching_Mission?
+;      [
+;        ifelse random_start_region?
+;          [
+;            set sr_patches patches with [(distancexy rand-xcor rand-ycor < (34 * ([size] of robot (count goals)) / (2 * pi) ) + 1) and pxcor != 0 and pycor != 0]
+;          ]
+;          [
+;            set sr_patches patches with [(distancexy (max-pxcor * -0.55) (max-pycor * -0.55) < (34 * ([size] of robot (count goals)) / (2 * pi) ) + 1) and pxcor != 0 and pycor != 0]
+;          ]
+;      ]
+;      [
+;        set sr_patches patches with [(distancexy 0 0 < ((0.9 * (number-of-robots + number-of-group2) * ([size] of robot (count goals)) / pi) + 2)) and pxcor != 0 and pycor != 0]
+;      ]
+;
+;      if spawn_semi_randomly?
+;        [
+;          move-to one-of sr_patches with [(not any? other robots in-radius ([size] of robot (count goals)))]
+;          setxy (xcor + .01) (ycor + .01)
+;        ]
+;
 
-      if spawn_semi_randomly?
-        [
-          move-to one-of sr_patches with [(not any? other robots in-radius ([size] of robot (count goals)))]
-          setxy (xcor + .01) (ycor + .01)
-        ]
+      setxy -35.002 -35.002
 
       set shape "turtle"
       set color red
@@ -3263,7 +3271,7 @@ to paint-patches-in-new-FOV
 ;      set fov-list-patches patches in-cone (vision-distance2 * 10) (vision-cone2 + (2 * abs(vision-cone-offset2))) with [(distancexy-nowrap ([xcor] of myself) ([ycor] of myself) <= (vision-distance * 10)) and pcolor != black]
 ;    ]
 
-  set fov-list-patches patches in-cone (vision-distance * 10) (vision-cone + (2 * abs(vision-cone-offset))) with [(distancexy-nowrap ([xcor] of myself) ([ycor] of myself) <= (vision-distance * 10))  and pcolor != black]
+  set fov-list-patches patches in-cone (vision-distance * 10) (vision-cone + (2 * abs(vision-cone-offset))) with [(distancexy-nowrap ([xcor] of myself) ([ycor] of myself) <= (vision-distance * 10))  and pcolor != black and pcolor != green]
 
 
   ask fov-list-patches
@@ -3762,7 +3770,7 @@ number-of-robots
 number-of-robots
 0
 12
-6.0
+7.0
 1
 1
 NIL
@@ -3777,7 +3785,7 @@ seed-no
 seed-no
 1
 100
-24.0
+1.0
 1
 1
 NIL
@@ -3964,30 +3972,30 @@ NIL
 1
 
 SLIDER
-533
-609
-739
-642
+726
+606
+932
+639
 noise-actuating-speed
 noise-actuating-speed
 0
 0.5
-0.1
+0.0
 0.01
 1
 m/s
 HORIZONTAL
 
 SLIDER
-542
-562
-736
-595
+735
+559
+929
+592
 noise-actuating-turning
 noise-actuating-turning
 0
 20
-5.0
+0.0
 1
 1
 deg/s
@@ -4011,7 +4019,7 @@ SWITCH
 250
 draw_path?
 draw_path?
-1
+0
 1
 -1000
 
@@ -4061,10 +4069,10 @@ see_walls?
 -1000
 
 SWITCH
-49
-605
-152
-638
+85
+1170
+188
+1203
 delay?
 delay?
 0
@@ -4072,10 +4080,10 @@ delay?
 -1000
 
 SLIDER
-162
-605
-254
-638
+198
+1170
+290
+1203
 delay-length
 delay-length
 0
@@ -4102,15 +4110,15 @@ NIL
 HORIZONTAL
 
 SLIDER
-553
-649
-725
-682
+746
+646
+918
+679
 false_negative_rate
 false_negative_rate
 0
 100
-4.0
+0.0
 1
 1
 NIL
@@ -4128,15 +4136,15 @@ collision_stop?
 -1000
 
 SLIDER
-552
-685
-724
-718
+745
+682
+917
+715
 false_positive_rate
 false_positive_rate
 0
 100
-10.0
+0.0
 1
 1
 NIL
@@ -4154,15 +4162,15 @@ mode_switching?
 -1000
 
 SLIDER
-928
-1159
-1100
-1192
+38
+538
+210
+571
 number-of-group1
 number-of-group1
 0
 300
-0.0
+1.0
 1
 1
 NIL
@@ -4717,10 +4725,10 @@ Time of First Detection
 1
 
 CHOOSER
-2012
-357
-2168
-402
+1916
+458
+2072
+503
 selected_algorithm1
 selected_algorithm1
 "Mill" "Dispersal" "Levy" "VNQ" "VQN" "Standard Random" "RRR"
@@ -4767,10 +4775,10 @@ non-target-detection-response
 1
 
 BUTTON
-1068
-1202
-1151
-1236
+176
+580
+259
+614
 Forward
 ask robots with [group_type = 2][ set inputs (list (10 * leader_speed) 90 0)]
 NIL
@@ -4784,10 +4792,10 @@ NIL
 1
 
 BUTTON
-1068
-1253
-1148
-1287
+176
+632
+256
+666
 Reverse
 ask robots with [group_type = 2][ set inputs (list (10 * leader_speed) 270 0)]
 NIL
@@ -4801,10 +4809,10 @@ NIL
 1
 
 BUTTON
-1158
-1253
-1262
-1287
+266
+632
+370
+666
 Strafe Right
 ask robots with [group_type = 2][ set inputs (list (10 * leader_speed) 0 0)]
 NIL
@@ -4818,10 +4826,10 @@ NIL
 1
 
 BUTTON
-968
-1253
-1063
-1287
+76
+632
+171
+666
 Strafe Left
 ask robots with [group_type = 2][ set inputs (list (10 * leader_speed) 180 0)]
 NIL
@@ -4835,10 +4843,10 @@ NIL
 1
 
 BUTTON
-1160
-1206
-1282
-1240
+269
+585
+391
+619
 Diagonal Right
 ask robots with [group_type = 2][ set inputs (list (10 * leader_speed) 45 0)]
 NIL
@@ -4852,10 +4860,10 @@ NIL
 1
 
 BUTTON
-943
-1206
-1056
-1240
+52
+585
+165
+619
 Diagonal Left
 ask robots with [group_type = 2][ set inputs (list (10 * leader_speed) 135 0)]
 NIL
@@ -4903,13 +4911,13 @@ NIL
 1
 
 CHOOSER
-2149
-54
-2306
-99
+473
+613
+630
+658
 mecanum_procedure
 mecanum_procedure
-"manual" "binary_control"
+"manual" "Sliders_1" "Levy" "VNQ" "VQN" "Standard Random"
 1
 
 BUTTON
@@ -5077,10 +5085,10 @@ sensing_type
 1
 
 TEXTBOX
-935
-1136
-1185
-1166
+43
+515
+293
+545
 Controllable Agents using controls below
 11
 0.0
@@ -5107,10 +5115,10 @@ Inputs for when something is detected
 1
 
 MONITOR
-863
-572
-1005
-617
+1886
+1678
+2028
+1723
 Average velocity
 precision avg-speeds 4
 17
@@ -5118,10 +5126,10 @@ precision avg-speeds 4
 11
 
 MONITOR
-863
-633
-1007
-678
+1886
+1740
+2030
+1785
 Group Rotation
 precision group-rot 4
 17
@@ -5129,10 +5137,10 @@ precision group-rot 4
 11
 
 MONITOR
-860
-748
-1010
-793
+1884
+1854
+2034
+1899
 Scatter
 precision scatter 4
 17
@@ -5140,10 +5148,10 @@ precision scatter 4
 11
 
 MONITOR
-863
-803
-1015
-848
+1886
+1910
+2038
+1955
 Radial Variance
 precision rad_var 4
 17
@@ -5151,10 +5159,10 @@ precision rad_var 4
 11
 
 MONITOR
-863
-692
-1010
-737
+1886
+1798
+2033
+1843
 Angular Momentum
 precision ang-momentum 4
 17
@@ -5162,10 +5170,10 @@ precision ang-momentum 4
 11
 
 MONITOR
-866
-862
-1019
-907
+1890
+1968
+2043
+2013
 Circliness
 precision circliness 4
 17
@@ -5173,10 +5181,10 @@ precision circliness 4
 11
 
 MONITOR
-866
-922
-1019
-967
+1890
+2028
+2043
+2073
 Algebraic Connectivity
 precision alg-con 4
 17
@@ -5202,10 +5210,10 @@ PENS
 "detect_flag" 1.0 0 -16777216 true "" ""
 
 MONITOR
-1026
-962
-1194
-1007
+2050
+2068
+2218
+2113
 Auto-Classified Behavior
 behave_name
 17
@@ -5223,20 +5231,20 @@ Keep vision-distance and vision-cone the same for now
 1
 
 TEXTBOX
-279
-609
-429
-665
+315
+1173
+465
+1229
 this is \"sampling period\" - (30 would mean that it takes 30 ticks (0.5 seconds) to take a new measurement)
 11
 0.0
 1
 
 SLIDER
-156
-705
-261
-738
+192
+1269
+297
+1302
 filter-val
 filter-val
 0
@@ -5248,10 +5256,10 @@ NIL
 HORIZONTAL
 
 TEXTBOX
-293
-702
-443
-786
+329
+1266
+479
+1350
 this is the \"window length\" of the filter - (10 means that it saves 10 values and then decides what to do for the next actuation period based on the majority vote)
 11
 0.0
@@ -5276,42 +5284,27 @@ PENS
 "circliness_pen" 1.0 0 -16777216 true "" ""
 
 SLIDER
-685
-270
-858
-303
+2515
+22
+2688
+55
 number-of-group2
 number-of-group2
 0
 20
-4.0
+0.0
 1
 1
 NIL
 HORIZONTAL
 
 SLIDER
-783
-309
-983
-342
+2613
+62
+2813
+95
 forward_speed2_B
 forward_speed2_B
-0
-0.3
-0.3
-0.05
-1
-m/s
-HORIZONTAL
-
-SLIDER
-575
-313
-775
-346
-forward_speed1_B
-forward_speed1_B
 0
 0.3
 0.0
@@ -5321,40 +5314,55 @@ m/s
 HORIZONTAL
 
 SLIDER
-785
-405
-985
-438
+2405
+66
+2605
+99
+forward_speed1_B
+forward_speed1_B
+0
+0.3
+0.25
+0.05
+1
+m/s
+HORIZONTAL
+
+SLIDER
+2615
+158
+2815
+191
 turning-rate2_B
 turning-rate2_B
 -150
 150
-0.0
+-120.0
 5
 1
 deg/s
 HORIZONTAL
 
 SLIDER
-568
-398
-768
-431
+2398
+150
+2598
+183
 turning-rate1_B
 turning-rate1_B
 -100
 150
-150.0
+80.0
 5
 1
 deg/s
 HORIZONTAL
 
 SLIDER
-575
-363
-773
-396
+2405
+116
+2603
+149
 body_direction1_B
 body_direction1_B
 0
@@ -5366,25 +5374,25 @@ deg
 HORIZONTAL
 
 SLIDER
-794
-364
-990
-397
+2623
+116
+2819
+149
 body_direction2_B
 body_direction2_B
 0
 359
-270.0
+90.0
 10
 1
 deg
 HORIZONTAL
 
 SLIDER
-1126
-1162
-1299
-1195
+235
+540
+408
+573
 leader_speed
 leader_speed
 0
@@ -5430,15 +5438,105 @@ NIL
 1
 
 SWITCH
-1789
-828
-2014
-861
+502
+376
+727
+411
 distinguish_between_types?
 distinguish_between_types?
-1
+0
 1
 -1000
+
+SLIDER
+785
+319
+973
+354
+forward_speed3
+forward_speed3
+0
+0.3
+0.0
+0.05
+1
+m/s
+HORIZONTAL
+
+SLIDER
+780
+373
+962
+408
+body_direction3
+body_direction3
+0
+360
+90.0
+10
+1
+deg
+HORIZONTAL
+
+SLIDER
+780
+418
+968
+453
+turning-rate3
+turning-rate3
+-150
+150
+0.0
+0
+1
+deg/s
+HORIZONTAL
+
+TEXTBOX
+775
+249
+990
+278
+Inputs for when Evader is detected (if switch to distinguish is on)
+11
+0.0
+1
+
+SLIDER
+469
+715
+669
+750
+turning-rate_range
+turning-rate_range
+0
+150
+150.0
+10
+1
+deg
+HORIZONTAL
+
+TEXTBOX
+471
+580
+686
+609
+Selects what hunters do when nothing is detected
+11
+0.0
+1
+
+TEXTBOX
+495
+685
+710
+714
+Turning-Rate range specific to random walk alg
+11
+0.0
+1
 
 @#$#@#$#@
 ## WHAT IS IT?
