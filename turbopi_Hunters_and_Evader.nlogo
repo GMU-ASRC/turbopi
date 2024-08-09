@@ -3851,7 +3851,7 @@ forward_speed1
 forward_speed1
 0
 0.3
-0.25
+0.0
 0.05
 1
 m/s
@@ -3866,7 +3866,7 @@ turning-rate1
 turning-rate1
 -150
 150
-30.0
+150.0
 5
 1
 deg/s
@@ -5033,7 +5033,7 @@ forward_speed2
 forward_speed2
 0
 0.3
-0.25
+0.2
 0.05
 1
 m/s
@@ -5063,7 +5063,7 @@ turning-rate2
 turning-rate2
 -150
 150
--30.0
+-5.0
 5
 1
 deg/s
@@ -5509,7 +5509,7 @@ turning-rate3
 -150
 150
 0.0
-0
+10
 1
 deg/s
 HORIZONTAL
