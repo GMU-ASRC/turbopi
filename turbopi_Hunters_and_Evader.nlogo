@@ -586,7 +586,11 @@ to select_alg_mecanum
 
   if mecanum_procedure = "Sliders_1"
   [
-    set inputs (list (10 * random-normal (forward_speed1 ) noise-actuating-speed) body_direction1 (random-normal turning-rate1  noise-actuating-turning))
+    if group_type = 0
+    [set inputs (list (10 * random-normal (forward_speed1 ) noise-actuating-speed) body_direction1 (random-normal turning-rate1  noise-actuating-turning))]
+
+    if group_type = 1
+    [set inputs (list (10 * random-normal (forward_speed1_B ) noise-actuating-speed) body_direction1_B (random-normal turning-rate1_B  noise-actuating-turning))]
   ]
 
   if mecanum_procedure = "VNQ"
@@ -664,16 +668,48 @@ to mecanum_with_sensing_vis2
   do_sensing
 
 
-   ifelse sum detection_list >= (filter-val / 2) ; if agent or target is detected do whats within first set of brackets
+  ifelse not distinguish_between_types?
    [
-     set color blue
-     set inputs (list (10 * random-normal (forward_speed2_B ) noise-actuating-speed) body_direction2_B (random-normal turning-rate2_B  noise-actuating-turning))
+       ifelse sum detection_list >= (filter-val / 2) ; if agent or target is detected do whats within first set of brackets
+       [
+         set color blue
+         set inputs (list (10 * random-normal (forward_speed2_B ) noise-actuating-speed) body_direction2_B (random-normal turning-rate2_B  noise-actuating-turning))
 
-   ]
+       ]
+       [
+         set color red
+         set inputs (list (10 * random-normal (forward_speed1_B ) noise-actuating-speed) body_direction1_B (random-normal turning-rate1_B  noise-actuating-turning))
+       ]
+
+      ]
    [
-     set color red
-     set inputs (list (10 * random-normal (forward_speed1_B ) noise-actuating-speed) body_direction1_B (random-normal turning-rate1_B  noise-actuating-turning))
+      ifelse sum detection_list_2 >= (filter-val / 2) ; if agent or target is detected do whats within first set of brackets
+      [
+        set color green
+        set inputs (list (10 * random-normal (forward_speed3 ) noise-actuating-speed) body_direction3 (random-normal turning-rate3  noise-actuating-turning))
+
+      ]
+      [
+        ifelse sum detection_list_1 >= (filter-val / 2) ; if agent or target is detected do whats within first set of brackets
+        [
+          set color blue
+          set inputs (list (10 * random-normal (forward_speed2_B ) noise-actuating-speed) body_direction2_B (random-normal turning-rate2_B  noise-actuating-turning))
+        ]
+        [
+          set color red
+
+          select_alg_mecanum
+          ;set inputs (list (10 * random-normal (forward_speed1 ) noise-actuating-speed) body_direction1 (random-normal turning-rate1  noise-actuating-turning))
+
+
+
+        ]
+      ]
    ]
+
+
+
+  update_agent_state_mecanum2
 
 
 
@@ -3791,7 +3827,7 @@ number-of-robots
 number-of-robots
 0
 12
-7.0
+11.0
 1
 1
 NIL
@@ -3806,7 +3842,7 @@ seed-no
 seed-no
 1
 100
-10.0
+12.0
 1
 1
 NIL
@@ -3873,10 +3909,10 @@ deg/s
 HORIZONTAL
 
 SLIDER
-2478
-605
-2650
-638
+2963
+718
+3135
+751
 state-disturbance
 state-disturbance
 0
@@ -3888,10 +3924,10 @@ NIL
 HORIZONTAL
 
 SWITCH
-2483
-328
-2661
-361
+2968
+443
+3146
+476
 spawn_semi_randomly?
 spawn_semi_randomly?
 0
@@ -3910,10 +3946,10 @@ walls_on?
 -1000
 
 SLIDER
-2450
-1180
-2622
-1213
+2933
+1293
+3105
+1326
 mode
 mode
 -1
@@ -4029,7 +4065,7 @@ SWITCH
 212
 paint_fov?
 paint_fov?
-0
+1
 1
 -1000
 
@@ -4116,10 +4152,10 @@ NIL
 HORIZONTAL
 
 SLIDER
-2450
-1125
-2618
-1158
+2933
+1238
+3101
+1271
 vision-cone-offset
 vision-cone-offset
 -90
@@ -4146,10 +4182,10 @@ NIL
 HORIZONTAL
 
 SWITCH
-2475
-568
-2624
-601
+2958
+683
+3107
+716
 collision_stop?
 collision_stop?
 0
@@ -4172,10 +4208,10 @@ NIL
 HORIZONTAL
 
 SWITCH
-2483
-750
-2646
-783
+2968
+863
+3131
+896
 mode_switching?
 mode_switching?
 1
@@ -4183,10 +4219,10 @@ mode_switching?
 -1000
 
 SLIDER
-38
-538
-210
-571
+1884
+205
+2056
+238
 number-of-group1
 number-of-group1
 0
@@ -4198,10 +4234,10 @@ NIL
 HORIZONTAL
 
 SLIDER
-2475
-793
-2647
-826
+2958
+908
+3130
+941
 rand_count_prob
 rand_count_prob
 0
@@ -4213,10 +4249,10 @@ NIL
 HORIZONTAL
 
 SWITCH
-2483
-650
-2626
-683
+2968
+763
+3111
+796
 wrap_around?
 wrap_around?
 1
@@ -4224,10 +4260,10 @@ wrap_around?
 -1000
 
 SLIDER
-2663
-750
-2838
-783
+3148
+863
+3323
+896
 mode_switching_type
 mode_switching_type
 0
@@ -4239,10 +4275,10 @@ NIL
 HORIZONTAL
 
 SWITCH
-2658
-605
-2806
-638
+3143
+718
+3291
+751
 start_in_circle?
 start_in_circle?
 1
@@ -4261,10 +4297,10 @@ collisions?
 -1000
 
 SLIDER
-2458
-1385
-2631
-1418
+2943
+1498
+3116
+1531
 c
 c
 0
@@ -4302,10 +4338,10 @@ NIL
 HORIZONTAL
 
 SWITCH
-2633
-565
-2796
-598
+3118
+678
+3281
+711
 elastic_collisions?
 elastic_collisions?
 1
@@ -4313,10 +4349,10 @@ elastic_collisions?
 -1000
 
 SLIDER
-2663
-793
-2836
-826
+3148
+908
+3321
+941
 temp
 temp
 0
@@ -4328,10 +4364,10 @@ NIL
 HORIZONTAL
 
 TEXTBOX
-2468
-1365
-2683
-1391
+2953
+1478
+3168
+1504
 For Levy Distribution
 11
 0.0
@@ -4348,20 +4384,20 @@ Turn off to speed up sim\n
 1
 
 TEXTBOX
-2854
-753
-3069
-825
+3338
+868
+3553
+940
 Type 1 switches randomly with probability \"rand_count_prob\"\n\nType 2 switches when agent detects something \"temp\" times\n
 11
 0.0
 1
 
 SLIDER
-2602
-912
-2778
-945
+3086
+1026
+3262
+1059
 vision-distance2
 vision-distance2
 0
@@ -4373,10 +4409,10 @@ m
 HORIZONTAL
 
 SLIDER
-2598
-951
-2771
-984
+3083
+1066
+3256
+1099
 vision-cone2
 vision-cone2
 0
@@ -4388,10 +4424,10 @@ deg
 HORIZONTAL
 
 SLIDER
-2613
-992
-2786
-1025
+3098
+1106
+3271
+1139
 mode2
 mode2
 -1
@@ -4403,10 +4439,10 @@ NIL
 HORIZONTAL
 
 SLIDER
-2812
-1072
-2997
-1105
+3296
+1186
+3481
+1219
 vision-cone-offset2
 vision-cone-offset2
 -90
@@ -4418,10 +4454,10 @@ deg
 HORIZONTAL
 
 SWITCH
-2468
-1240
-2681
-1273
+2953
+1353
+3166
+1386
 Goal_Searching_Mission?
 Goal_Searching_Mission?
 1
@@ -4429,10 +4465,10 @@ Goal_Searching_Mission?
 -1000
 
 SLIDER
-2688
-1240
-2837
-1273
+3173
+1353
+3322
+1386
 number-of-goals
 number-of-goals
 0
@@ -4444,10 +4480,10 @@ NIL
 HORIZONTAL
 
 SLIDER
-2840
-1240
-2988
-1273
+3323
+1353
+3471
+1386
 goal-region-size
 goal-region-size
 0
@@ -4459,10 +4495,10 @@ NIL
 HORIZONTAL
 
 SWITCH
-2465
-1280
-2663
-1313
+2948
+1393
+3146
+1426
 random_goal_position?
 random_goal_position?
 1
@@ -4470,10 +4506,10 @@ random_goal_position?
 -1000
 
 SLIDER
-2685
-1283
-2888
-1316
+3168
+1398
+3371
+1431
 false_negative_rate_for_goal
 false_negative_rate_for_goal
 0
@@ -4485,10 +4521,10 @@ NIL
 HORIZONTAL
 
 SLIDER
-2898
-1280
-3094
-1313
+3383
+1393
+3579
+1426
 false_positive_rate_for_goal
 false_positive_rate_for_goal
 0
@@ -4500,10 +4536,10 @@ NIL
 HORIZONTAL
 
 SLIDER
-2685
-1320
-2858
-1353
+3168
+1433
+3341
+1466
 see_goal_response
 see_goal_response
 0
@@ -4515,10 +4551,10 @@ NIL
 HORIZONTAL
 
 MONITOR
-2209
-1250
-2375
-1295
+2693
+1363
+2859
+1408
 Time of first goal detection
 time-to-first-see
 17
@@ -4526,10 +4562,10 @@ time-to-first-see
 11
 
 SWITCH
-3019
-935
-3207
-968
+3503
+1048
+3691
+1081
 start_in_outward_circle?
 start_in_outward_circle?
 1
@@ -4537,10 +4573,10 @@ start_in_outward_circle?
 -1000
 
 SLIDER
-2888
-1345
-3061
-1378
+3373
+1458
+3546
+1491
 number-of-trials
 number-of-trials
 0
@@ -4552,10 +4588,10 @@ NIL
 HORIZONTAL
 
 SLIDER
-2710
-1183
-2883
-1216
+3193
+1298
+3366
+1331
 number-of-levys
 number-of-levys
 0
@@ -4567,10 +4603,10 @@ NIL
 HORIZONTAL
 
 SLIDER
-2110
-139
-2335
-172
+2638
+601
+2863
+634
 percent-of-second-species
 percent-of-second-species
 0
@@ -4582,10 +4618,10 @@ NIL
 HORIZONTAL
 
 SWITCH
-2290
-828
-2480
-861
+2773
+943
+2963
+976
 random_start_region?
 random_start_region?
 0
@@ -4593,10 +4629,10 @@ random_start_region?
 -1000
 
 SLIDER
-2643
-1385
-2790
-1418
+3128
+1498
+3275
+1531
 max_levy_time
 max_levy_time
 0
@@ -4608,20 +4644,20 @@ sec
 HORIZONTAL
 
 TEXTBOX
-2660
-1148
-2848
-1176
+3143
+1263
+3331
+1291
 off for now, to do levy, switch number-of-group1\n
 11
 0.0
 1
 
 SWITCH
-2422
-912
-2559
-945
+2906
+1026
+3043
+1059
 species_levy?
 species_levy?
 1
@@ -4629,10 +4665,10 @@ species_levy?
 -1000
 
 SWITCH
-2637
-742
-2794
-775
+3121
+856
+3278
+889
 show_detection?
 show_detection?
 1
@@ -4658,10 +4694,10 @@ PENS
 "number_on_green" 1.0 0 -16777216 true "" ""
 
 SWITCH
-2053
-734
-2181
-767
+2538
+848
+2666
+881
 static_area?
 static_area?
 1
@@ -4669,10 +4705,10 @@ static_area?
 -1000
 
 SWITCH
-2463
-443
-2656
-476
+2948
+558
+3141
+591
 custom_environment?
 custom_environment?
 1
@@ -4680,10 +4716,10 @@ custom_environment?
 -1000
 
 SLIDER
-2668
-443
-2841
-476
+3153
+558
+3326
+591
 gap_width
 gap_width
 0
@@ -4695,10 +4731,10 @@ NIL
 HORIZONTAL
 
 SLIDER
-2668
-478
-2841
-511
+3153
+593
+3326
+626
 gap_length
 gap_length
 0
@@ -4710,10 +4746,10 @@ NIL
 HORIZONTAL
 
 SLIDER
-2463
-480
-2636
-513
+2948
+593
+3121
+626
 custom_env
 custom_env
 0
@@ -4725,10 +4761,10 @@ NIL
 HORIZONTAL
 
 SWITCH
-3005
-762
-3198
-795
+3488
+876
+3681
+909
 non-target-detection?
 non-target-detection?
 0
@@ -4736,70 +4772,70 @@ non-target-detection?
 -1000
 
 TEXTBOX
-2249
-1210
-2378
-1238
+2733
+1323
+2862
+1351
 Time of First Detection
 11
 0.0
 1
 
 CHOOSER
-1916
-458
-2072
-503
+2401
+573
+2557
+618
 selected_algorithm1
 selected_algorithm1
 "Mill" "Dispersal" "Levy" "VNQ" "VQN" "Standard Random" "RRR"
 3
 
 CHOOSER
-2195
-357
-2381
-402
+2678
+471
+2864
+516
 distribution_for_direction
 distribution_for_direction
 "uniform" "gaussian" "triangle"
 0
 
 CHOOSER
-2823
-985
-2979
-1030
+3308
+1098
+3464
+1143
 selected_algorithm2
 selected_algorithm2
 "Mill" "Dispersal" "Levy" "VNQ" "VQN" "Standard Random" "RRR"
 6
 
 TEXTBOX
-2195
-332
-2410
-358
+2678
+446
+2893
+472
 for random walk algorithms
 11
 0.0
 1
 
 CHOOSER
-2999
-804
-3221
-849
+3483
+918
+3705
+963
 non-target-detection-response
 non-target-detection-response
 "turn-away-in-place" "reverse" "flight"
 1
 
 BUTTON
-176
-580
-259
-614
+2022
+247
+2105
+281
 Forward
 ask robots with [group_type = 2][ set inputs (list (10 * leader_speed) 90 0)]
 NIL
@@ -4813,10 +4849,10 @@ NIL
 1
 
 BUTTON
-176
-632
-256
-666
+2022
+300
+2102
+334
 Reverse
 ask robots with [group_type = 2][ set inputs (list (10 * leader_speed) 270 0)]
 NIL
@@ -4830,10 +4866,10 @@ NIL
 1
 
 BUTTON
-266
-632
-370
-666
+2112
+300
+2216
+334
 Strafe Right
 ask robots with [group_type = 2][ set inputs (list (10 * leader_speed) 0 0)]
 NIL
@@ -4847,10 +4883,10 @@ NIL
 1
 
 BUTTON
-76
-632
-171
-666
+1922
+300
+2017
+334
 Strafe Left
 ask robots with [group_type = 2][ set inputs (list (10 * leader_speed) 180 0)]
 NIL
@@ -4864,10 +4900,10 @@ NIL
 1
 
 BUTTON
-269
-585
-391
-619
+2115
+252
+2237
+286
 Diagonal Right
 ask robots with [group_type = 2][ set inputs (list (10 * leader_speed) 45 0)]
 NIL
@@ -4881,10 +4917,10 @@ NIL
 1
 
 BUTTON
-52
-585
-165
-619
+1899
+252
+2012
+286
 Diagonal Left
 ask robots with [group_type = 2][ set inputs (list (10 * leader_speed) 135 0)]
 NIL
@@ -4976,10 +5012,10 @@ NIL
 1
 
 BUTTON
-2259
-715
-2412
-749
+2743
+828
+2896
+862
 CW away from pivot
 ask robots [set inputs (list 1.75 -1.75 -1.25 1.25)]
 NIL
@@ -4993,10 +5029,10 @@ NIL
 1
 
 BUTTON
-2464
-714
-2597
-748
+2948
+828
+3081
+862
 CW toward pivot
 ask robots [set inputs (list  -1.25 1.25 1.75 -1.75)]
 NIL
@@ -5033,7 +5069,7 @@ forward_speed2
 forward_speed2
 0
 0.3
-0.2
+0.25
 0.05
 1
 m/s
@@ -5048,7 +5084,7 @@ body_direction2
 body_direction2
 0
 360
-90.0
+270.0
 10
 1
 deg
@@ -5063,17 +5099,17 @@ turning-rate2
 turning-rate2
 -150
 150
--5.0
+0.0
 5
 1
 deg/s
 HORIZONTAL
 
 SWITCH
-579
-62
-728
-95
+3094
+264
+3243
+297
 start_in_circle?
 start_in_circle?
 1
@@ -5081,10 +5117,10 @@ start_in_circle?
 -1000
 
 SLIDER
-2182
-587
-2354
-620
+2666
+701
+2838
+734
 sound_range
 sound_range
 0
@@ -5096,20 +5132,20 @@ m
 HORIZONTAL
 
 CHOOSER
-2144
-255
-2282
-300
+2628
+368
+2766
+413
 sensing_type
 sensing_type
 "sound" "visual"
 1
 
 TEXTBOX
-43
-515
-293
-545
+1889
+182
+2139
+212
 Controllable Agents using controls below
 11
 0.0
@@ -5320,25 +5356,25 @@ NIL
 HORIZONTAL
 
 SLIDER
-2613
-62
-2813
-95
+249
+609
+449
+642
 forward_speed2_B
 forward_speed2_B
 0
 0.3
-0.0
+0.25
 0.05
 1
 m/s
 HORIZONTAL
 
 SLIDER
-2405
-66
-2605
-99
+40
+612
+240
+645
 forward_speed1_B
 forward_speed1_B
 0
@@ -5350,25 +5386,25 @@ m/s
 HORIZONTAL
 
 SLIDER
-2615
-158
-2815
-191
+250
+704
+450
+737
 turning-rate2_B
 turning-rate2_B
 -150
 150
--120.0
+-80.0
 5
 1
 deg/s
 HORIZONTAL
 
 SLIDER
-2398
-150
-2598
-183
+34
+695
+234
+728
 turning-rate1_B
 turning-rate1_B
 -100
@@ -5380,10 +5416,10 @@ deg/s
 HORIZONTAL
 
 SLIDER
-2405
-116
-2603
-149
+40
+662
+238
+695
 body_direction1_B
 body_direction1_B
 0
@@ -5395,10 +5431,10 @@ deg
 HORIZONTAL
 
 SLIDER
-2623
-116
-2819
-149
+259
+662
+455
+695
 body_direction2_B
 body_direction2_B
 0
@@ -5410,10 +5446,10 @@ deg
 HORIZONTAL
 
 SLIDER
-235
-540
-408
-573
+2080
+207
+2253
+240
 leader_speed
 leader_speed
 0
@@ -5430,13 +5466,13 @@ BUTTON
 680
 206
 Mode A
-ask robots [set group_type 0]
+ask robots with [group_type != 2] [set group_type 0]
 NIL
 1
 T
 OBSERVER
 NIL
-NIL
+1
 NIL
 NIL
 1
@@ -5447,13 +5483,13 @@ BUTTON
 757
 207
 Mode B
-ask robots [set group_type 1]
+ask robots with [group_type != 2][set group_type 1]
 NIL
 1
 T
 OBSERVER
 NIL
-NIL
+2
 NIL
 NIL
 1
@@ -5478,7 +5514,7 @@ forward_speed3
 forward_speed3
 0
 0.3
-0.0
+0.3
 0.05
 1
 m/s
@@ -5591,6 +5627,26 @@ chosen_winner
 17
 1
 11
+
+TEXTBOX
+107
+557
+357
+587
+Mode B
+11
+0.0
+1
+
+TEXTBOX
+49
+254
+299
+284
+Mode A
+11
+0.0
+1
 
 @#$#@#$#@
 ## WHAT IS IT?
