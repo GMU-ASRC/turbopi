@@ -81,6 +81,10 @@ globals [ tick-delta
           rad_var
            alg-con
           behave_name
+          time-of-escape
+          time-of-capture
+          chosen_winner
+          end_flag
          ]
 
 robots-own [
@@ -472,7 +476,7 @@ to go
 
         if paint_fov?
           [
-            ask robots
+            ask robots with [group_type != 2]
               [
                 paint-patches-in-new-FOV
               ]
@@ -497,11 +501,33 @@ to go
       do-plots ; updates plots
 
 
-      if time-to-first-see = 0
-      [
-        if count robots with [goal_seen_flag = 1] > 0
-        [set time-to-first-see ticks]
-      ]
+      if time-of-escape = 0
+        [
+          if count robots with [group_type = 2 and pcolor = green] > 0
+          [
+           set time-of-escape ticks
+           set chosen_winner "Evader"
+           ]
+        ]
+
+      if time-of-capture = 0
+        [
+          if count robots with [group_type = 2 and distance min-one-of other robots [distance myself] < size] > 0
+          [
+            set time-of-capture ticks
+            set chosen_winner "Hunters"
+          ]
+        ]
+
+   if (time-of-capture > 0) or  (time-of-escape > 0)
+      [set end_flag 1]
+
+
+   if end_flag = 1
+    [
+
+      stop
+    ]
 
   tick-advance 1
 end
@@ -2388,21 +2414,16 @@ to make_robot0
       set detection_list_1 (list )
       set detection_list_2 (list )
 
-      ifelse Goal_Searching_Mission?
-      [
-        ifelse random_start_region?
+
+      ifelse random_start_region?
           [
-            set sr_patches patches with [(distancexy rand-xcor rand-ycor < (34 * ([size] of robot (count goals)) / (2 * pi) ) + 1) and pxcor != 0 and pycor != 0]
+            set sr_patches patches with [(distancexy (rand-xcor) (rand-ycor) < (2 * (number-of-robots + number-of-group2) * ([size] of robot (count goals)) / (2 * pi) ) + 1) and pxcor != 0 and pycor != 0]
           ]
           [
             ;set sr_patches patches with [(distancexy (max-pxcor * -0.55) (max-pycor * -0.55) < (34 * ([size] of robot (count goals)) / (2 * pi) ) + 1) and pxcor != 0 and pycor != 0]
-            set sr_patches patches with [(distancexy (0) (0) < (54 * ([size] of robot (count goals)) / (2 * pi) ) + 1) and pxcor != 0 and pycor != 0]
+            set sr_patches patches with [(distancexy (0) (0) < (2 * (number-of-robots + number-of-group2) * ([size] of robot (count goals)) / (2 * pi) ) + 1) and pxcor != 0 and pycor != 0]
           ]
-      ]
-      [
-        ;set sr_patches patches with [(distancexy 0 0 < ((0.9 * number-of-robots * ([size] of robot (count goals)) / pi) + 2)) and pxcor != 0 and pycor != 0]
-        set sr_patches patches with [(distancexy (0) (0) < (2 * (number-of-robots + number-of-group2) * ([size] of robot (count goals)) / (2 * pi) ) + 1) and pxcor != 0 and pycor != 0]
-      ]
+
 
       if spawn_semi_randomly?
         [
@@ -2414,7 +2435,7 @@ to make_robot0
       set color red
       set mass size
       set sound_timer round random-normal 60 2
-      set heading (towardsxy 0 0) + 180
+      set heading (towardsxy rand-xcor rand-ycor) + 180
 
       set speed forward_speed1
 
@@ -3785,7 +3806,7 @@ seed-no
 seed-no
 1
 100
-1.0
+10.0
 1
 1
 NIL
@@ -5441,7 +5462,7 @@ SWITCH
 502
 376
 727
-411
+409
 distinguish_between_types?
 distinguish_between_types?
 0
@@ -5452,7 +5473,7 @@ SLIDER
 785
 319
 973
-354
+352
 forward_speed3
 forward_speed3
 0
@@ -5467,7 +5488,7 @@ SLIDER
 780
 373
 962
-408
+406
 body_direction3
 body_direction3
 0
@@ -5482,7 +5503,7 @@ SLIDER
 780
 418
 968
-453
+451
 turning-rate3
 turning-rate3
 -150
@@ -5507,7 +5528,7 @@ SLIDER
 469
 715
 669
-750
+748
 turning-rate_range
 turning-rate_range
 0
@@ -5537,6 +5558,39 @@ Turning-Rate range specific to random walk alg
 11
 0.0
 1
+
+MONITOR
+1500
+22
+1606
+68
+Time of Escape
+time-of-escape
+17
+1
+11
+
+MONITOR
+1613
+22
+1726
+68
+Time of Capture
+time-of-capture
+17
+1
+11
+
+MONITOR
+1253
+25
+1433
+71
+Result
+chosen_winner
+17
+1
+11
 
 @#$#@#$#@
 ## WHAT IS IT?
