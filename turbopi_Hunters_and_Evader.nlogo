@@ -509,7 +509,7 @@ to go
           if count robots with [group_type = 2 and pcolor = green] > 0
           [
            set time-of-escape ticks
-           set chosen_winner "Evader"
+           set chosen_winner "Evader Wins"
            ]
         ]
 
@@ -518,7 +518,7 @@ to go
           if count robots with [group_type = 2 and distance min-one-of other robots [distance myself] < size] > 0
           [
             set time-of-capture ticks
-            set chosen_winner "Hunters"
+            set chosen_winner "Hunters Win"
           ]
         ]
 
@@ -721,10 +721,6 @@ to mecanum_with_sensing_vis2
         ]
       ]
    ]
-
-
-
-  update_agent_state_mecanum2
 
 
 
@@ -3843,7 +3839,7 @@ number-of-robots
 number-of-robots
 0
 12
-10.0
+3.0
 1
 1
 NIL
@@ -3858,7 +3854,7 @@ seed-no
 seed-no
 1
 100
-19.0
+11.0
 1
 1
 NIL
@@ -4081,7 +4077,7 @@ SWITCH
 212
 paint_fov?
 paint_fov?
-1
+0
 1
 -1000
 
@@ -4161,7 +4157,7 @@ delay-length
 delay-length
 0
 30
-1.0
+2.0
 1
 1
 NIL
@@ -5322,7 +5318,7 @@ filter-val
 filter-val
 0
 50
-5.0
+10.0
 1
 1
 NIL
@@ -5395,7 +5391,7 @@ forward_speed1_B
 forward_speed1_B
 0
 0.3
-0.25
+0.0
 0.05
 1
 m/s
@@ -5410,7 +5406,7 @@ turning-rate2_B
 turning-rate2_B
 -150
 150
--80.0
+0.0
 5
 1
 deg/s
@@ -5425,7 +5421,7 @@ turning-rate1_B
 turning-rate1_B
 -100
 150
-80.0
+150.0
 5
 1
 deg/s
@@ -5455,7 +5451,7 @@ body_direction2_B
 body_direction2_B
 0
 359
-90.0
+270.0
 10
 1
 deg
@@ -5469,8 +5465,8 @@ SLIDER
 leader_speed
 leader_speed
 0
+0.5
 0.3
-0.25
 0.05
 1
 m/s
