@@ -453,7 +453,10 @@ to go
     [
       ifelse group_type = 2
       [
-        manual_drive
+        if evader-control = "manual_drive"
+        [manual_drive]
+        if evader-control =  "straight_to_goal"
+        [straight-to-goal]
       ]
       [
         ifelse group_type = 1
@@ -610,6 +613,18 @@ end
 
 to manual_drive
    ;set inputs ( list 1 -1 1 -1)
+   update_agent_state_mecanum2
+
+end
+
+to straight-to-goal
+
+  set_actuating_and_extra_variables
+  do_sensing
+
+;   set heading towardsxy (max-pxcor - 3) (max-pycor - 3)
+   set inputs (list (10 * leader_speed) 90 0)
+
    update_agent_state_mecanum2
 
 end
@@ -2590,6 +2605,7 @@ to make_robot2
 ;
 
       setxy -35.002 -35.002
+      set heading towardsxy (max-pxcor - 3) (max-pycor - 3)
 
       set shape "turtle"
       set color red
@@ -2610,7 +2626,7 @@ to make_robot2
 
      set group_type 2
      set color red
-    set heading 0
+
     ]
 end
 
@@ -3805,8 +3821,8 @@ GRAPHICS-WINDOW
 1
 1
 0
-1
-1
+0
+0
 1
 -40
 40
@@ -3827,7 +3843,7 @@ number-of-robots
 number-of-robots
 0
 12
-11.0
+10.0
 1
 1
 NIL
@@ -3842,7 +3858,7 @@ seed-no
 seed-no
 1
 100
-12.0
+19.0
 1
 1
 NIL
@@ -5306,7 +5322,7 @@ filter-val
 filter-val
 0
 50
-10.0
+5.0
 1
 1
 NIL
@@ -5454,7 +5470,7 @@ leader_speed
 leader_speed
 0
 0.3
-0.3
+0.25
 0.05
 1
 m/s
@@ -5646,6 +5662,16 @@ TEXTBOX
 Mode A
 11
 0.0
+1
+
+CHOOSER
+1982
+107
+2127
+152
+evader-control
+evader-control
+"manual_drive" "straight_to_goal"
 1
 
 @#$#@#$#@
