@@ -622,7 +622,7 @@ to straight-to-goal
   set_actuating_and_extra_variables
   do_sensing
 
-;   set heading towardsxy (max-pxcor - 3) (max-pycor - 3)
+   set heading towardsxy (max-pxcor - 3) (max-pycor - 3)
    set inputs (list (10 * leader_speed) 90 0)
 
    update_agent_state_mecanum2
@@ -2482,7 +2482,8 @@ to make_robot0
       set color red
       set mass size
       set sound_timer round random-normal 60 2
-      set heading (towardsxy rand-xcor rand-ycor) + 180
+      ;set heading 0
+      ;set heading (towardsxy rand-xcor rand-ycor) + 180
 
       set speed forward_speed1
 
@@ -2601,7 +2602,8 @@ to make_robot2
 ;
 
       setxy -35.002 -35.002
-      set heading towardsxy (max-pxcor - 3) (max-pycor - 3)
+      set heading 0
+      ;set heading towardsxy (max-pxcor - 3) (max-pycor - 3)
 
       set shape "turtle"
       set color red
@@ -3838,8 +3840,8 @@ SLIDER
 number-of-robots
 number-of-robots
 0
-12
-3.0
+30
+20.0
 1
 1
 NIL
@@ -3854,7 +3856,7 @@ seed-no
 seed-no
 1
 100
-11.0
+4.0
 1
 1
 NIL
@@ -4077,7 +4079,7 @@ SWITCH
 212
 paint_fov?
 paint_fov?
-0
+1
 1
 -1000
 
@@ -4088,7 +4090,7 @@ SWITCH
 250
 draw_path?
 draw_path?
-0
+1
 1
 -1000
 
@@ -5111,7 +5113,7 @@ turning-rate2
 turning-rate2
 -150
 150
-0.0
+-30.0
 5
 1
 deg/s
@@ -5484,7 +5486,7 @@ NIL
 T
 OBSERVER
 NIL
-1
+9
 NIL
 NIL
 1
@@ -5501,7 +5503,7 @@ NIL
 T
 OBSERVER
 NIL
-2
+0
 NIL
 NIL
 1
@@ -5668,7 +5670,7 @@ CHOOSER
 evader-control
 evader-control
 "manual_drive" "straight_to_goal"
-1
+0
 
 @#$#@#$#@
 ## WHAT IS IT?
