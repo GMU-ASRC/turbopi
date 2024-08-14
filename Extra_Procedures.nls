@@ -1,0 +1,3765 @@
+
+;
+; Variable
+;
+breed [ robots robot]
+breed [ walls wall]
+breed [ goals goal]
+breed[ place-holders place-holder]
+breed[ circums circum]
+
+extensions [matrix]
+globals [ tick-delta
+          n
+          i
+          ii
+          iii
+          j
+          k
+          b
+          h
+          g
+          s
+          tr
+          lr
+          t1
+          t2
+          t3
+          t4
+          t5
+          fs
+          fl
+          val
+          deg
+          rank
+          DM
+          AM
+          GM
+          LapM
+          c-mat
+          groups
+          group1
+          num-of-groups
+          old-num-of-groups
+          phase
+          time-to-first-see
+          time-to-first-see-list
+          rand-xcor
+          rand-ycor
+          group-stability
+          static_area
+          sr_patches
+          dynamic_area
+          circliness_list
+          rad_var_list
+          group-rot_list
+          ang-momentum_list
+          scatter_list
+          outer_radius_size_list
+          alg-con_list
+          num-of-groups_list
+          group-stability_list
+          circliness_list_list
+          v_avg_list
+          rad_var_comp1_sum
+          rad_var_comp1_mean
+          rad_var_comp1_mean_sub
+          rad_var_comp1
+          rad_var_comp2
+          momentum_indiv
+          rot_indiv
+          V-sum
+          scatter-sum
+          momentum-sum
+          ang-momentum
+          avg-speeds
+          group-rot-sum
+          group-rot
+          rad_var_comp_sum
+          scatter
+          circliness
+          outer_radius_size
+          rad_var
+           alg-con
+          behave_name
+          time-of-escape
+          time-of-capture
+          chosen_winner
+          end_flag
+         ]
+
+robots-own [
+           velocity
+           angular-velocity   ;; angular velocity of heading/yaw
+           inputs             ;; input forces
+           visible-turtles    ;; what target can I see nearby?
+           closest-target     ;; closest target
+           impact-x
+           impact-y
+           angle
+           angle2
+           impact-angle
+           rand-x
+           rand-y
+           chance
+           turn-r
+           speed-w-noise
+           turning-w-noise
+           robots-in-new-fov
+           fov-list
+           visible-goals
+           speed
+           seen_flag
+           real-bearing
+           fov-list-walls
+           visible-walls
+           fov-list-patches
+           sensor-var
+           speed_2
+           speed-w-noise2
+           turning-w-noise2
+           turn-r2
+           goal_flag
+           group_type
+           levy_time
+           seen_count
+           seen_threshold
+           rand_count
+           goal_seen_flag
+           fov-list-goals
+           mass
+           wait_ticks
+           wall_wait_ticks
+           levy_tick_counter
+           rand_turn
+           rand_velocity
+           step_count
+           flight_count
+           pre_flight_count
+           step_time
+           flight_time
+           pre_flight_time
+           max_time
+           resultant_v
+           body_v_x
+           body_v_y
+           theta_dot
+           v_x
+           v_y
+           body_direct
+           frame_direction
+           body_direct2
+           sound_timer
+           sound_emitting_flag
+           V
+           scatter_indiv
+           detection_list
+           closest-targets
+           closest-target2
+           coll_angle2
+           fov-list_0
+           fov-list_1
+           fov-list_2
+           seen_flag_0
+           seen_flag_1
+           seen_flag_2
+           detection_list_hunters
+           detection_list_1
+           detection_list_evader
+          ]
+
+patches-own [
+            real-bearing-patch
+          ]
+
+circums-own [
+            cc-rad
+            ic-rad
+            ir-stability
+            cr-stability
+            lamda-stability
+            lamda-avg
+          lamda_sum
+          old-lamda-avg
+          lamda-tick-count
+          cr-avg
+          cr-sum
+          old-cr-avg
+          cr-tick-count
+          stable-sum
+          stability-count
+          ir-avg
+          ir_sum
+          cr_val
+          ir_val
+          old-ir-avg
+          ir-tick-count
+          ]
+
+ walls-own [
+           velocity
+           angular-velocity   ;; angular velocity of heading/yaw
+           mass
+          ]
+;;
+;; Setup Procedures
+;;
+to setup
+  clear-all
+  random-seed seed-no
+
+
+  set tick-delta 0.01666 ; 60 ticks in one second
+
+  initialize_lists
+
+
+  set rand-xcor (random max-pxcor) - (random max-pxcor)
+  set rand-ycor (random max-pycor) - (random max-pycor)
+
+
+
+  set time-to-first-see-list (list )
+
+
+  ask patches
+    [
+      set pcolor white
+    ]
+
+
+  if Goal_Searching_Mission?
+    [
+      add_goal
+    ]
+
+  ;creates robots of either species 1 or 2
+  set n number-of-robots + number-of-group2 + number-of-group1
+
+
+  ;set number-of-group1 round (percent-of-second-species * 0.01 * number-of-robots)
+  while [n > (number-of-group1 + number-of-group2)]
+  [
+   make_robot0
+   set n (n - 1)
+  ]
+
+  while [n > (number-of-group1)]
+  [
+   make_robot1
+   set n (n - 1)
+  ]
+
+    while [n > (0)]
+  [
+   make_robot2
+   set n (n - 1)
+  ]
+
+  ; adds extra "ghost" turtles that make adding and removing agents during simulation a bit easier
+  create-place-holders 20
+  [
+    setxy max-pxcor max-pycor
+    ht
+  ]
+
+  if start_in_circle?
+    [start_circle]
+
+
+;  ask robot 0
+;  [
+;    setxy -32 0
+;    set heading 0
+;  ]
+
+  if walls_on?
+     [
+       ifelse custom_environment? ;default to off
+       [
+         ifelse custom_env = 0
+         [add_walls_custom0]
+         [add_walls_custom1]
+       ]
+       [
+         ifelse circular_environment? ; default to off --> rectangular environment is default
+         [add_walls_circular]
+         [add_walls]
+       ]
+     ]
+
+    create-circums 1
+    [
+      setxy 0 0
+      set size 1
+      set color white
+      set shape "circle"
+      set cc-rad 3
+      set ic-rad 1
+      set stable-sum 5
+      set lamda_sum (list )
+    ]
+
+  ask patches
+  [if pycor > 33 and pxcor > 33
+    [set pcolor green]
+
+    ]
+
+  reset-ticks
+end
+
+to initialize_lists
+
+  set circliness_list (list )
+  set rad_var_list (list )
+  set group-rot_list (list )
+  set ang-momentum_list (list )
+  set scatter_list (list )
+
+
+  set outer_radius_size_list (list )
+  set circliness_list_list (list )
+  set alg-con_list (list )
+  set num-of-groups_list (list )
+  set group-stability_list (list )
+  set v_avg_list (list )
+
+  let num-num (number-of-robots + number-of-group2 + number-of-group1)
+
+
+  set DM matrix:make-constant num-num num-num 0
+  set AM matrix:make-constant num-num num-num 0
+  set GM matrix:make-constant number-of-robots number-of-robots number-of-robots
+
+end
+to start_circle
+;let irr  (34 * ([size] of robot 0) / (2 * pi) ) + 1
+;let irr  10 * ((0.1583 * number-of-robots + 0.043)* vision-distance - 0.05)
+let irr 2 * (vision-distance / (2 * sin (180 / number-of-robots)))
+;let irr 10
+set j 0
+let heading_num 360 / number-of-robots
+
+
+while [j < number-of-robots]
+[ask robot (j )
+  [
+    set heading 90 + (j * heading_num) + (0.5 * heading_num) - (vision-cone / 2)
+    setxy (irr * -1 * cos((j * heading_num) + 90)) (irr * sin((j * heading_num)+ 90))
+  ]
+  set j j + 1
+]
+
+ ;set heading 180 + x
+;ask robot 1
+;[
+;  set heading 90 + (11 * 30); + (0.5 * 30) - (vision-cone / 2)
+;    setxy (irr * -1 * cos((11 * 30) + 90)) (irr * sin((11 * 30)+ 90))
+;]
+;
+;ask robot 4
+;[
+;  set heading 90 + (5 * 30); + (0.5 * 30) - (vision-cone / 2)
+;    setxy (irr * -1 * cos((5 * 30) + 90)) (irr * sin((5 * 30)+ 90))
+;]
+;
+;ask robot 2
+;[
+;  set heading 90 + (4 * 30); + (0.5 * 30) - (vision-cone / 2)
+;
+;]
+;
+;ask robot 5
+;[
+;  set heading 90 + (10 * 30); + (0.5 * 30) - (vision-cone / 2)
+;
+;]
+end
+
+to start_outward_circle
+;let irr  (number-of-robots * ([size] of robot 0) / (2 * pi) ) + 1
+let irr  (34 * ([size] of robot 0) / (2 * pi) ) + 1
+set j 0
+let heading_num 360 / number-of-robots
+let random-rotation random 90
+
+
+while [j < number-of-robots]
+[ask robot (j)
+  [
+    ifelse Goal_Searching_Mission?
+    [
+      setxy (( irr * -1 * cos((j * heading_num) + random-rotation)) + (rand-xcor)) (( irr * sin((j * heading_num)+ random-rotation))  + (rand-ycor))
+      set heading (towardsxy rand-xcor rand-ycor) + 180; + 40
+    ]
+    [
+      setxy (irr * -1 * cos(j * heading_num)) (irr * sin(j * heading_num))
+      set heading 180 + towardsxy 0 0
+    ]
+  ]
+  set j j + 1
+]
+
+
+end
+
+to background_procedures
+ifelse static_area?
+  [
+    ask patches
+    [
+      if pcolor = orange
+          [
+            set pcolor yellow
+          ]
+     ]
+  ]
+  [clear-paint]
+
+  ask goals ; maintains green region around target
+     [
+       ask patches in-radius goal-region-size
+       [
+         set pcolor green
+       ]
+     ]
+
+  if walls_on? ; allows for environment to change sizes during sim
+  [
+    ifelse custom_environment?
+       [
+         ifelse custom_env = 0
+         [move_walls_custom0]
+         [move_walls_custom1]
+       ]
+    [
+      ifelse circular_environment?
+        [move_walls_circular]
+        [move_walls_square]
+    ]
+  ]
+  
+  ask robots
+  [
+  ifelse draw_path?
+        [
+          pd ; pen down
+        ]
+        [
+          pu ; pen up
+        ]
+
+        if paint_fov?
+          [
+            ask robots with [group_type != 2]
+              [
+                paint-patches-in-new-FOV
+              ]
+          ]
+  ]
+
+end
+
+to measure_results
+ask circums
+       [
+         resize
+;         find_lamda-avg
+;         find_stability
+         ht
+       ]
+
+      if count robots > 1
+      [
+      find_adj_matrix
+      find-metrics
+      auto-classify-behavior
+      ]
+;
+      do-plots ; updates plots
+
+
+      if time-of-escape = 0
+        [
+          if count robots with [group_type = 0 and pcolor = green] > 0
+          [
+           set time-of-escape ticks
+           set chosen_winner "Evader Wins"
+           ]
+        ]
+
+      if time-of-capture = 0
+        [
+          if count robots with [group_type = 0 and distance min-one-of other robots [distance myself] < size] > 0
+          [
+            set time-of-capture ticks
+            set chosen_winner "Hunters Win"
+          ]
+        ]
+
+   if (time-of-capture > 0) or  (time-of-escape > 0)
+      [set end_flag 1]
+
+end
+
+
+to select_alg_procedure1
+  if selected_algorithm1 = "Mill"
+  [mill]
+
+  if selected_algorithm1 = "Dispersal"
+  [dispersal]
+
+  if selected_algorithm1 = "VNQ"
+  [vnq]
+
+  if selected_algorithm1 = "VQN"
+  [vqn]
+
+  if selected_algorithm1 = "Standard Random"
+  [standard_random_walk]
+
+  if selected_algorithm1 = "RRR"
+  [rrr]
+
+  if selected_algorithm1 = "Levy"
+  [real_levy]
+
+end
+
+to select_alg_procedure2
+  if selected_algorithm2 = "Mill"
+  [mill]
+
+  if selected_algorithm2 = "Dispersal"
+  [dispersal]
+
+  if selected_algorithm2 = "VNQ"
+  [vnq]
+
+  if selected_algorithm2 = "VQN"
+  [vqn]
+
+  if selected_algorithm2 = "Standard Random"
+  [standard_random_walk]
+
+  if selected_algorithm2 = "RRR"
+  [rrr]
+
+  if selected_algorithm2 = "Levy"
+  [real_levy]
+
+end
+
+to select_alg_mecanum
+  if mecanum_procedure = "manual"
+  [manual_drive]
+
+  if mecanum_procedure = "Sliders_1"
+  [
+    if group_type = 1
+    [set inputs (list (10 * random-normal (forward_speed1 ) noise-actuating-speed) body_direction1 (random-normal turning-rate1  noise-actuating-turning))]
+
+    if group_type = 2
+    [set inputs (list (10 * random-normal (forward_speed1_B ) noise-actuating-speed) body_direction1_B (random-normal turning-rate1_B  noise-actuating-turning))]
+    
+    if group_type = 3
+    [set inputs (list (10 * random-normal (forward_speed1_C ) noise-actuating-speed) body_direction1_C (random-normal turning-rate1_C  noise-actuating-turning))]
+  ]
+
+  if mecanum_procedure = "VNQ"
+  [vnq]
+
+  if mecanum_procedure = "VQN"
+  [vqn]
+
+  if mecanum_procedure = "Standard Random"
+  [standard_random_walk]
+
+  if mecanum_procedure = "Levy"
+  [real_levy]
+
+
+end
+
+to manual_drive
+   ;set inputs ( list 1 -1 1 -1)
+   update_agent_state_mecanum2
+
+end
+
+to straight-to-goal
+
+  set_actuating_and_extra_variables
+  do_sensing
+
+   set heading towardsxy (max-pxcor - 3) (max-pycor - 3)
+   set inputs (list (10 * leader_speed) 90 0)
+
+   update_agent_state_mecanum2
+
+end
+
+
+to mecanum_with_sensing_vis
+  set_actuating_and_extra_variables
+  do_sensing
+
+
+   ifelse not distinguish_between_types?
+   [
+      ifelse sum detection_list >= (filter-val / 2) ; if agent or target is detected do whats within first set of brackets
+      [
+        set color blue
+        set inputs (list (10 * random-normal (forward_speed2 ) noise-actuating-speed) body_direction2 (random-normal turning-rate2  noise-actuating-turning))
+
+      ]
+      [
+        set color red
+        set inputs (list (10 * random-normal (forward_speed1 ) noise-actuating-speed) body_direction1 (random-normal turning-rate1  noise-actuating-turning))
+      ]
+   ]
+   [
+      ifelse sum detection_list_evader >= (filter-val / 2) ; if agent or target is detected do whats within first set of brackets
+      [
+        set color green
+        set inputs (list (10 * random-normal (forward_speed3 ) noise-actuating-speed) body_direction3 (random-normal turning-rate3  noise-actuating-turning))
+
+      ]
+      [
+        ifelse sum detection_list_hunters >= (filter-val / 2) ; if agent or target is detected do whats within first set of brackets
+        [
+          set color blue
+          set inputs (list (10 * random-normal (forward_speed2 ) noise-actuating-speed) body_direction2 (random-normal turning-rate2  noise-actuating-turning))
+        ]
+        [
+          set color red
+
+          select_alg_mecanum
+          ;set inputs (list (10 * random-normal (forward_speed1 ) noise-actuating-speed) body_direction1 (random-normal turning-rate1  noise-actuating-turning))
+
+
+
+        ]
+      ]
+   ]
+
+  update_agent_state_mecanum2
+end
+
+to mecanum_with_sensing_vis2
+  set_actuating_and_extra_variables
+  do_sensing
+
+
+  ifelse not distinguish_between_types?
+   [
+       ifelse sum detection_list >= (filter-val / 2) ; if agent or target is detected do whats within first set of brackets
+       [
+         set color blue
+         set inputs (list (10 * random-normal (forward_speed2_B ) noise-actuating-speed) body_direction2_B (random-normal turning-rate2_B  noise-actuating-turning))
+
+       ]
+       [
+         set color red
+         set inputs (list (10 * random-normal (forward_speed1_B ) noise-actuating-speed) body_direction1_B (random-normal turning-rate1_B  noise-actuating-turning))
+       ]
+
+      ]
+   [
+      ifelse sum detection_list_evader >= (filter-val / 2) ; if agent or target is detected do whats within first set of brackets
+      [
+        set color green
+        set inputs (list (10 * random-normal (forward_speed3 ) noise-actuating-speed) body_direction3 (random-normal turning-rate3  noise-actuating-turning))
+
+      ]
+      [
+        ifelse sum detection_list_1 >= (filter-val / 2) ; if agent or target is detected do whats within first set of brackets
+        [
+          set color blue
+          set inputs (list (10 * random-normal (forward_speed2_B ) noise-actuating-speed) body_direction2_B (random-normal turning-rate2_B  noise-actuating-turning))
+        ]
+        [
+          set color red
+
+          select_alg_mecanum
+          ;set inputs (list (10 * random-normal (forward_speed1 ) noise-actuating-speed) body_direction1 (random-normal turning-rate1  noise-actuating-turning))
+
+
+
+        ]
+      ]
+   ]
+
+
+
+  update_agent_state_mecanum2
+end
+
+to mecanum_with_sensing_sound
+  set_actuating_and_extra_variables
+   ;do_sensing_sound
+
+
+
+  ;inputs is list of wheel velocities (rad/s) =  (front_right front_left back_left back_right)
+
+  ifelse ticks mod sound_timer <= 10
+  [
+    ask patches in-radius (sound_range * 10)
+    [set pcolor grey]
+
+    set sound_emitting_flag 1
+  ]
+  [
+    set sound_emitting_flag 0
+  ]
+
+  ifelse count other robots in-radius (sound_range * 10) with [sound_emitting_flag = 1] > 0
+    [
+      set color blue
+      set inputs (list forward_speed2 body_direction2 turning-rate2)
+    ]
+    [
+      set color red
+      set inputs (list forward_speed1 body_direction1 turning-rate1)
+    ]
+
+
+
+
+  update_agent_state_mecanum2
+end
+
+
+
+
+to mill  ;; robot procedure for milling
+  set_actuating_and_extra_variables
+  do_sensing
+
+    ifelse goal_seen_flag = 1
+      [
+       goal_detected_procedure
+      ]
+      [
+        ifelse seen_flag = 1
+         [
+           set color blue
+           set inputs (list (1 * speed-w-noise) ( -1  * turning-w-noise))
+         ]
+         [
+           set color red
+           set inputs (list (1 * speed-w-noise) ( 1  * turning-w-noise))
+         ]
+     ]
+
+  update_agent_state
+
+  if mode_switching?
+    [
+     do_mode_switching
+    ]
+end
+
+to dispersal ; dispersal algorithm (if something is detected, turns right twice as fast)
+  set_actuating_and_extra_variables
+  do_sensing
+
+    ifelse goal_seen_flag = 1
+      [
+       goal_detected_procedure
+      ]
+      [
+        ifelse seen_flag = 1
+         [
+           set color blue
+           set inputs (list (1 * speed-w-noise) ( 2  * turning-w-noise))
+         ]
+         [
+           set color red
+           set inputs (list (1 * speed-w-noise) ( 1  * turning-w-noise))
+         ]
+     ]
+
+  update_agent_state
+
+  if mode_switching?
+    [
+     do_mode_switching
+    ]
+end
+
+
+to standard_random_walk ;
+  set_actuating_and_extra_variables
+  do_sensing
+
+    ifelse goal_seen_flag = 1
+      [
+       goal_detected_procedure
+      ]
+      [
+
+            ifelse step_count < fixed_walk_step;
+            [
+
+              ifelse step_count < (1 / tick-delta);10
+               [
+                 set color blue
+                 set inputs (list (0) 90 rand_turn)
+               ]
+               [
+                 ifelse seen_flag = 1
+                 [
+                   non_target_detection_procedure
+                 ]
+                 [
+                   set color red
+                   set inputs (list (10 * random-walk-speed) 90  0)
+                 ]
+               ]
+
+              set step_count step_count + 1
+            ]
+            [
+               choose_rand_turn
+               set step_count 0
+            ]
+
+        ]
+  update_agent_state_mecanum2
+
+end
+
+
+to circular_levy  ;; algorithm where agents are always moving forward but choose turning rate at every beginning of step. Step length is chosen from levy distribution
+  set_actuating_and_extra_variables
+  do_sensing
+
+    ifelse goal_seen_flag = 1
+      [
+       goal_detected_procedure
+      ]
+      [
+        ifelse seen_flag = 1
+        [
+          non_target_detection_procedure
+        ]
+        [
+          set color red
+          ifelse ticks mod levy_time = 0
+            [
+             set levy_time round (100 * (1 / (random-gamma 0.5 (c / 2  ))))
+             while [levy_time > round (max_levy_time / tick-delta)]
+               [set levy_time round (100 * (1 / (random-gamma 0.5 (c / 2 ))))]
+
+             choose_rand_turn
+            ]
+            [
+              set inputs (list (speed-w-noise * 1) rand_turn 0)
+            ]
+          ]
+     ]
+
+  update_agent_state
+
+  if mode_switching?
+    [
+     do_mode_switching
+    ]
+end
+
+to real_levy  ;; classic levy that chooses direction at beginning of step and moves straight in that line. Step lengths are chosen from levy distribution
+  set_actuating_and_extra_variables
+  do_sensing
+
+    ifelse goal_seen_flag = 1
+      [
+       goal_detected_procedure
+      ]
+      [
+            ifelse step_count < step_time;
+            [
+
+              ifelse step_count < (1 / tick-delta);10
+               [
+                 non_target_detection_procedure
+               ]
+               [
+                 ifelse seen_flag = 1
+                 [
+                   set color blue
+                  set inputs (list (0) 90 rand_turn)
+                 ]
+                 [
+                   set color red
+                   set inputs (list speed-w-noise 0)
+                 ]
+               ]
+
+              set step_count step_count + 1
+            ]
+            [
+                 set step_time round (100 * (1 / (random-gamma 0.5 (c / 2  ))))
+                 while [step_time > round (max_levy_time / tick-delta)]
+                   [set step_time round (100 * (1 / (random-gamma 0.5 (c / 2 ))))]
+
+                 choose_rand_turn
+                 set step_count 0
+            ]
+     ]
+
+  update_agent_state_mecanum2
+end
+
+to vnq  ;; robot procedure for Q's algorithm. Forces agents to take long flights as well as forces them to search locally for a certain amount
+        ;; of time (can't take two flights back to back)
+;  set_actuating_and_extra_variables
+;  do_sensing
+
+;    ifelse goal_seen_flag = 1
+;      [
+;       goal_detected_procedure
+;      ]
+;      [
+        ifelse pre_flight_count < pre_flight_time
+          [
+            ifelse step_count < step_time;
+              [
+
+                ifelse step_count < (1 / tick-delta);10
+                 [
+                   set inputs (list (0) 90 rand_turn)
+                 ]
+                 [
+                     set inputs (list (10 * random-walk-speed) 90  0)
+
+                   ]
+              set step_count step_count + 1
+            ]
+            [
+              set step_time round (random-normal 120 5) + 10
+              while [step_time <= 0]
+                [set step_time round (random-normal 120 5) + 10]
+
+              choose_rand_turn
+              set step_count 0
+            ]
+          set pre_flight_count pre_flight_count + 1
+        ]
+        [
+          ifelse flight_count < flight_time
+          [
+            set inputs (list (10 * random-walk-speed) 90  0)
+            set flight_count flight_count + 1
+            set color green
+          ]
+          [
+            set pre_flight_time round (random-normal 1200 10) + 10
+
+            set flight_time round (random-normal 600 10) + 10
+            while [pre_flight_time <= 0]
+            [set pre_flight_time round (random-normal 600 10) + 10]
+
+            set flight_count 0
+
+            choose_rand_turn
+            set pre_flight_count 0
+          ]
+        ]
+        
+        update_agent_state_mecanum2
+
+
+end
+
+to vqn    ;; robot procedure for cameron's algorithm. Forces agents to take long flights (where they move in an arc rather than a straight line)
+          ;; as well as forces them to search locally for a certain amount of time (can't take two flights back to back)
+  set_actuating_and_extra_variables
+  do_sensing
+
+    ifelse goal_seen_flag = 1
+      [
+       goal_detected_procedure
+      ]
+      [
+        ifelse pre_flight_count < pre_flight_time
+        [
+          ifelse step_count < step_time;
+            [
+
+              ifelse step_count < (1 / tick-delta);10
+               [
+                 ;set color blue
+                 set inputs (list (0) 90 rand_turn)
+               ]
+               [
+                 ifelse seen_flag = 1
+                   [
+                      non_target_detection_procedure
+                   ]
+                   [
+                     ;set color red
+                     set inputs (list (10 * random-walk-speed) 90  0)
+                   ]
+               ]
+              set step_count step_count + 1
+            ]
+            [
+              set step_time round (random-normal 20 5) + 10
+              while [step_time <= 0]
+              [set step_time round (random-normal 20 5) + 10]
+
+              choose_rand_turn
+              set step_count 0
+            ]
+          set pre_flight_count pre_flight_count + 1
+        ]
+        [
+          if rand_turn = 0
+          [ set rand_turn 1]
+
+          set max_time 500
+
+          if abs((180 / ((rand_turn) / 25)) / tick-delta ) < max_time ;Maximum time can be adjusted
+            [
+              set max_time abs((180 / ((rand_turn) / 25)) / tick-delta )
+            ]
+
+          ifelse flight_count < max_time ; move in a semi-circle or less (500 ticks max)
+            [
+              set inputs (list speed-w-noise ((rand_turn ) / 25))
+              set flight_count flight_count + 1
+              set color green
+            ]
+            [
+              while [flight_time <= 0]
+                [set pre_flight_time round (random-normal 20 5) + 10]
+
+              set flight_count 0
+
+              choose_rand_turn
+              set pre_flight_count 0
+            ]
+        ]
+     ]
+
+  update_agent_state_mecanum2
+end
+
+to rrr  ;; robot procedure
+  set_actuating_and_extra_variables
+  do_sensing
+
+    ifelse goal_seen_flag = 1
+      [
+       goal_detected_procedure
+      ]
+      [
+        ifelse pre_flight_count < pre_flight_time
+          [
+            ifelse step_count < step_time;
+            [
+              ifelse step_count < (1 / tick-delta);10
+               [
+                 set color blue
+                 set inputs (list (0) rand_turn)
+               ]
+               [
+                 ifelse seen_flag = 1
+                 [
+                   non_target_detection_procedure
+                 ]
+                 [
+                   set color red
+                   set inputs (list speed-w-noise 0)
+                 ]
+               ]
+              set step_count step_count + 1
+            ]
+            [
+                 set step_time round (random-normal 20 5) + 10
+                 while [step_time <= 0]
+                 [set step_time round (random-normal 20 5) + 10]
+
+                 choose_rand_turn
+                 set step_count 0
+            ]
+          set pre_flight_count pre_flight_count + 1
+        ]
+        [
+          if rand_turn = 0
+          [ set rand_turn 1]
+
+           set max_time 400
+
+          if abs((180 / ((rand_turn) / 10)) / tick-delta ) < max_time ;Maximum time can be adjusted
+            [
+              set max_time abs((180 / ((rand_turn) / 10)) / tick-delta )
+            ]
+
+          ifelse flight_count < max_time
+            [
+              set inputs (list (- speed-w-noise) ((rand_turn ) / 10))
+              set flight_count flight_count + 1
+              set color green
+            ]
+            [
+              set pre_flight_time abs(round (random-normal 600 10) + 10)
+
+              set flight_count 0
+
+              choose_rand_turn
+              set pre_flight_count 0
+            ]
+        ]
+     ]
+
+  update_agent_state
+
+  if mode_switching?
+    [
+     do_mode_switching
+    ]
+end
+
+
+;
+;
+;-------------- Nested functions and Setup Procedures below--------------
+;
+;
+
+to non_target_detection_procedure
+  set color blue
+
+  if non-target-detection-response = "turn-away-in-place"
+    [
+      set inputs (list (0) rand_turn)
+    ]
+
+    if non-target-detection-response = "reverse"
+    [
+      set inputs (list (- speed-w-noise) rand_turn)
+    ]
+
+    if non-target-detection-response = "flight"
+    [
+      set inputs (list (- speed-w-noise) rand_turn)
+    ]
+
+
+end
+
+to choose_rand_turn
+  if distribution_for_direction = "uniform"
+  [set rand_turn (- turning-rate_range) + ((random turning-rate_range) * 2) ]
+
+  if distribution_for_direction = "gaussian"
+  [ set rand_turn round (random-normal 0 (turning-rate_range / 6))]
+
+  if distribution_for_direction = "triangle"
+  [set rand_turn (random turning-rate1) - (random turning-rate1) ]
+end
+
+
+to set_actuating_and_extra_variables
+  find-chance
+
+  set rand-x random-normal 0 state-disturbance
+  set rand-y random-normal 0 state-disturbance
+
+;  ifelse group_type = 0
+;  [
+;    set speed-w-noise (forward_speed1 * 10) + random-normal 0 noise-actuating-speed
+;    set turning-w-noise (turning-rate1) + random-normal 0 noise-actuating-turning
+;  ]
+;  [
+;    set speed-w-noise (speed2 * 10) + random-normal 0 noise-actuating-speed
+;    set turning-w-noise (turning-rate2) + random-normal 0 noise-actuating-turning
+;  ]
+
+  ifelse group_type = 0
+  [
+    set speed-w-noise (forward_speed1 * 10) + random-normal 0 noise-actuating-speed
+    set turning-w-noise (turning-rate1) + random-normal 0 noise-actuating-turning
+  ]
+  [
+    set speed-w-noise (forward_speed2 * 10) + random-normal 0 noise-actuating-speed
+    set turning-w-noise (turning-rate2) + random-normal 0 noise-actuating-turning
+  ]
+end
+
+to do_sensing
+
+  ifelse see_walls?
+    [find-walls-in-new-FOV]
+    [set fov-list-walls (list)]
+  find-goals-in-new-FOV
+  find-robots-in-new-FOV
+
+  ifelse delay?
+  [
+    if ticks mod delay-length = 0
+      [
+          ifelse length fov-list > 0 or length fov-list-walls > 0
+            [
+              ifelse chance < false_negative_rate
+                [
+                  set seen_flag 0
+                ]
+                [
+                  set seen_flag 1
+                ]
+            ]
+            [
+
+               ifelse chance < false_positive_rate
+               [ set seen_flag 1]
+               [set seen_flag 0]
+            ]
+
+            ifelse length fov-list_0 > 0
+            [
+              ifelse chance < false_negative_rate
+                [
+                  set seen_flag_0 0
+                ]
+                [
+                  set seen_flag_0 1
+                ]
+            ]
+            [
+
+               ifelse chance < false_positive_rate
+               [ set seen_flag_0 1]
+               [set seen_flag_0 0]
+            ]
+
+;            ifelse length fov-list_1 > 0
+;            [
+;              ifelse chance < false_negative_rate
+;                [
+;                  set seen_flag_1 0
+;                ]
+;                [
+;                  set seen_flag_1 1
+;                ]
+;            ]
+;            [
+;
+;               ifelse chance < false_positive_rate
+;               [ set seen_flag_1 1]
+;               [set seen_flag_1 0]
+;            ]
+
+            ifelse length fov-list_2 > 0
+            [
+              ifelse chance < false_negative_rate
+                [
+                  set seen_flag_2 0
+                ]
+                [
+                  set seen_flag_2 1
+                ]
+            ]
+            [
+
+               ifelse chance < false_positive_rate
+               [ set seen_flag_2 1]
+               [set seen_flag_2 0]
+            ]
+
+
+          ifelse length fov-list-goals > 0
+            [
+              ifelse chance < false_negative_rate_for_goal
+                [
+                  set goal_seen_flag 0
+                ]
+                [
+                  set goal_seen_flag 1
+                ]
+            ]
+            [
+               ifelse chance < false_positive_rate_for_goal
+               [ set goal_seen_flag 1]
+               [set goal_seen_flag 0]
+            ]
+
+         ifelse goal_seen_flag = 1 or seen_flag = 1 ; if agent or target is detected do whats within first set of brackets
+            [
+              ifelse length detection_list > filter-val
+               [
+                set detection_list remove-item 0 detection_list
+               set detection_list lput 1 detection_list
+                ]
+               [
+                 set detection_list lput 1 detection_list
+               ]
+
+            ]
+            [
+              ifelse length detection_list > filter-val
+               [
+                set detection_list remove-item 0 detection_list
+               set detection_list lput 0 detection_list
+                ]
+               [
+                 set detection_list lput 0 detection_list
+               ]
+            ]
+
+           ifelse seen_flag_0 = 1 ; if agent of type of group 0
+            [
+              ifelse length detection_list_hunters > filter-val
+               [
+                set detection_list_hunters remove-item 0 detection_list_hunters
+               set detection_list_hunters lput 1 detection_list_hunters
+                ]
+               [
+                 set detection_list_hunters lput 1 detection_list_hunters
+               ]
+
+            ]
+            [
+              ifelse length detection_list_hunters > filter-val
+               [
+                set detection_list_hunters remove-item 0 detection_list_hunters
+               set detection_list_hunters lput 0 detection_list_hunters
+                ]
+               [
+                 set detection_list_hunters lput 0 detection_list_hunters
+               ]
+            ]
+
+;            ifelse seen_flag_1 = 1 ; if agent of type of group
+;            [
+;              ifelse length detection_list_1 > filter-val
+;               [
+;                set detection_list_1 remove-item 0 detection_list_1
+;               set detection_list_1 lput 1 detection_list_1
+;                ]
+;               [
+;                 set detection_list_1 lput 1 detection_list_1
+;               ]
+;
+;            ]
+;            [
+;              ifelse length detection_list_1 > filter-val
+;               [
+;                set detection_list_1 remove-item 0 detection_list_1
+;               set detection_list_1 lput 0 detection_list_1
+;                ]
+;               [
+;                 set detection_list_1 lput 0 detection_list_1
+;               ]
+;            ]
+
+            ifelse seen_flag_2 = 1 ; if agent of type of group
+            [
+              ifelse length detection_list_evader > filter-val
+               [
+                set detection_list_evader remove-item 0 detection_list_evader
+               set detection_list_evader lput 1 detection_list_evader
+                ]
+               [
+                 set detection_list_evader lput 1 detection_list_evader
+               ]
+
+            ]
+            [
+              ifelse length detection_list_evader > filter-val
+               [
+                set detection_list_evader remove-item 0 detection_list_evader
+               set detection_list_evader lput 0 detection_list_evader
+                ]
+               [
+                 set detection_list_evader lput 0 detection_list_evader
+               ]
+            ]
+
+
+        ]
+    ]
+    [
+      ifelse non-target-detection?
+      [
+      ifelse length fov-list > 0 or length fov-list-walls > 0
+        [
+          ifelse chance < false_negative_rate
+            [
+              set seen_flag 0
+            ]
+            [
+              set seen_flag 1
+              set seen_count (seen_count + 1)
+            ]
+         ]
+         [
+           ifelse chance < false_positive_rate
+             [
+               set seen_flag 1
+             ]
+             [
+               set seen_flag 0
+             ]
+         ]
+
+         ]
+         [
+           set seen_flag 0
+         ]
+      ifelse length fov-list-goals > 0
+            [
+              ifelse chance < false_negative_rate_for_goal
+                [
+                  set goal_seen_flag 0
+                ]
+                [
+                  set goal_seen_flag 1
+                ]
+            ]
+            [
+               ifelse chance < false_positive_rate_for_goal
+               [ set goal_seen_flag  1]
+               [set goal_seen_flag 0]
+            ]
+    ]
+end
+
+to do_sensing_sound
+
+;  ifelse see_walls?
+;    [find-walls-in-new-FOV]
+;    [set fov-list-walls (list)]
+  find-goals-in-new-FOV
+  find-robots-in-new-FOV
+
+  ifelse delay?
+  [
+    if ticks mod delay-length = 0
+      [
+          ifelse length fov-list > 0 or length fov-list-walls > 0
+            [
+              ifelse chance < false_negative_rate
+                [
+                  set seen_flag 0
+                ]
+                [
+                  set seen_flag 1
+                ]
+            ]
+            [
+
+               ifelse chance < false_positive_rate
+               [ set seen_flag 1]
+               [set seen_flag 0]
+            ]
+
+          ifelse length fov-list-goals > 0
+            [
+              ifelse chance < false_negative_rate_for_goal
+                [
+                  set goal_seen_flag 0
+                ]
+                [
+                  set goal_seen_flag 1
+                ]
+            ]
+            [
+               ifelse chance < false_positive_rate_for_goal
+               [ set goal_seen_flag 1]
+               [set goal_seen_flag 0]
+            ]
+        ]
+    ]
+    [
+      ifelse non-target-detection?
+      [
+      ifelse length fov-list > 0 or length fov-list-walls > 0
+        [
+          ifelse chance < false_negative_rate
+            [
+              set seen_flag 0
+            ]
+            [
+              set seen_flag 1
+              set seen_count (seen_count + 1)
+            ]
+         ]
+         [
+           ifelse chance < false_positive_rate
+             [
+               set seen_flag 1
+             ]
+             [
+               set seen_flag 0
+             ]
+         ]
+
+         ]
+         [
+           set seen_flag 0
+         ]
+      ifelse length fov-list-goals > 0
+            [
+              ifelse chance < false_negative_rate_for_goal
+                [
+                  set goal_seen_flag 0
+                ]
+                [
+                  set goal_seen_flag 1
+                ]
+            ]
+            [
+               ifelse chance < false_positive_rate_for_goal
+               [ set goal_seen_flag  1]
+               [set goal_seen_flag 0]
+            ]
+    ]
+end
+
+to goal_detected_procedure
+  ifelse see_goal_response = 0
+            [
+              set inputs (list (0) ( 0))
+            ]
+            [
+
+              ifelse see_goal_response = 1
+                [
+                  set inputs (list (speed-w-noise) ( 1.5 * turning-w-noise) (0))
+                ]
+              [
+                ifelse distance min-one-of visible-goals [distance myself] > 1
+                  [
+                    set heading towards min-one-of visible-goals [distance myself]
+                    set inputs (list (1  * speed-w-noise) (turning-w-noise) (0))
+                  ]
+                  [
+                    set inputs (list 0 0)
+                  ]
+              ]
+              ]
+             set color yellow
+end
+
+to update_agent_state
+  agent_dynamics
+
+
+    if collisions?
+    [
+      do_collisions
+    ]
+
+  let nxcor xcor + ( item 0 velocity * tick-delta  ) + (impact-x * tick-delta  ) + (rand-x * tick-delta  )
+  let nycor ycor + ( item 1 velocity * tick-delta  ) + (impact-y * tick-delta  ) + (rand-y * tick-delta  )
+
+  setxy nxcor nycor
+
+  let nheading heading + (angular-velocity * tick-delta  ) + (impact-angle * tick-delta )
+  set heading nheading
+
+  if not wrap_around?
+    [
+    if (distance (patch min-pxcor ycor ) < 0.25) [let nxcor1 xcor + 0.63
+    setxy nxcor1 ycor]
+    if (distance (patch max-pxcor ycor) < 0.25) [let nxcor1 xcor - 0.63
+    setxy nxcor1 ycor]
+    if (distance (patch xcor min-pycor) < 0.25) [let nycor1 ycor + 0.63
+    setxy xcor nycor1]
+    if (distance (patch xcor max-pycor) < 0.25) [let nycor1 ycor - 0.63
+    setxy xcor nycor1]
+    ]
+
+end
+
+to update_agent_state_mecanum
+  agent_dynamics_mecanum
+
+
+    if collisions?
+    [
+      do_collisions
+    ]
+
+  let nxcor xcor + ( item 0 velocity * tick-delta  ) + (impact-x * tick-delta  ) + (rand-x * tick-delta  )
+  let nycor ycor + ( item 1 velocity * tick-delta  ) + (impact-y * tick-delta  ) + (rand-y * tick-delta  )
+
+  setxy nxcor nycor
+
+  let nheading heading + (angular-velocity * tick-delta  ) + (impact-angle * tick-delta )
+  set heading nheading
+
+  if not wrap_around?
+    [
+    if (distance (patch min-pxcor ycor ) < 0.25) [let nxcor1 xcor + 0.63
+    setxy nxcor1 ycor]
+    if (distance (patch max-pxcor ycor) < 0.25) [let nxcor1 xcor - 0.63
+    setxy nxcor1 ycor]
+    if (distance (patch xcor min-pycor) < 0.25) [let nycor1 ycor + 0.63
+    setxy xcor nycor1]
+    if (distance (patch xcor max-pycor) < 0.25) [let nycor1 ycor - 0.63
+    setxy xcor nycor1]
+    ]
+
+end
+
+to update_agent_state_mecanum2
+  agent_dynamics_mecanum2
+
+
+    if collisions?
+    [
+      do_collisions
+    ]
+
+  let nxcor xcor + ( item 0 velocity * tick-delta  ) + (impact-x * tick-delta  ) + (rand-x * tick-delta  )
+  let nycor ycor + ( item 1 velocity * tick-delta  ) + (impact-y * tick-delta  ) + (rand-y * tick-delta  )
+
+  setxy nxcor nycor
+
+  let nheading heading + (angular-velocity * tick-delta  ) + (impact-angle * tick-delta )
+  set heading nheading
+
+  if not wrap_around?
+    [
+    if (distance (patch min-pxcor ycor ) < 0.25) [let nxcor1 xcor + 0.63
+    setxy nxcor1 ycor]
+    if (distance (patch max-pxcor ycor) < 0.25) [let nxcor1 xcor - 0.63
+    setxy nxcor1 ycor]
+    if (distance (patch xcor min-pycor) < 0.25) [let nycor1 ycor + 0.63
+    setxy xcor nycor1]
+    if (distance (patch xcor max-pycor) < 0.25) [let nycor1 ycor - 0.63
+    setxy xcor nycor1]
+    ]
+
+end
+
+to do_mode_switching
+  ifelse mode_switching_type = 0
+      [
+        if  ticks mod 100 = 0 and chance < rand_count_prob
+          [
+           set group_type 1
+           set shape "turtle2"
+          ]
+      ]
+      [
+        if seen_count > (seen_threshold)
+          [
+            set group_type 1
+            set seen_count 0
+            set seen_threshold temp;round random-normal temp 10
+          ]
+     ]
+end
+
+
+to add_robot
+  ask place-holder ((count goals + count robots))
+  [  set breed robots
+      st
+
+      setxy 0.3 0
+      set detection_list (list )
+      set detection_list_hunters (list )
+      set detection_list_1 (list )
+      set detection_list_evader (list )
+
+      ifelse Goal_Searching_Mission?
+      [
+        set sr_patches patches with [(distancexy (max-pxcor * -0.75) (max-pycor * -0.75) < (number-of-robots * ([size] of robot (count goals)) / pi)) and pxcor != 0 and pycor != 0]
+      ]
+      [
+        set sr_patches patches with [(distancexy 0 0 < (5 * ([size] of robot (count goals)) / pi)) and pxcor != 0 and pycor != 0]
+      ]
+
+      move-to one-of sr_patches with [(not any? other robots in-radius ([size] of robot (count goals)))]
+          setxy (xcor + .01) (ycor + .01)
+
+      set velocity [ 0 0 ]
+      set angular-velocity 0
+      set inputs [0 0]
+
+
+
+      set shape "mecanum"
+      set color red
+      set size 2.0 ; sets size to 0.1m
+
+      set mass size
+
+      set speed forward_speed1
+
+
+      set turn-r turning-rate1
+      set turn-r2 turning-rate2
+
+     set levy_time 200
+
+     set group_type 0
+     set color red
+    ]
+
+    set number-of-robots (number-of-robots + 1)
+    let num-num (number-of-robots + number-of-group2 + number-of-group1)
+
+
+  set DM matrix:make-constant num-num num-num 0
+  set AM matrix:make-constant num-num num-num 0
+  set GM matrix:make-constant number-of-robots number-of-robots number-of-robots
+end
+
+to remove_robot
+ask robot (number-of-robots - 1)
+  [
+    set breed place-holders
+    ht
+  ]
+  let num-num (number-of-robots + number-of-group2 + number-of-group1)
+
+
+  set DM matrix:make-constant num-num num-num 0
+  set AM matrix:make-constant num-num num-num 0
+  set GM matrix:make-constant number-of-robots number-of-robots number-of-robots
+
+end
+
+to add_walls
+  create-walls (4 * (max-pxcor - min-pxcor)) + 1 ;environment_size
+      [
+
+             set size 1.7; 0.1m
+       set color pink
+       set shape "circle 2"
+
+       set mass 1000
+       set velocity (list 0 0 )
+
+       set iii (-0.5 * environment_size)
+       set ii 0
+       while [ii < environment_size ]
+       [
+         ask wall ((count goals + count robots) + count place-holders + ii )
+           [setxy iii ( environment_size * -0.5)
+           set heading 90]
+         set iii (iii + 1)
+         set ii (ii + 1)
+
+         ]
+
+       set iii (-0.5 * environment_size)
+       while [ii < environment_size * 2]
+       [
+         ask wall ((count goals + count robots) + count place-holders + ii)
+           [setxy iii (0.5 * environment_size)
+           set heading 90]
+         set iii (iii + 1)
+         set ii (ii + 1)
+
+         ]
+
+       set iii (-0.5 * environment_size)
+       while [ii < environment_size * 3]
+       [
+         ask wall ((count goals + count robots) + count place-holders + ii)
+           [setxy (-0.5 * environment_size) iii
+           set heading 0]
+         set iii (iii + 1)
+         set ii (ii + 1)
+         ]
+
+      set iii (-0.5 * environment_size)
+      while [ii < (environment_size * 4) + 1 ]
+       [
+         ask wall ((count goals + count robots) + count place-holders + ii)
+           [setxy (0.5 * environment_size) iii
+           set heading 0]
+         set iii (iii + 1)
+         set ii (ii + 1)
+
+         ]
+
+      while [ii < 4 * (max-pxcor - min-pycor)]
+      [ask wall (ii + (count goals + count robots) + count place-holders)
+        [
+          ;set heading (j * heading_num) ;+ (random 20 + random -20)
+          setxy max-pxcor max-pycor
+          set heading 0
+
+        ]
+        set ii ii + 1
+        ]
+
+       ]
+end
+
+to add_walls_circular
+  create-walls (4 * (max-pxcor - min-pxcor)) + 1;(round environment_size * pi * 0.75)
+      [
+
+      let irr environment_size / (2)
+      set j 0
+      let heading_num 360 / (round environment_size * pi * 0.75)
+
+
+      while [j < (round environment_size * pi * 0.75) - 1]
+      [ask wall (j + (count goals + count robots) + count place-holders)
+        [
+          ;set heading (j * heading_num) ;+ (random 20 + random -20)
+          setxy (irr * -1 * cos(j * heading_num)) (irr * sin(j * heading_num))
+          set heading j * heading_num
+
+        ]
+
+        set j j + 1
+    ]
+
+    while [j < 4 * (max-pxcor - min-pycor)]
+    [ask wall (j + (count goals + count robots) + count place-holders)
+        [
+          ;set heading (j * heading_num) ;+ (random 20 + random -20)
+          setxy max-pxcor max-pycor
+          set heading 0
+
+        ]
+
+        set j j + 1
+    ]
+
+
+       set size 1
+       set color pink
+       set shape "circle 2"
+       set heading 0
+       set mass size
+       set velocity (list 0 0 )
+      ]
+end
+
+to add_walls_custom0
+  create-walls (4 * (max-pxcor - min-pxcor)) + (2 * (environment_size)) + 3 ;environment_size
+      [
+
+             set size 1
+       set color pink
+       set shape "circle 2"
+
+       set mass 1000
+       set velocity (list 0 0 )
+
+       set iii (-0.5 * environment_size)
+       set ii 0
+       while [ii < environment_size ]
+       [
+         ask wall ((count goals + count robots) + count place-holders + ii)
+           [setxy iii ( environment_size * -0.5)
+           set heading 90]
+         set iii (iii + 1)
+         set ii (ii + 1)
+
+         ]
+
+       set iii (-0.5 * environment_size)
+       while [ii < environment_size * 2]
+       [
+         ask wall ((count goals + count robots) + count place-holders + ii)
+           [setxy iii (0.5 * environment_size)
+           set heading 90]
+         set iii (iii + 1)
+         set ii (ii + 1)
+
+         ]
+
+       set iii (-0.5 * environment_size)
+       while [ii < (environment_size * 2) + ((environment_size - gap_length) / 2)]
+       [
+         ask wall ((count goals + count robots) + count place-holders + ii)
+           [setxy (-0.5 * environment_size) iii
+           set heading 0]
+         set iii (iii + 1)
+         set ii (ii + 1)
+         ]
+
+       set iii (0.5 * environment_size) ;+ (environment_size / 2 + gap_length)
+       while [ii < (environment_size * 2) + (environment_size - gap_length)]
+       [
+         ask wall ((count goals + count robots) + count place-holders + ii)
+           [setxy (-0.5 * environment_size) iii
+           set heading 0]
+         set iii (iii - 1)
+         set ii (ii + 1)
+         ]
+
+       set iii (-0.5 * environment_size)
+       while [ii < (environment_size * 2) + (3 * (environment_size - gap_length) / 2)]
+       [
+         ask wall ((count goals + count robots) + count place-holders + ii   )
+           [setxy (0.5 * environment_size) iii
+           set heading 0]
+         set iii (iii + 1)
+         set ii (ii + 1)
+         ]
+
+       set iii (0.5 * environment_size) ;+ (environment_size / 2 + gap_length)
+       while [ii < (environment_size * 2) + 2 * (environment_size - gap_length)]
+       [
+         ask wall ((count goals + count robots) + count place-holders + ii   )
+           [setxy (0.5 * environment_size) iii
+           set heading 0]
+         set iii (iii - 1)
+         set ii (ii + 1)
+         ]
+
+       set iii (-0.5 * environment_size)
+       while [ii < (environment_size * 2) + (2 * (environment_size - gap_length)) + ((environment_size - gap_width) / 2)]
+       [
+         ask wall ((count goals + count robots) + count place-holders + ii   )
+           [setxy iii (gap_length / 2)
+           set heading 0]
+         set iii (iii + 1)
+         set ii (ii + 1)
+         ]
+
+       set iii (-0.5 * environment_size)
+       while [ii < (environment_size * 2) + (2 * (environment_size - gap_length)) + ((environment_size - gap_width))]
+       [
+         ask wall ((count goals + count robots) + count place-holders + ii   )
+           [setxy iii (- gap_length / 2)
+           set heading 0]
+         set iii (iii + 1)
+         set ii (ii + 1)
+         ]
+
+       set iii (0.5 * environment_size)
+       while [ii < (environment_size * 2) + (2 * (environment_size - gap_length)) + (3 * (environment_size - gap_width) / 2)]
+       [
+         ask wall ((count goals + count robots) + count place-holders + ii   )
+           [setxy iii (gap_length / 2)
+           set heading 0]
+         set iii (iii - 1)
+         set ii (ii + 1)
+         ]
+
+       set iii (0.5 * environment_size)
+       while [ii < (environment_size * 2) + (2 * (environment_size - gap_length)) + (2 * (environment_size - gap_width))]
+       [
+         ask wall ((count goals + count robots) + count place-holders + ii   )
+           [setxy iii (- gap_length / 2)
+           set heading 0]
+         set iii (iii - 1)
+         set ii (ii + 1)
+         ]
+
+       set iii (gap_length / -2)
+       while [ii < (environment_size * 2) + (2 * (environment_size - gap_length)) + (2 * (environment_size - gap_width)) + gap_length + 1]
+       [
+         ask wall ((count goals + count robots) + count place-holders + ii   )
+           [setxy (gap_width / 2) iii
+           set heading 0]
+         set iii (iii + 1)
+         set ii (ii + 1)
+         ]
+
+       set iii (gap_length / -2)
+       while [ii < (environment_size * 2) + (2 * (environment_size - gap_length)) + (2 * (environment_size - gap_width)) + (2 * gap_length) + 2]
+       [
+         ask wall ((count goals + count robots) + count place-holders + ii   )
+           [setxy (- gap_width / 2) iii
+           set heading 0]
+         set iii (iii + 1)
+         set ii (ii + 1)
+         ]
+
+
+       while [ii < (4 * (max-pxcor - min-pxcor)) + (2 * (environment_size)) + 3]
+       [
+         ask wall ((count goals + count robots) + count place-holders + ii   )
+           [setxy max-pxcor max-pycor
+           set heading 0]
+         set iii (iii + 1)
+         set ii (ii + 1)
+         ]
+       ]
+
+       ask patches with [(abs(pycor) < (gap_length / 2))  and (abs(pxcor) > (gap_width / 2))]
+       [ set pcolor black]
+end
+
+to add_walls_custom1
+  create-walls (6 * (max-pxcor - min-pxcor)) + 1;(round environment_size * pi * 0.75)
+      [
+
+      let irr environment_size / (2)
+      set j 0
+      let heading_num 360 / (round environment_size * pi * 0.75)
+
+
+      while [j < (round environment_size * pi * 0.75) - 1]
+      [ask wall (j + (count goals + count robots) + count place-holders  )
+        [
+          ;set heading (j * heading_num) ;+ (random 20 + random -20)
+          setxy (irr * -1 * cos(j * heading_num)) (irr * sin(j * heading_num))
+          set heading j * heading_num
+
+        ]
+
+        set j j + 1
+    ]
+
+    set iii (0.5 * environment_size)
+       while [j < ((round environment_size * pi * 0.75) - 1)  + ((environment_size - gap_length))]
+       [
+         ask wall (j + (count goals + count robots) + count place-holders  )
+           [setxy  (- gap_width / 2) iii
+           set heading 0]
+         set iii (iii - 1)
+         set j (j + 1)
+         ]
+
+    set iii (0.5 * environment_size)
+       while [j < ((round environment_size * pi * 0.75) - 1)  + 2 * ((environment_size - gap_length))]
+       [
+         ask wall (j + (count goals + count robots) + count place-holders  )
+           [setxy  ( gap_width / 2) iii
+           set heading 0]
+         set iii (iii - 1)
+         set j (j + 1)
+         ]
+
+     set iii (gap_width / -2)
+       while [j < ((round environment_size * pi * 0.75) - 1)  + 2 * ((environment_size - gap_length)) + gap_width + 1]
+       [
+         ask wall (j + (count goals + count robots) + count place-holders  )
+           [setxy iii ( (-0.5 * environment_size)  + ( gap_length) )
+           set heading 0]
+         set iii (iii + 1)
+         set j (j + 1)
+         ]
+
+
+
+    while [j < 4 * (max-pxcor - min-pycor)]
+    [ask wall (j + (count goals + count robots) + count place-holders   )
+        [
+          ;set heading (j * heading_num) ;+ (random 20 + random -20)
+          setxy max-pxcor max-pycor
+          set heading 0
+
+        ]
+
+        set j j + 1
+    ]
+
+
+       set size 1
+       set color pink
+       set shape "circle 2"
+       set heading 0
+       set mass size
+       set velocity (list 0 0 )
+      ]
+
+      ask patches with [pycor > ( (-0.5 * environment_size)  + ( gap_length) )  and (abs(pxcor) <(gap_width / 2))]
+       [ set pcolor black]
+      ask patches with [distance patch 0 0 > environment_size / (2)]
+       [ set pcolor black]
+end
+
+
+
+to add_goal
+  create-goals number-of-goals
+  [
+    set shape "circle"
+    set size 1
+    set color violet
+
+    ifelse random_goal_position?
+      [
+        let gr (range  (goal-region-size) (max-pxcor - goal-region-size) 1)
+        setxy (one-of gr) (one-of gr)
+      ]
+      [
+        ;setxy (max-pxcor - ( goal-region-size + 10)) (max-pycor - (goal-region-size + 10))
+        setxy 0 0
+      ]
+
+    ask patches in-radius goal-region-size
+    [set pcolor green]
+  ]
+end
+
+
+to move_walls_square
+
+
+       set iii (-0.5 * environment_size)
+       set ii 0
+       while [ii < environment_size ]
+       [
+         ask wall ((count goals + count robots) + count place-holders  + ii  )
+           [setxy iii ( environment_size * -0.5)
+           set heading 90]
+         set iii (iii + 1)
+         set ii (ii + 1)
+
+         ]
+
+       set iii (-0.5 * environment_size)
+       while [ii < environment_size * 2]
+       [
+         ask wall ((count goals + count robots) + count place-holders  + ii   )
+           [setxy iii (0.5 * environment_size)
+           set heading 90]
+         set iii (iii + 1)
+         set ii (ii + 1)
+
+         ]
+
+       set iii (-0.5 * environment_size)
+       while [ii < environment_size * 3]
+       [
+         ask wall ((count goals + count robots) + count place-holders  + ii   )
+           [setxy (-0.5 * environment_size) iii
+           set heading 0]
+         set iii (iii + 1)
+         set ii (ii + 1)
+         ]
+      set iii (-0.5 * environment_size)
+      while [ii < (environment_size * 4)  + 1]
+       [
+         ask wall ((count goals + count robots) + count place-holders  + ii   )
+           [setxy (0.5 * environment_size) iii
+           set heading 0]
+         set iii (iii + 1)
+         set ii (ii + 1)
+
+         ]
+      while [ii < (4 * (max-pxcor - min-pxcor)) + 1]
+      [ask wall (ii + (count goals + count robots) + count place-holders   )
+        [
+          ;set heading (j * heading_num) ;+ (random 20 + random -20)
+          setxy max-pxcor max-pycor
+          set heading 0
+        ]
+        set ii ii + 1
+        ]
+end
+
+to move_walls_circular
+  let irr environment_size / (2)
+      set j 0
+      let heading_num 360 / (round environment_size * pi * 0.75)
+
+      while [j < (round environment_size * pi * 0.75) - 1]
+      [ask wall (j + (count goals + count robots) + count place-holders   )
+        [
+          ;set heading (j * heading_num) ;+ (random 20 + random -20)
+          setxy (irr * 1 * cos(j * heading_num)) (irr * sin(j * heading_num))
+          set heading ( - j * heading_num )
+
+        ]
+        set j j + 1
+  ]
+
+  while [j < (4 * (max-pxcor - min-pxcor)) + 1]
+    [ask wall (j + (count goals + count robots) + count place-holders   )
+        [
+          ;set heading (j * heading_num) ;+ (random 20 + random -20)
+          setxy max-pxcor max-pycor
+          set heading 0
+        ]
+        set j j + 1
+    ]
+end
+
+to move_walls_custom0
+
+           set iii (-0.5 * environment_size)
+       set ii 0
+       while [ii < environment_size ]
+       [
+         ask wall ((count goals + count robots) + count place-holders + ii  )
+           [setxy iii ( environment_size * -0.5)
+           set heading 90]
+         set iii (iii + 1)
+         set ii (ii + 1)
+
+         ]
+
+       set iii (-0.5 * environment_size)
+       while [ii < environment_size * 2]
+       [
+         ask wall ((count goals + count robots) + count place-holders + ii   )
+           [setxy iii (0.5 * environment_size)
+           set heading 90]
+         set iii (iii + 1)
+         set ii (ii + 1)
+
+         ]
+
+       set iii (-0.5 * environment_size)
+       while [ii < (environment_size * 2) + ((environment_size - gap_length) / 2)]
+       [
+         ask wall ((count goals + count robots) + count place-holders + ii   )
+           [setxy (-0.5 * environment_size) iii
+           set heading 0]
+         set iii (iii + 1)
+         set ii (ii + 1)
+         ]
+
+       set iii (0.5 * environment_size) ;+ (environment_size / 2 + gap_length)
+       while [ii < (environment_size * 2) + (environment_size - gap_length)]
+       [
+         ask wall ((count goals + count robots) + count place-holders + ii   )
+           [setxy (-0.5 * environment_size) iii
+           set heading 0]
+         set iii (iii - 1)
+         set ii (ii + 1)
+         ]
+
+       set iii (-0.5 * environment_size)
+       while [ii < (environment_size * 2) + (3 * (environment_size - gap_length) / 2)]
+       [
+         ask wall ((count goals + count robots) + count place-holders + ii   )
+           [setxy (0.5 * environment_size) iii
+           set heading 0]
+         set iii (iii + 1)
+         set ii (ii + 1)
+         ]
+
+       set iii (0.5 * environment_size) ;+ (environment_size / 2 + gap_length)
+       while [ii < (environment_size * 2) + 2 * (environment_size - gap_length)]
+       [
+         ask wall ((count goals + count robots) + count place-holders + ii   )
+           [setxy (0.5 * environment_size) iii
+           set heading 0]
+         set iii (iii - 1)
+         set ii (ii + 1)
+         ]
+
+       set iii (-0.5 * environment_size)
+       while [ii < (environment_size * 2) + (2 * (environment_size - gap_length)) + ((environment_size - gap_width) / 2)]
+       [
+         ask wall ((count goals + count robots) + count place-holders + ii   )
+           [setxy iii (gap_length / 2)
+           set heading 0]
+         set iii (iii + 1)
+         set ii (ii + 1)
+         ]
+
+       set iii (-0.5 * environment_size)
+       while [ii < (environment_size * 2) + (2 * (environment_size - gap_length)) + ((environment_size - gap_width))]
+       [
+         ask wall ((count goals + count robots) + count place-holders + ii   )
+           [setxy iii (- gap_length / 2)
+           set heading 0]
+         set iii (iii + 1)
+         set ii (ii + 1)
+         ]
+
+       set iii (0.5 * environment_size)
+       while [ii < (environment_size * 2) + (2 * (environment_size - gap_length)) + (3 * (environment_size - gap_width) / 2)]
+       [
+         ask wall ((count goals + count robots) + count place-holders + ii   )
+           [setxy iii (gap_length / 2)
+           set heading 0]
+         set iii (iii - 1)
+         set ii (ii + 1)
+         ]
+
+       set iii (0.5 * environment_size)
+       while [ii < (environment_size * 2) + (2 * (environment_size - gap_length)) + (2 * (environment_size - gap_width))]
+       [
+         ask wall ((count goals + count robots) + count place-holders + ii   )
+           [setxy iii (- gap_length / 2)
+           set heading 0]
+         set iii (iii - 1)
+         set ii (ii + 1)
+         ]
+
+       set iii (gap_length / -2)
+       while [ii < (environment_size * 2) + (2 * (environment_size - gap_length)) + (2 * (environment_size - gap_width)) + gap_length + 1]
+       [
+         ask wall ((count goals + count robots) + count place-holders + ii   )
+           [setxy (gap_width / 2) iii
+           set heading 0]
+         set iii (iii + 1)
+         set ii (ii + 1)
+         ]
+
+       set iii (gap_length / -2)
+       while [ii < (environment_size * 2) + (2 * (environment_size - gap_length)) + (2 * (environment_size - gap_width)) + (2 * gap_length) + 2]
+       [
+         ask wall ((count goals + count robots) + count place-holders + ii   )
+           [setxy (- gap_width / 2) iii
+           set heading 0]
+         set iii (iii + 1)
+         set ii (ii + 1)
+         ]
+
+       while [ii < (4 * (max-pxcor - min-pxcor)) + (2 * (environment_size)) + 3]
+       [
+         ask wall ((count goals + count robots) + count place-holders + ii   )
+           [setxy max-pxcor max-pycor
+           set heading 0]
+         set iii (iii + 1)
+         set ii (ii + 1)
+         ]
+
+
+       ask patches with [(abs(pycor) < (gap_length / 2))  and (abs(pxcor) > (gap_width / 2))]
+       [ set pcolor black]
+
+       ask patches with [pcolor = black]
+       [
+         if (abs(pycor) >= (gap_length / 2))  or (abs(pxcor) <= (gap_width / 2))
+         [set pcolor white]
+       ]
+
+
+
+end
+
+to move_walls_custom1
+      let irr environment_size / (2)
+      set j 0
+      let heading_num 360 / (round environment_size * pi * 0.75)
+
+
+      while [j < (round environment_size * pi * 0.75) - 1]
+      [ask wall (j + (count goals + count robots) + count place-holders  )
+        [
+          ;set heading (j * heading_num) ;+ (random 20 + random -20)
+          setxy (irr * -1 * cos(j * heading_num)) (irr * sin(j * heading_num))
+          set heading j * heading_num
+
+        ]
+
+        set j j + 1
+    ]
+
+    set iii (0.5 * environment_size)
+       while [j < ((round environment_size * pi * 0.75) - 1)  + ((environment_size - gap_length))]
+       [
+         ask wall (j + (count goals + count robots) + count place-holders  )
+           [setxy  (- gap_width / 2) iii
+           set heading 0]
+         set iii (iii - 1)
+         set j (j + 1)
+         ]
+
+    set iii (0.5 * environment_size)
+       while [j < ((round environment_size * pi * 0.75) - 1)  + 2 * ((environment_size - gap_length))]
+       [
+         ask wall (j + (count goals + count robots) + count place-holders  )
+           [setxy  ( gap_width / 2) iii
+           set heading 0]
+         set iii (iii - 1)
+         set j (j + 1)
+         ]
+
+     set iii (gap_width / -2)
+       while [j < ((round environment_size * pi * 0.75) - 1)  + 2 * ((environment_size - gap_length)) + gap_width + 1]
+       [
+         ask wall (j + (count goals + count robots) + count place-holders  )
+           [setxy iii ( (-0.5 * environment_size)  + ( gap_length) )
+           set heading 0]
+         set iii (iii + 1)
+         set j (j + 1)
+         ]
+
+
+
+    while [j < 6 * (max-pxcor - min-pycor) + 1]
+    [ask wall (j + (count goals + count robots) + count place-holders   )
+        [
+          ;set heading (j * heading_num) ;+ (random 20 + random -20)
+          setxy max-pxcor max-pycor
+          set heading 0
+
+        ]
+
+        set j j + 1
+    ]
+
+
+      ask patches with [pycor > ( (-0.5 * environment_size)  + ( gap_length) )  and (abs(pxcor) <(gap_width / 2))]
+       [ set pcolor black]
+      ask patches with [distance patch 0 0 > environment_size / (2)]
+       [ set pcolor black]
+
+      ask patches with [pcolor = black and distance patch 0 0 < environment_size / (2)]
+       [
+         if (pycor <=  (-0.5 * environment_size)  + ( gap_length) )  or (abs(pxcor) > (gap_width / 2))
+         [set pcolor white]
+       ]
+end
+
+
+to make_robot0
+  create-robots 1
+    [
+      set velocity [ 0 0]
+      set angular-velocity 0
+      set inputs [0 0 0 0]
+      set size 2 ; 0.2m
+
+      let sr (range ((150  )) ((- 150 )) -.5)
+      let pr (range ((max-pxcor * .35 )) ((- (max-pxcor * .35)  )) -.5)
+      setxy (one-of pr) (one-of pr)
+      set detection_list (list )
+      set detection_list_hunters (list )
+      set detection_list_1 (list )
+      set detection_list_evader (list )
+
+
+      ifelse random_start_region?
+          [
+            set sr_patches patches with [(distancexy (rand-xcor) (rand-ycor) < (2 * (number-of-robots + number-of-group2) * ([size] of robot (count goals)) / (2 * pi) ) + 1) and pxcor != 0 and pycor != 0]
+          ]
+          [
+            ;set sr_patches patches with [(distancexy (max-pxcor * -0.55) (max-pycor * -0.55) < (34 * ([size] of robot (count goals)) / (2 * pi) ) + 1) and pxcor != 0 and pycor != 0]
+            set sr_patches patches with [(distancexy (0) (0) < (2 * (number-of-robots + number-of-group2) * ([size] of robot (count goals)) / (2 * pi) ) + 1) and pxcor != 0 and pycor != 0]
+          ]
+
+
+      if spawn_semi_randomly?
+        [
+          move-to one-of sr_patches with [(not any? other robots in-radius (1 * [size] of robot (count goals)))]
+          setxy (xcor + .01) (ycor + .01)
+        ]
+
+      set shape "mecanum"
+      set color red
+      set mass size
+      set sound_timer round random-normal 60 2
+      ;set heading 0
+      ;set heading (towardsxy rand-xcor rand-ycor) + 180
+
+      set speed forward_speed1
+
+
+      set turn-r turning-rate1
+      set turn-r2 turning-rate2
+
+     set levy_time round (100 * (1 / (random-gamma 0.5 (c / 2  ))))
+     while [levy_time > (max_levy_time / tick-delta)]
+     [set levy_time round (100 * (1 / (random-gamma 0.5 (.5))))]
+     set pre_flight_time round (random-normal 400 10) + 10
+
+     set flight_time round (random-normal 200 10) + 10
+
+     set group_type 1
+     set color red
+    ]
+end
+
+to make_robot1
+  create-robots 1
+    [
+      set velocity [ 0 0]
+      set angular-velocity 0
+      set inputs [0 0 0 0]
+      set size 2 ;0.2m
+
+      let sr (range ((150  )) ((- 150 )) -.5)
+      let pr (range ((max-pxcor * .35 )) ((- (max-pxcor * .35)  )) -.5)
+      setxy (one-of pr) (one-of pr)
+
+      set detection_list (list )
+      set detection_list_hunters (list )
+      set detection_list_1 (list )
+      set detection_list_evader (list )
+
+      ifelse Goal_Searching_Mission?
+      [
+        ifelse random_start_region?
+          [
+            set sr_patches patches with [(distancexy rand-xcor rand-ycor < (34 * ([size] of robot (count goals)) / (2 * pi) ) + 1) and pxcor != 0 and pycor != 0]
+          ]
+          [
+            set sr_patches patches with [(distancexy (max-pxcor * -0.55) (max-pycor * -0.55) < (34 * ([size] of robot (count goals)) / (2 * pi) ) + 1) and pxcor != 0 and pycor != 0]
+          ]
+      ]
+      [
+        set sr_patches patches with [(distancexy 0 0 < ((0.9 * (number-of-robots + number-of-group2) * ([size] of robot (count goals)) / pi) + 2)) and pxcor != 0 and pycor != 0]
+      ]
+
+      if spawn_semi_randomly?
+        [
+          move-to one-of sr_patches with [(not any? other robots in-radius ([size] of robot (count goals)))]
+          setxy (xcor + .01) (ycor + .01)
+        ]
+
+      set shape "circle 2"
+      set color red
+      set mass size
+
+      set speed forward_speed1
+
+
+      set turn-r turning-rate1
+      set turn-r2 turning-rate2
+
+     set levy_time round (100 * (1 / (random-gamma 0.5 (c / 2  ))))
+     while [levy_time > (max_levy_time / tick-delta)]
+     [set levy_time round (100 * (1 / (random-gamma 0.5 (.5  ))))]
+     set pre_flight_time round (random-normal 400 10) + 10
+
+     set flight_time round (random-normal 200 10) + 10
+
+     set group_type 2
+     set color red
+    ]
+end
+
+
+to make_robot2
+  create-robots 1
+    [
+      set velocity [ 0 0]
+      set angular-velocity 0
+      set inputs [0 0 0 0]
+      set size 2 ;0.2m
+
+      let sr (range ((150  )) ((- 150 )) -.5)
+      let pr (range ((max-pxcor * .35 )) ((- (max-pxcor * .35)  )) -.5)
+      setxy (one-of pr) (one-of pr)
+
+      set detection_list (list )
+      set detection_list_hunters (list )
+      set detection_list_1 (list )
+      set detection_list_evader (list )
+
+;      ifelse Goal_Searching_Mission?
+;      [
+;        ifelse random_start_region?
+;          [
+;            set sr_patches patches with [(distancexy rand-xcor rand-ycor < (34 * ([size] of robot (count goals)) / (2 * pi) ) + 1) and pxcor != 0 and pycor != 0]
+;          ]
+;          [
+;            set sr_patches patches with [(distancexy (max-pxcor * -0.55) (max-pycor * -0.55) < (34 * ([size] of robot (count goals)) / (2 * pi) ) + 1) and pxcor != 0 and pycor != 0]
+;          ]
+;      ]
+;      [
+;        set sr_patches patches with [(distancexy 0 0 < ((0.9 * (number-of-robots + number-of-group2) * ([size] of robot (count goals)) / pi) + 2)) and pxcor != 0 and pycor != 0]
+;      ]
+;
+;      if spawn_semi_randomly?
+;        [
+;          move-to one-of sr_patches with [(not any? other robots in-radius ([size] of robot (count goals)))]
+;          setxy (xcor + .01) (ycor + .01)
+;        ]
+;
+
+      setxy -35.002 -35.002
+      set heading 0
+      ;set heading towardsxy (max-pxcor - 3) (max-pycor - 3)
+
+      set shape "turtle"
+      set color red
+      set mass size
+
+      set speed forward_speed1
+
+
+      set turn-r turning-rate1
+      set turn-r2 turning-rate2
+
+     set levy_time round (100 * (1 / (random-gamma 0.5 (c / 2  ))))
+     while [levy_time > (max_levy_time / tick-delta)]
+     [set levy_time round (100 * (1 / (random-gamma 0.5 (.5  ))))]
+     set pre_flight_time round (random-normal 400 10) + 10
+
+     set flight_time round (random-normal 200 10) + 10
+
+     set group_type 0
+     set color red
+
+    ]
+end
+
+to clear-paint
+ask patches
+      [
+        ifelse static_area?
+        [
+          if pcolor = orange
+          [
+            set pcolor yellow
+          ]
+          if pcolor != green or pcolor != yellow
+          [
+            set pcolor white
+          ]
+        ]
+        [
+           if pcolor != green
+          [
+            set pcolor white
+          ]
+        ]
+      ]
+end
+
+
+
+to do-plots
+;  set-current-plot "Number of Agents Detecting Target"
+;  set-current-plot-pen "number_on_green"
+;  plot (count robots with [goal_seen_flag = 1]) / count robots
+;
+
+  set-current-plot "Detection (post filter) Flag of Robot 0"
+  set-current-plot-pen "detect_flag"
+  plot [mean (modes detection_list)] of robot 0
+
+  set-current-plot "Circliness"
+  set-current-plot-pen "circliness_pen"
+  plot circliness
+
+
+; find-metrics
+
+;  set-current-plot "Static Area Covered"
+;  set-current-plot-pen "static_area"
+;  plot static_area
+;
+;  set-current-plot "Dynamic Area Covered"
+;  set-current-plot-pen "dynamic_area"
+;  plot dynamic_area
+end
+
+to find-metrics
+  ;set static_area (count patches with [pcolor = yellow] + count patches with [pcolor = orange]) / (count patches with [pcolor != black])
+  ;set dynamic_area (count patches with [pcolor = orange]) / (count patches with [pcolor != black])
+
+  let num-num (number-of-robots + number-of-group2 + number-of-group1)
+
+  ask robots
+  [ ;find_resultant_angle
+    set V sqrt ((item 0 velocity * item 0 velocity) + (item 1 velocity * item 1 velocity))
+
+
+
+    set scatter_indiv ((xcor - mean[xcor] of circums) ^ 2 + (ycor - mean [ycor] of circums ) ^ 2)
+
+    set rad_var_comp1 sqrt(scatter_indiv)
+    set rad_var_comp1_sum rad_var_comp1_sum + rad_var_comp1
+    set rad_var_comp2 (rad_var_comp1 - rad_var_comp1_mean_sub) ^ 2
+
+
+
+    set momentum_indiv  ((item 0 velocity * (ycor - mean [ycor] of circums)) - (item 1 velocity * (xcor - mean [xcor] of circums )))
+
+    set rot_indiv  ((item 0 velocity * ((ycor - mean [ycor] of circums) / sqrt((xcor - mean [xcor] of circums) ^ 2 + (ycor - mean [ycor] of circums) ^ 2))) - (item 1 velocity * ((xcor - mean [xcor] of circums) / sqrt((xcor - mean [xcor] of circums) ^ 2 + (ycor - mean [ycor] of circums) ^ 2))))
+
+
+
+    set V-sum V-sum + V
+    set scatter-sum scatter-sum + scatter_indiv
+    set momentum-sum momentum-sum + momentum_indiv
+    set group-rot-sum group-rot-sum + rot_indiv
+    set rad_var_comp_sum rad_var_comp_sum + rad_var_comp2
+
+
+
+
+
+   ]
+
+
+
+   set avg-speeds (V-sum / num-num)
+   set scatter (scatter-sum / (num-num * (sqrt(2)* max-pxcor) ^ 2))
+   set ang-momentum (momentum-sum / (num-num * (sqrt(2)* max-pxcor)))
+   set group-rot (group-rot-sum / num-num)
+   set circliness (mean[cc-rad] of circums - mean [ic-rad] of circums )/ mean [ic-rad] of circums
+
+   set outer_radius_size (mean [cc-rad] of circums )
+   set rad_var_comp1_mean (rad_var_comp1_sum / num-num)
+   set rad_var_comp1_mean_sub rad_var_comp1_mean
+
+   set rad_var (rad_var_comp_sum / (num-num * (sqrt(2)* max-pxcor) ^ 2))
+
+   set V-sum 0
+   set scatter-sum 0
+   set momentum-sum 0
+   set group-rot-sum 0
+   set rad_var_comp_sum 0
+   set rad_var_comp1_sum 0
+
+
+   ifelse length v_avg_list > 1000
+    [
+     set v_avg_list remove-item 0 v_avg_list
+     set v_avg_list lput avg-speeds v_avg_list
+     ]
+    [
+      set v_avg_list lput avg-speeds v_avg_list
+    ]
+
+   ifelse length scatter_list > 1000
+    [
+     set scatter_list remove-item 0 scatter_list
+     set scatter_list lput scatter scatter_list
+     ]
+    [
+      set scatter_list lput scatter scatter_list
+    ]
+
+  ifelse length group-rot_list > 1000
+    [
+     set group-rot_list remove-item 0 group-rot_list
+     set group-rot_list lput group-rot group-rot_list
+     ]
+    [
+      set group-rot_list lput group-rot group-rot_list
+    ]
+
+  ifelse length ang-momentum_list > 1000
+    [
+     set ang-momentum_list remove-item 0 ang-momentum_list
+     set ang-momentum_list lput ang-momentum ang-momentum_list
+     ]
+    [
+      set ang-momentum_list lput ang-momentum ang-momentum_list
+    ]
+
+  ifelse length rad_var_list > 1000
+    [
+     set rad_var_list remove-item 0 rad_var_list
+     set rad_var_list lput rad_var rad_var_list
+     ]
+    [
+      set rad_var_list lput rad_var rad_var_list
+    ]
+
+  ifelse length circliness_list > 300
+    [
+     set circliness_list remove-item 0 circliness_list
+     set circliness_list lput circliness circliness_list
+     ]
+    [
+      set circliness_list lput circliness circliness_list
+    ]
+
+  ifelse length alg-con_list > 300
+    [
+     set alg-con_list remove-item 0 alg-con_list
+     set alg-con_list lput alg-con alg-con_list
+     ]
+    [
+      set alg-con_list lput alg-con alg-con_list
+    ]
+
+
+end
+
+to auto-classify-behavior
+    if circliness < 0.1
+    [
+      set behave_name "Milling"
+    ]
+
+end
+
+
+
+to find-chance
+     set chance random-float  99
+end
+
+
+to agent_dynamics
+  set v_x item 0 inputs * sin(heading)
+  set v_y item 0 inputs * cos(heading)
+  set theta_dot item 1 inputs
+
+  set velocity (list (v_x) (v_y) 0)
+  set angular-velocity theta_dot
+end
+
+to agent_dynamics_mecanum
+  ; Reminder, each patch represents 0.1m, these values below are in terms of patches (i.e. 0.25 patches = 0.025m = 2.5cm)
+  let R 0.57 ; wheel radius
+  let lx 0.7 ; half distance between front two wheels
+  let ly 0.59 ; half distance between side two wheels
+
+  ;inputs is list of wheel velocities (rad/s) =  (front_right front_left back_left back_right)
+
+
+  set body_v_x (item 0 inputs + item 1 inputs + item 2 inputs + item 3 inputs) * (R / 4)
+  set body_v_y (- item 0 inputs + item 1 inputs + item 2 inputs - item 3 inputs) * (R / 4)
+  set theta_dot ( item 0 inputs - item 1 inputs + item 2 inputs - item 3 inputs) * (R / (4 * (lx + ly)))
+  ; above is altered due to netlogo's definition of 0 deg (or 0 rad). heading of 0 is pointing straight north rather than east.
+  ; and heading of 90 deg is east rather than north (i.e. increasing angle means going clockwise rather than counter-clockwise
+  ; normally it'd be
+  ;   set theta_dot ( -item 0 inputs + item 1 inputs - item 2 inputs + item 3 inputs) * (R / (4 * (lx + ly)))
+
+
+  set resultant_v sqrt(body_v_x ^ 2 + body_v_y ^ 2)
+
+  ifelse body_v_x = 0 and body_v_y = 0 ; checks to make sure atan can be used (if the first argument is zero it sometimes creates an error)
+  [set body_direct heading]
+  [set body_direct atan body_v_y body_v_x]
+
+                                                          ; In traditional coordinates
+  set v_x resultant_v * sin(- body_direct + heading)   ; set v_x resultant_v * cos(- body_direct + heading)
+  set v_y resultant_v * cos(- body_direct + heading )  ; set v_y resultant_v * sin(- body_direct + heading )
+
+
+
+  set velocity (list (v_x) (v_y) 0)
+  set angular-velocity (theta_dot * 180 / pi) ; changes angular velocity to degrees rather than radians
+end
+
+
+to agent_dynamics_mecanum2
+  ; Reminder, each patch represents 0.1m, these values below are in terms of patches (i.e. 0.25 patches = 0.025m = 2.5cm)
+  let R 0.57 ; wheel radius
+  let lx 0.7 ; half distance between front two wheels
+  let ly 0.59 ; half distance between side two wheels
+
+
+  set body_v_x (item 0 inputs) * sin (item 1 inputs) ; forward speed
+  set body_v_y (item 0 inputs) * -1 * cos( item 1 inputs) ; transversal speed
+  set theta_dot (item 2 inputs) ; turning rate
+  ; above is altered due to netlogo's definition of 0 deg (or 0 rad). heading of 0 is pointing straight north rather than east.
+  ; and heading of 90 deg is east rather than north (i.e. increasing angle means going clockwise rather than counter-clockwise
+  ; normally it'd be
+  ;   set theta_dot ( -item 0 inputs + item 1 inputs - item 2 inputs + item 3 inputs) * (R / (4 * (lx + ly)))
+
+
+  set resultant_v sqrt(body_v_x ^ 2 + body_v_y ^ 2)
+
+  ifelse body_v_x = 0 and body_v_y = 0 ; checks to make sure atan can be used (if the first argument is zero it sometimes creates an error)
+  [set body_direct heading]
+  [set body_direct atan body_v_y body_v_x]
+
+                                                          ; In traditional coordinates
+  set v_x resultant_v * sin(- body_direct + heading)   ; set v_x resultant_v * cos(- body_direct + heading)
+  set v_y resultant_v * cos(- body_direct + heading )  ; set v_y resultant_v * sin(- body_direct + heading )
+   ; above is altered due to netlogo's definition of 0 deg (or 0 rad). heading of 0 is pointing straight north rather than east.
+  ; and heading of 90 deg is east rather than north (i.e. increasing angle means going clockwise rather than counter-clockwise
+  ; normally it'd be
+  ;   set theta_dot ( -item 0 inputs + item 1 inputs - item 2 inputs + item 3 inputs) * (R / (4 * (lx + ly)))
+
+
+
+  set velocity (list (v_x) (v_y) 0)
+  set angular-velocity (theta_dot)
+end
+
+
+to do_collisions
+if count other turtles > 0
+      [
+        let closest-target1 (max-one-of place-holders [distance myself])
+
+        if count robots > 1
+        [
+          ifelse count robots > 3
+          [
+            set closest-targets (min-n-of 2 other robots [distance myself])
+
+            set closest-target1 (min-one-of closest-targets [distance myself])
+            set closest-target2 (max-one-of closest-targets [distance myself])
+          ]
+          [
+            set closest-target1 (min-one-of other robots [distance myself])
+          ]
+          ;set closest-target1 (min-one-of other robots [distance myself])
+        ]
+
+
+
+        ifelse walls_on?
+          [
+            let closest-target3 (min-one-of walls [distance myself])
+
+            ifelse distance closest-target1 > distance closest-target3
+              [set closest-target closest-target3]
+              [set closest-target closest-target1]
+          ]
+          [
+            set closest-target closest-target1
+          ]
+
+        ifelse (distance closest-target ) < (size + ([size] of closest-target)) / 2
+           [
+              let xdiff item 0 target-diff
+              let ydiff item 1 target-diff
+
+
+              if closest-target2 != 0
+              [
+                let xdiff2 item 0 target-diff2
+                let ydiff2 item 1 target-diff2
+                set coll_angle2 (rel-bearing2 - (body_direct2))
+                ifelse coll_angle2 < -180
+                  [
+                    set coll_angle2 coll_angle2 + 360
+                   ]
+                  [
+                    ifelse coll_angle2 > 180
+                    [set coll_angle2 coll_angle2 - 360]
+                    [set coll_angle2 coll_angle2]
+                  ]
+              ]
+              set body_direct2 (360 - body_direct)
+              let coll_angle (rel-bearing - (body_direct2))
+
+
+
+
+              if body_direct2 > 180
+              [
+                set body_direct2 (body_direct2 - 360)
+              ]
+
+              ifelse coll_angle < -180
+              [
+                set coll_angle coll_angle + 360
+               ]
+              [
+                ifelse coll_angle > 180
+                [set coll_angle coll_angle - 360]
+                [set coll_angle coll_angle]
+              ]
+
+
+
+
+              ifelse collision_stop?
+              [
+                ifelse member? closest-target walls
+                  [
+
+                    ifelse abs(coll_angle) < 120
+                    [
+                      set impact-x  (-1 * item 0 velocity)
+                      set impact-y  (-1 * item 1 velocity)
+                      ;set impact-angle (- angular-velocity)
+                    ]
+                    [
+                     set impact-x 0
+                     set impact-y 0
+                     set impact-angle 0
+                    ]
+                  ]
+
+                  [
+                    ifelse abs(coll_angle) < 120
+                    [
+                      set impact-x  (-1 * item 0 velocity)
+                      set impact-y  (-1 * item 1 velocity)
+                      ;set impact-angle (- angular-velocity)
+                    ]
+                    [
+                     set impact-x 0
+                     set impact-y 0
+                     set impact-angle 0
+                    ]
+
+                    if closest-target2 != 0
+                    [
+                      if (distance closest-target2 ) < (size + ([size] of closest-target)) / 2
+                      [
+                         if abs(coll_angle2) < 120
+                         [
+                           set impact-x  (-1 * item 0 velocity)
+                           set impact-y  (-1 * item 1 velocity)
+                           ;set impact-angle (- angular-velocity)
+                         ]
+                      ]
+                     ]
+
+                   ]
+                ]
+                [
+                  ifelse elastic_collisions?
+                    [
+                      ifelse member? closest-target walls
+                        [
+                          let wall_bear 0
+                          let wall_crash_angle 0
+
+                          ifelse towards closest-target > 180
+                            [  set wall_bear (towards closest-target - 360)]
+                            [  set wall_bear towards closest-target]
+
+                          ifelse abs (heading - wall_bear) > 180
+                            [  set wall_crash_angle (abs (heading - wall_bear) - 360)]
+                            [  set wall_crash_angle abs (heading - wall_bear)]
+
+                          if wall_wait_ticks = 0 and (wall_crash_angle < 135)
+                            [
+                              ;set color violet
+                              set heading (2 * [heading] of closest-target) - heading
+                              set velocity (list (item 0 inputs * sin heading) (item 0 inputs * cos heading) 0)
+                              set wall_wait_ticks wall_wait_ticks + 2
+                            ]
+
+                          set wall_wait_ticks wall_wait_ticks - 1
+                          if wall_wait_ticks < 0
+                            [set wall_wait_ticks 0]
+
+                          if distance closest-target < (size + ([size] of closest-target)) / 2
+                            [
+                              set impact-x -1 * sin (towards closest-target)
+                              set impact-y -1 * cos (towards closest-target)
+                            ]
+                        ]
+                        [
+                          let my_vx item 0 velocity
+                          let my_vy item 1 velocity
+                          let my_cx xcor
+                          let my_cy ycor
+                          let m1 mass
+
+                          let other_vx [item 0 velocity] of closest-target
+                          let other_vy [item 1 velocity] of closest-target
+                          let other_cx [xcor] of closest-target
+                          let other_cy [ycor] of closest-target
+                          let m2 [mass] of closest-target
+
+                          let f1 ((my_vx - other_vx)*(my_cx - other_cx) + (my_vy - other_vy)*(my_cy - other_cy))
+                          let hh1 ((my_cx - other_cx) ^ 2 + (my_cy - other_cy) ^ 2)
+                          let mass_prod1 (2 * m2)/(m1 + m2)
+
+                          let f2 ((other_vx - my_vx)*(other_cx - my_cx) + (other_vy - my_vy)*(other_cy - my_cy))
+                          let hh2 ((other_cx - my_cx) ^ 2 + (other_cy - my_cy) ^ 2)
+                          let mass_prod2 (2 * m1)/(m1 + m2)
+
+
+
+                          let v_x_1 (my_vx - (mass_prod1 * f1 / hh1)*(my_cx - other_cx))
+                          let v_y_1 (my_vy - (mass_prod1 * f1 / hh1)*(my_cy - other_cy))
+
+                          let v_x_2 (other_vx - (mass_prod2 * f2 / hh2)*(other_cx - my_cx))
+                          let v_y_2 (other_vy - (mass_prod2 * f2 / hh2)*(other_cy - my_cy))
+
+
+;                          if wait_ticks = 0
+;                            [
+                              set color green
+                              set velocity (list (v_x_1) (v_y_1) 0)
+
+                              if v_x_1 != 0 or v_y_1 != 0
+                                [
+                                  set heading ((atan  v_x_1 v_y_1));]
+                                ]
+
+                              set wait_ticks wait_ticks + 4
+
+                              ask closest-target
+                                [
+                                  set color green
+                                  set velocity (list (v_x_2) (v_y_2) 0)
+                                  if v_x_2 != 0 or v_y_2 != 0
+                                    [
+                                      set heading ( (atan  v_x_2 v_y_2))
+                                    ]
+
+                                  set wait_ticks wait_ticks + 2
+                                ]
+                            ;]
+
+                          set wait_ticks wait_ticks - 1
+
+                          if wait_ticks < 0
+                            [set wait_ticks 0]
+
+                          if distance closest-target < (size + ([size] of closest-target)) / 2
+                            [
+                              set impact-x -1 * sin (towards closest-target)
+                              set impact-y -1 * cos (towards closest-target)
+                            ]
+                        ]
+                    ]
+                    [
+                      ifelse member? closest-target walls
+                        [
+                          ifelse rel-bearing >= -75 and rel-bearing <= 75
+                            [
+                              set impact-x  (-1 * item 0 velocity)
+                              set impact-y  (-1 * item 1 velocity)
+                            ]
+                            [
+                              set impact-x 0
+                              set impact-y 0
+                            ]
+                        ]
+                        [
+                          ifelse rel-bearing >= 0 and rel-bearing <= 75
+                            [
+                              set impact-angle (.7 * item 1 inputs)
+                              set impact-x  (-1 * item 0 velocity)
+                              set impact-y  (-1 * item 1 velocity)
+                            ]
+                            [
+                              ifelse rel-bearing < 0 and rel-bearing >= -75
+                                [
+                                  set impact-angle (-.7 * item 1 inputs)
+                                  set impact-x  (-1 * item 0 velocity)
+                                  set impact-y  (-1 * item 1 velocity)
+                                ]
+                                [
+                                  set impact-x 0
+                                  set impact-y 0
+                                ]
+                             ]
+                          ]
+                       ]
+                    ]
+                ]
+          [
+            set wait_ticks 0
+            set impact-angle 0
+            set impact-x 0
+            set impact-y 0
+          ]
+      ]
+
+end
+
+
+
+to find-closest-walls  ;; turtle procedure
+  let vision-dd vision-distance
+  ifelse wrap_around?
+   [set visible-walls (walls in-cone (vision-distance * 10) (vision-cone )) with [distancexy ([xcor] of myself) ([ycor] of myself) <= (vision-dd * 10)]]
+   [set visible-walls (walls in-cone (vision-distance * 10) (vision-cone )) with [distancexy-nowrap ([xcor] of myself) ([ycor] of myself) <= (vision-dd * 10)]]
+end
+
+to find-closest-robots  ;; turtle procedure
+   let vision-dd vision-distance
+   ifelse wrap_around?
+   [set visible-turtles (other robots in-cone (vision-distance * 10) (vision-cone)) with [distancexy ([xcor] of myself) ([ycor] of myself) <= (vision-dd * 10)]]
+   [set visible-turtles (other robots in-cone (vision-distance * 10) (vision-cone)) with [distancexy-nowrap ([xcor] of myself) ([ycor] of myself) <= (vision-dd * 10)]]
+
+end
+
+to find-closest-goals  ;; turtle procedure
+   let vision-dd vision-distance
+   ifelse wrap_around?
+   [set visible-goals (goals in-cone (vision-distance * 10) (vision-cone)) with [distancexy ([xcor] of myself) ([ycor] of myself) <= (vision-dd * 10)]]
+   [set visible-goals (goals in-cone (vision-distance * 10) (vision-cone)) with [distancexy-nowrap ([xcor] of myself) ([ycor] of myself) <= (vision-dd * 10)]]
+
+end
+
+
+to find-robots-in-new-FOV
+  find-closest-robots
+
+
+  let vision-dd vision-distance
+  let vision-cc vision-cone
+
+
+  set fov-list (list )
+  set fov-list_0 (list )
+  set fov-list_1 (list )
+  set fov-list_2 (list )
+  set i (count goals)
+
+  while [i < (count goals + count robots)]
+    [
+      if self != robot ((i )  )
+        [
+          let sub-heading towards robot (i ) - heading
+          set real-bearing sub-heading
+
+          if sub-heading < 0
+            [set real-bearing sub-heading + 360]
+
+          if sub-heading > 180
+            [set real-bearing sub-heading - 360]
+
+          if real-bearing > 180
+            [set real-bearing real-bearing - 360]
+
+
+          if (real-bearing < ((vision-cone / 2) + vision-cone-offset) and real-bearing > ((vision-cone / -2) + vision-cone-offset)) and (distance-nowrap (robot (i )) < (vision-dd * 10));
+          [
+            set fov-list fput (robot (i)) fov-list
+
+;            if [group_type] of robot (i) = 0
+;            [set fov-list_0 fput (robot (i)) fov-list_0]
+;
+;            if [group_type] of robot (i) = 1
+;            [set fov-list_1 fput (robot (i)) fov-list_1]
+
+            ifelse [group_type] of robot (i) = 0
+            [set fov-list_2 fput (robot (i)) fov-list_2]
+            [set fov-list_0 fput (robot (i)) fov-list_0]
+
+
+
+          ]
+        ]
+     set i (i + 1)
+    ]
+
+
+end
+
+to find-walls-in-new-FOV
+  let vision-dd vision-distance
+  set fov-list-walls (list )
+  set i 0
+
+  while [i < count walls]
+  [
+    let sub-heading towards wall (i + (count goals + count robots) + count place-holders  ) - heading
+
+   set real-bearing sub-heading
+
+   if sub-heading < 0
+    [set real-bearing sub-heading + 360]
+
+
+  if sub-heading > 180
+    [set real-bearing sub-heading - 360]
+
+  if real-bearing > 180
+    [set real-bearing real-bearing - 360]
+
+
+    if (real-bearing < ((vision-cone / 2) + vision-cone-offset) and real-bearing > ((vision-cone / -2) + vision-cone-offset)) and (distance-nowrap (wall (i + (count goals + count robots) + count place-holders  )) < (vision-dd * 10))
+    [ set fov-list-walls fput (wall (i + (count goals + count robots) + count place-holders  )) fov-list-walls]
+
+    set i (i + 1)
+   ]
+
+
+end
+
+to find-goals-in-new-FOV
+find-closest-goals
+  let vision-dd vision-distance
+  set fov-list-goals (list )
+  set i 0
+
+  while [i < count goals]
+  [
+    let sub-heading towards goal (i) - heading
+
+   set real-bearing sub-heading
+
+   if sub-heading < 0
+    [set real-bearing sub-heading + 360]
+
+
+  if sub-heading > 180
+    [set real-bearing sub-heading - 360]
+
+  if real-bearing > 180
+    [set real-bearing real-bearing - 360]
+
+
+    if (real-bearing < ((vision-cone / 2) + vision-cone-offset) and real-bearing > ((vision-cone / -2) + vision-cone-offset)) and (distance-nowrap (goal (i )) < (vision-dd * 10))
+    [ set fov-list-goals fput (goal (i)) fov-list-goals]
+
+    set i (i + 1)
+   ]
+
+
+end
+
+to paint-patches-in-new-FOV
+  ifelse group_type = 0
+    [
+      ;let vision-dd vision-distance
+      let half-fov vision-cone / 2
+      ;let vc-offset vision-cone-offset
+    ]
+    [
+     ; let vision-dd vision-distance2
+      let half-fov vision-cone2 / 2
+      ;let vc-offset vision-cone-offset2
+    ]
+
+
+  set fov-list-patches (list )
+  set i 0
+
+
+;  ifelse group_type = 0
+;    [
+;      set fov-list-patches patches in-cone (vision-distance * 10) (vision-cone + (2 * abs(vision-cone-offset))) with [(distancexy-nowrap ([xcor] of myself) ([ycor] of myself) <= (vision-distance * 10))  and pcolor != black]
+;    ]
+;    [
+;      set fov-list-patches patches in-cone (vision-distance2 * 10) (vision-cone2 + (2 * abs(vision-cone-offset2))) with [(distancexy-nowrap ([xcor] of myself) ([ycor] of myself) <= (vision-distance * 10)) and pcolor != black]
+;    ]
+
+  set fov-list-patches patches in-cone (vision-distance * 10) (vision-cone + (2 * abs(vision-cone-offset))) with [(distancexy-nowrap ([xcor] of myself) ([ycor] of myself) <= (vision-distance * 10))  and pcolor != black and pcolor != green]
+
+
+  ask fov-list-patches
+  [
+      ifelse towards myself  > 180
+      [
+        let sub-heading (towards myself - 180) - [heading] of myself
+        set real-bearing-patch sub-heading
+        if sub-heading < 0
+          [set real-bearing-patch sub-heading + 360]
+
+        if sub-heading > 180
+          [set real-bearing-patch sub-heading - 360]
+
+        if real-bearing-patch > 180
+          [set real-bearing-patch real-bearing-patch - 360]
+      ]
+      [
+        let sub-heading (towards myself + 180) - [heading] of myself
+        set real-bearing-patch sub-heading
+
+        if sub-heading < 0
+          [set real-bearing-patch sub-heading + 360]
+
+        if sub-heading > 180
+          [set real-bearing-patch sub-heading - 360]
+
+        if real-bearing-patch > 180
+          [set real-bearing-patch real-bearing-patch - 360]
+      ]
+
+
+
+      ifelse [group_type] of myself = 0
+      [
+        if (real-bearing-patch < ((vision-cone / 2) + vision-cone-offset) and real-bearing-patch > ((-1 * (vision-cone / 2)) + vision-cone-offset ))
+        [
+          ifelse show_detection?
+          [
+            ifelse [color] of myself = red
+              [set pcolor yellow]
+              [set pcolor orange]
+          ]
+          [
+            set pcolor orange
+          ]
+        ]
+      ]
+      [
+        if (real-bearing-patch < ((vision-cone2 / 2) + vision-cone-offset2) and real-bearing-patch > ((-1 * (vision-cone2 / 2)) + vision-cone-offset2 ))
+        [
+          ifelse show_detection?
+          [
+            ifelse [color] of myself = red
+              [set pcolor yellow]
+              [set pcolor orange]
+          ]
+          [
+            set pcolor orange
+          ]
+        ]
+      ]
+  ]
+
+end
+
+
+
+
+
+
+
+to-report target-diff  ;; robot reporter
+     report
+    (   map
+        [ [a q] -> a - q]
+        (list
+          [xcor] of closest-target
+          [ycor] of closest-target)
+        (list
+          xcor
+          ycor))
+
+end
+
+to-report target-diff2  ;; robot reporter
+     report
+    (   map
+        [ [a q] -> a - q]
+        (list
+          [xcor] of closest-target2
+          [ycor] of closest-target2)
+        (list
+          xcor
+          ycor))
+
+end
+
+to-report mean-target-diff  ;; robot reporter
+     report
+    (   map
+        [ [a q] -> a - q]
+        (list
+          mean [xcor] of visible-turtles
+          mean [ycor] of visible-turtles)
+        (list
+          xcor
+          ycor))
+
+end
+
+
+to-report rel-bearing
+  let xdiff item 0 target-diff
+  let ydiff item 1 target-diff
+
+  let cart-heading (90 - heading)
+
+  ifelse cart-heading < 0
+    [set cart-heading cart-heading + 360]
+    [set cart-heading cart-heading]
+
+  ifelse cart-heading > 180
+    [set cart-heading cart-heading - 360]
+    [set cart-heading cart-heading]
+
+  if xdiff != 0 and ydiff != 0
+    [set angle (atan ydiff xdiff)]
+
+
+  let bearing cart-heading - angle
+  if bearing < -180
+    [set bearing bearing + 360]
+  report( bearing )
+end
+
+to-report rel-bearing2
+  let xdiff2 item 0 target-diff2
+  let ydiff2 item 1 target-diff2
+
+  let cart-heading2 (90 - heading)
+
+  ifelse cart-heading2 < 0
+    [set cart-heading2 cart-heading2 + 360]
+    [set cart-heading2 cart-heading2]
+
+  ifelse cart-heading2 > 180
+    [set cart-heading2 cart-heading2 - 360]
+    [set cart-heading2 cart-heading2]
+
+  if xdiff2 != 0 and ydiff2 != 0
+    [set angle2 (atan ydiff2 xdiff2)]
+
+
+  let bearing2 cart-heading2 - angle2
+  if bearing2 < -180
+    [set bearing2 bearing2 + 360]
+  report( bearing2 )
+end
+
+to-report rel-bearing-mean
+  let xdiff item 0 mean-target-diff
+  let ydiff item 1 mean-target-diff
+
+  let cart-heading (90 - heading)
+
+  ifelse cart-heading < 0
+    [set cart-heading cart-heading + 360]
+    [set cart-heading cart-heading]
+
+  ifelse cart-heading > 180
+    [set cart-heading cart-heading - 360]
+    [set cart-heading cart-heading]
+
+  if xdiff != 0 and ydiff != 0
+    [set angle (atan ydiff xdiff)]
+
+
+  let bearing cart-heading - angle
+  if bearing < -180
+    [set bearing bearing + 360]
+
+  report( bearing )
+end
+
+
+to resize
+  let minx (min [xcor] of robots)
+  let maxx (max [xcor] of robots)
+
+  let miny (min [ycor] of robots)
+  let maxy (max [ycor] of robots)
+
+
+  let centerx (maxx + minx) / 2
+  let centery (maxy + miny) / 2
+
+  ;let centerx mean [xcor] of robots
+  ;let centery mean [ycor] of robots
+
+  setxy centerx centery
+
+
+  set cc-rad ([distance myself] of max-one-of robots [distance myself])
+  set ic-rad ([distance myself] of min-one-of robots [distance myself])
+
+end
+
+to find_adj_matrix
+  set i 0
+  set k 0
+
+  set old-num-of-groups (num-of-groups)
+
+  let num-num (number-of-robots + number-of-group2 + number-of-group1)
+
+  set groups (list )
+  set GM matrix:make-constant num-num num-num num-num
+
+
+  while [i < num-num]
+  [
+    ask robot (i)
+    [
+      set j 0
+      set n 0
+      set deg 0
+      while [j < num-num]
+      [
+        ;set val j
+        set val distance (robot (j))
+
+
+        ifelse val < (1 * vision-distance * 10) and val != 0
+        [ matrix:set AM i j 1
+          set deg deg + 1]
+        [ matrix:set AM i j 0]
+
+
+        ifelse val < (1.00 * vision-distance * 10); and val != 0
+        [
+          matrix:set GM i n j
+          set n (n + 1)
+        ]
+        [ matrix:set GM i j num-num]
+
+
+        set j (j + 1)
+      ]
+
+
+      matrix:set DM i i deg
+     ]
+    set i (i + 1)
+  ]
+
+ set rank matrix:rank AM
+
+
+ while [k < num-num]
+ [
+   set b 0
+   set group1 (list )
+   while [b < num-num]
+   [
+     let point matrix:get GM k b
+     if not member? point group1 and point < num-num
+     [
+       set group1 fput point group1
+       ;]
+       set h 0
+       while [h < num-num]
+       [
+         let point1 matrix:get GM point h
+         if not member? point1 group1 and point1 < num-num
+           [
+             set group1 fput point1 group1
+             set g 0
+             while [g < num-num]
+               [
+                 let point2 matrix:get GM point1 g
+                 if not member? point2 group1 and point2 < num-num
+                   [
+                     set group1 fput point2 group1
+                     set s 0
+                     while [s < num-num]
+                       [
+                         let point3 matrix:get GM point2 s
+                         if not member? point3 group1 and point3 < num-num
+                           [
+                             set group1 fput point3 group1
+                             set c-mat 0
+                             while [c-mat < num-num]
+                               [
+                                 let point4 matrix:get GM point3 c-mat
+                                 if not member? point4 group1 and point4 < num-num
+                                   [
+                                     set group1 fput point4 group1
+                                     set tr 0
+                                     while [tr < num-num]
+                                       [
+                                         let point5 matrix:get GM point4 tr
+                                         if not member? point5 group1 and point5 < num-num
+                                           [
+                                             set group1 fput point5 group1
+                                             set t1 0
+                                             while [t1 < num-num]
+                                               [
+                                                 let point6 matrix:get GM point5 t1
+                                                 if not member? point6 group1 and point6 < num-num
+                                                   [
+                                                     set group1 fput point6 group1
+                                                     set t2 0
+                                                     while [t2 < num-num]
+                                                       [
+                                                         let point7 matrix:get GM point6 t2
+                                                         if not member? point7 group1 and point7 < num-num
+                                                           [
+                                                             set group1 fput point7 group1
+                                                             set t3 0
+                                                             while [t3 < num-num]
+                                                               [
+                                                                 let point8 matrix:get GM point7 t3
+                                                                 if not member? point8 group1 and point8 < num-num
+                                                                 [
+                                                                   set group1 fput point8 group1
+                                                                   set t4 0
+                                                                   while [t4 < num-num]
+                                                                     [
+                                                                       let point9 matrix:get GM point8 t4
+                                                                       if not member? point9 group1 and point9 < num-num
+                                                                       [
+                                                                         set group1 fput point9 group1
+                                                                         set t5 0
+                                                                         while [t5 < num-num]
+                                                                           [
+                                                                             let point10 matrix:get GM point9 t5
+                                                                             if not member? point10 group1 and point10 < num-num
+                                                                             [
+                                                                               set group1 fput point10 group1
+
+                                                                              ]
+
+                                                                            set t5 (t5 + 1)
+                                                                           ]
+
+                                                                        ]
+
+                                                                      set t4 (t4 + 1)
+                                                                     ]
+
+                                                                  ]
+
+                                                                set t3 (t3 + 1)
+                                                               ]
+
+                                                            ]
+
+                                                          set t2 (t2 + 1)
+                                                       ]
+                                                    ]
+
+                                                  set t1 (t1 + 1)
+                                               ]
+                                           ]
+
+                                          set tr (tr + 1)
+                                       ]
+                                   ]
+
+                                  set c-mat (c-mat + 1)
+                                ]
+                           ]
+
+                          set s (s + 1)
+                       ]
+                   ]
+
+                   set g (g + 1)
+               ]
+           ]
+
+         set h (h + 1)
+        ]
+      ]
+      set b (b + 1)
+   ]
+   set group1 (sort group1 )
+   set groups fput group1 groups
+   set k (k + 1)
+ ]
+
+set groups remove-duplicates groups
+
+set num-of-groups length groups
+
+let ee 0
+
+while [ee < length groups]
+[
+  if length item ee groups = num-num
+  [ set num-of-groups 1]
+
+  set ee (ee + 1)
+]
+
+set LapM matrix:minus DM AM
+
+ifelse count robots > 1
+  [
+    set alg-con item 1 sort (matrix:real-eigenvalues LapM)
+  ]
+  [
+    set alg-con 1
+  ]
+
+
+ifelse old-num-of-groups = num-of-groups
+  [
+    set group-stability group-stability + 1
+  ]
+  [
+    set group-stability 0
+  ]
+
+end
+
+
+;;
+;; vector operations
+;;
+to-report add [ v1 v2 ]
+  report (map [ [a q] -> a + q ] v1 v2)
+end
+
+to-report scale [ scalar vector ]
+  report map [ p -> scalar * p ] vector
+end
+
+to-report scale_angle [ scalar vector ]
+  set vector vector * scalar
+  report (vector)
+end
+
+to-report magnitude [ vector ]
+  report sqrt sum map [ p -> p * p ] vector
+end
+
+to-report normalize [ vector ]
+  let m magnitude vector
+  if m = 0 [ report vector ]
+  report map [ p -> p / m ] vector
+end
+
+to-report normalize_angle [ v1 ]
+  let m abs(v1)
+  if m = 0 [ report v1 ]
+  ;report map [ n -> n / m ] v1
+  set v1 v1 / m
+  report (v1)
+end
