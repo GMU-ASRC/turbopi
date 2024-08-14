@@ -832,13 +832,13 @@ to standard_random_walk ;
       ]
       [
 
-            ifelse step_count < 40;
+            ifelse step_count < fixed_walk_step;
             [
 
               ifelse step_count < (1 / tick-delta);10
                [
                  set color blue
-                 set inputs (list (0) rand_turn)
+                 set inputs (list (0) 90 rand_turn)
                ]
                [
                  ifelse seen_flag = 1
@@ -847,7 +847,7 @@ to standard_random_walk ;
                  ]
                  [
                    set color red
-                   set inputs (list speed-w-noise 0)
+                   set inputs (list (10 * random-walk-speed) 90  0)
                  ]
                ]
 
@@ -859,12 +859,8 @@ to standard_random_walk ;
             ]
 
         ]
-  update_agent_state
+  update_agent_state_mecanum2
 
-  if mode_switching?
-    [
-     do_mode_switching
-    ]
 end
 
 
@@ -925,7 +921,7 @@ to real_levy  ;; classic levy that chooses direction at beginning of step and mo
                  ifelse seen_flag = 1
                  [
                    set color blue
-                  set inputs (list (0) rand_turn)
+                  set inputs (list (0) 90 rand_turn)
                  ]
                  [
                    set color red
@@ -945,12 +941,7 @@ to real_levy  ;; classic levy that chooses direction at beginning of step and mo
             ]
      ]
 
-  update_agent_state
-
-  if mode_switching?
-    [
-     do_mode_switching
-    ]
+  update_agent_state_mecanum2
 end
 
 to vnq  ;; robot procedure for Q's algorithm. Forces agents to take long flights as well as forces them to search locally for a certain amount
@@ -973,7 +964,7 @@ to vnq  ;; robot procedure for Q's algorithm. Forces agents to take long flights
                    set inputs (list (0) 90 rand_turn)
                  ]
                  [
-                     set inputs (list speed-w-noise 90 0)
+                     set inputs (list (10 * random-walk-speed) 90  0)
 
                    ]
               set step_count step_count + 1
@@ -991,7 +982,7 @@ to vnq  ;; robot procedure for Q's algorithm. Forces agents to take long flights
         [
           ifelse flight_count < flight_time
           [
-            set inputs (list speed-w-noise 90 0)
+            set inputs (list (10 * random-walk-speed) 90  0)
             set flight_count flight_count + 1
             set color green
           ]
@@ -1008,6 +999,8 @@ to vnq  ;; robot procedure for Q's algorithm. Forces agents to take long flights
             set pre_flight_count 0
           ]
         ]
+
+        update_agent_state_mecanum2
 
 
 end
@@ -1029,8 +1022,8 @@ to vqn    ;; robot procedure for cameron's algorithm. Forces agents to take long
 
               ifelse step_count < (1 / tick-delta);10
                [
-                 set color blue
-                 set inputs (list (0) rand_turn)
+                 ;set color blue
+                 set inputs (list (0) 90 rand_turn)
                ]
                [
                  ifelse seen_flag = 1
@@ -1038,8 +1031,8 @@ to vqn    ;; robot procedure for cameron's algorithm. Forces agents to take long
                       non_target_detection_procedure
                    ]
                    [
-                     set color red
-                     set inputs (list speed-w-noise 0)
+                     ;set color red
+                     set inputs (list (10 * random-walk-speed) 90  0)
                    ]
                ]
               set step_count step_count + 1
@@ -1083,12 +1076,7 @@ to vqn    ;; robot procedure for cameron's algorithm. Forces agents to take long
         ]
      ]
 
-  update_agent_state
-
-  if mode_switching?
-    [
-     do_mode_switching
-    ]
+  update_agent_state_mecanum2
 end
 
 to rrr  ;; robot procedure
@@ -4863,10 +4851,10 @@ NIL
 1
 
 BUTTON
-2022
-300
-2102
-334
+2024
+352
+2104
+386
 Reverse
 ask robots with [group_type = 2][ set inputs (list (10 * leader_speed) 270 0)]
 NIL
@@ -4992,12 +4980,12 @@ mecanum_procedure
 1
 
 BUTTON
-856
-1530
-920
-1564
+2043
+538
+2107
+572
 stop
-ask robots with [group_type = 1][ set inputs (list 0 0 0 0)]
+ask robots with [group_type = 2][ set inputs (list (0) 90 0)]
 NIL
 1
 T
@@ -5113,7 +5101,7 @@ turning-rate2
 turning-rate2
 -150
 150
--30.0
+0.0
 5
 1
 deg/s
@@ -5370,10 +5358,10 @@ NIL
 HORIZONTAL
 
 SLIDER
-249
-609
-449
-642
+232
+512
+432
+545
 forward_speed2_B
 forward_speed2_B
 0
@@ -5385,10 +5373,10 @@ m/s
 HORIZONTAL
 
 SLIDER
-40
-612
-240
-645
+22
+514
+222
+547
 forward_speed1_B
 forward_speed1_B
 0
@@ -5400,10 +5388,10 @@ m/s
 HORIZONTAL
 
 SLIDER
-250
-704
-450
-737
+232
+607
+432
+640
 turning-rate2_B
 turning-rate2_B
 -150
@@ -5415,10 +5403,10 @@ deg/s
 HORIZONTAL
 
 SLIDER
-34
-695
-234
-728
+17
+597
+217
+630
 turning-rate1_B
 turning-rate1_B
 -100
@@ -5430,10 +5418,10 @@ deg/s
 HORIZONTAL
 
 SLIDER
-40
-662
-238
-695
+22
+564
+220
+597
 body_direction1_B
 body_direction1_B
 0
@@ -5445,10 +5433,10 @@ deg
 HORIZONTAL
 
 SLIDER
-259
-662
-455
-695
+242
+564
+438
+597
 body_direction2_B
 body_direction2_B
 0
@@ -5509,10 +5497,10 @@ NIL
 1
 
 SWITCH
-502
-376
-727
-409
+720
+423
+945
+456
 distinguish_between_types?
 distinguish_between_types?
 0
@@ -5520,10 +5508,10 @@ distinguish_between_types?
 -1000
 
 SLIDER
-785
-319
-973
-352
+507
+460
+695
+493
 forward_speed3
 forward_speed3
 0
@@ -5535,10 +5523,10 @@ m/s
 HORIZONTAL
 
 SLIDER
-780
-373
-962
-406
+502
+514
+684
+547
 body_direction3
 body_direction3
 0
@@ -5550,10 +5538,10 @@ deg
 HORIZONTAL
 
 SLIDER
-780
-418
-968
-451
+502
+559
+690
+592
 turning-rate3
 turning-rate3
 -150
@@ -5565,10 +5553,10 @@ deg/s
 HORIZONTAL
 
 TEXTBOX
-775
-249
-990
-278
+495
+419
+710
+448
 Inputs for when Evader is detected (if switch to distinguish is on)
 11
 0.0
@@ -5613,7 +5601,7 @@ MONITOR
 1500
 22
 1606
-68
+67
 Time of Escape
 time-of-escape
 17
@@ -5624,7 +5612,7 @@ MONITOR
 1613
 22
 1726
-68
+67
 Time of Capture
 time-of-capture
 17
@@ -5635,7 +5623,7 @@ MONITOR
 1253
 25
 1433
-71
+70
 Result
 chosen_winner
 17
@@ -5643,10 +5631,10 @@ chosen_winner
 11
 
 TEXTBOX
+43
+473
 107
-557
-357
-587
+492
 Mode B
 11
 0.0
@@ -5670,7 +5658,71 @@ CHOOSER
 evader-control
 evader-control
 "manual_drive" "straight_to_goal"
+1
+
+SLIDER
+27
+1014
+200
+1048
+fixed_walk_step
+fixed_walk_step
 0
+600
+120.0
+60
+1
+NIL
+HORIZONTAL
+
+SLIDER
+25
+972
+237
+1006
+random-walk-speed
+random-walk-speed
+0
+0.30
+0.3
+0.05
+1
+m/s
+HORIZONTAL
+
+BUTTON
+2118
+395
+2281
+429
+Diagonal Right - Reverse
+ask robots with [group_type = 2][ set inputs (list (10 * leader_speed) 315 0)]
+NIL
+1
+T
+OBSERVER
+NIL
+C
+NIL
+NIL
+1
+
+BUTTON
+1875
+397
+2022
+431
+Diagonal Left Reverse
+ask robots with [group_type = 2][ set inputs (list (10 * leader_speed) 225 0)]
+NIL
+1
+T
+OBSERVER
+NIL
+Z
+NIL
+NIL
+1
 
 @#$#@#$#@
 ## WHAT IS IT?
