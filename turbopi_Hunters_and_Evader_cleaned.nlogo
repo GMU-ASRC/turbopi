@@ -204,7 +204,7 @@ number-of-robots
 number-of-robots
 0
 30
-12.0
+1.0
 1
 1
 NIL
@@ -1214,7 +1214,7 @@ BUTTON
 931
 497
 Forward
-ask robots with [group_type = 2][ set inputs (list (10 * leader_speed) 90 0)]
+ask robots with [group_type = 0][ set inputs (list (10 * leader_speed) 90 0)]
 NIL
 1
 T
@@ -1231,7 +1231,7 @@ BUTTON
 934
 549
 Reverse
-ask robots with [group_type = 2][ set inputs (list (10 * leader_speed) 270 0)]
+ask robots with [group_type = 0][ set inputs (list (10 * leader_speed) 270 0)]
 NIL
 1
 T
@@ -1248,7 +1248,7 @@ BUTTON
 1042
 549
 Strafe Right
-ask robots with [group_type = 2][ set inputs (list (10 * leader_speed) 0 0)]
+ask robots with [group_type = 0][ set inputs (list (10 * leader_speed) 0 0)]
 NIL
 1
 T
@@ -1265,7 +1265,7 @@ BUTTON
 843
 549
 Strafe Left
-ask robots with [group_type = 2][ set inputs (list (10 * leader_speed) 180 0)]
+ask robots with [group_type = 0][ set inputs (list (10 * leader_speed) 180 0)]
 NIL
 1
 T
@@ -1282,7 +1282,7 @@ BUTTON
 1062
 502
 Diagonal Right
-ask robots with [group_type = 2][ set inputs (list (10 * leader_speed) 45 0)]
+ask robots with [group_type = 0][ set inputs (list (10 * leader_speed) 45 0)]
 NIL
 1
 T
@@ -1299,7 +1299,7 @@ BUTTON
 838
 502
 Diagonal Left
-ask robots with [group_type = 2][ set inputs (list (10 * leader_speed) 135 0)]
+ask robots with [group_type = 0][ set inputs (list (10 * leader_speed) 135 0)]
 NIL
 1
 T
@@ -1360,7 +1360,7 @@ BUTTON
 937
 641
 stop
-ask robots with [group_type = 2][ set inputs (list (0) 90 0)]
+ask robots with [group_type = 0][ set inputs (list (0) 90 0)]
 NIL
 1
 T
@@ -2039,7 +2039,7 @@ SLIDER
 880
 1403
 1053
-1437
+1436
 fixed_walk_step
 fixed_walk_step
 0
@@ -2054,7 +2054,7 @@ SLIDER
 879
 1360
 1091
-1394
+1393
 random-walk-speed
 random-walk-speed
 0
@@ -2071,7 +2071,7 @@ BUTTON
 1111
 593
 Diagonal Right - Reverse
-ask robots with [group_type = 2][ set inputs (list (10 * leader_speed) 315 0)]
+ask robots with [group_type = 0][ set inputs (list (10 * leader_speed) 315 0)]
 NIL
 1
 T
@@ -2088,7 +2088,7 @@ BUTTON
 852
 594
 Diagonal Left Reverse
-ask robots with [group_type = 2][ set inputs (list (10 * leader_speed) 225 0)]
+ask robots with [group_type = 0][ set inputs (list (10 * leader_speed) 225 0)]
 NIL
 1
 T
@@ -2120,7 +2120,7 @@ SLIDER
 17
 679
 216
-713
+712
 forward_speed1_C
 forward_speed1_C
 0
@@ -2135,7 +2135,7 @@ SLIDER
 15
 722
 213
-756
+755
 body_direction1_C
 body_direction1_C
 0
@@ -2150,7 +2150,7 @@ SLIDER
 13
 765
 216
-799
+798
 turning-rate1_C
 turning-rate1_C
 -150
@@ -2165,7 +2165,7 @@ SLIDER
 257
 680
 460
-714
+713
 forward_speed2_C
 forward_speed2_C
 0
@@ -2180,7 +2180,7 @@ SLIDER
 254
 727
 452
-761
+760
 body_direction2_C
 body_direction2_C
 0
@@ -2195,7 +2195,7 @@ SLIDER
 253
 770
 456
-804
+803
 turning-rate2_C
 turning-rate2_C
 -150
@@ -2220,7 +2220,7 @@ SLIDER
 475
 680
 678
-714
+713
 forward_speed3_C
 forward_speed3_C
 0
@@ -2235,7 +2235,7 @@ SLIDER
 477
 727
 675
-761
+760
 body_direction3_C
 body_direction3_C
 0
@@ -2250,7 +2250,7 @@ SLIDER
 477
 775
 680
-809
+808
 turning-rate3_C
 turning-rate3_C
 -150
@@ -2265,7 +2265,7 @@ SLIDER
 474
 514
 674
-548
+547
 forward_speed3_B
 forward_speed3_B
 0
@@ -2280,7 +2280,7 @@ SLIDER
 475
 554
 670
-588
+587
 body_direction3_B
 body_direction3_B
 0
@@ -2295,7 +2295,7 @@ SLIDER
 478
 600
 678
-634
+633
 turning-rate3_B
 turning-rate3_B
 -150
