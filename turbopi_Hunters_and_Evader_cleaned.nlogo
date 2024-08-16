@@ -204,7 +204,7 @@ number-of-robots
 number-of-robots
 0
 30
-1.0
+11.0
 1
 1
 NIL
@@ -219,7 +219,7 @@ seed-no
 seed-no
 1
 100
-4.0
+1.0
 1
 1
 NIL
@@ -1248,7 +1248,7 @@ BUTTON
 1042
 549
 Strafe Right
-ask robots with [group_type = 0][ set inputs (list (10 * leader_speed) 0 0)]
+ask robots with [group_type = 0][ set inputs (list (10 * leader_speed * 0.833) 0 0)]
 NIL
 1
 T
@@ -1265,7 +1265,7 @@ BUTTON
 843
 549
 Strafe Left
-ask robots with [group_type = 0][ set inputs (list (10 * leader_speed) 180 0)]
+ask robots with [group_type = 0][ set inputs (list (10 * leader_speed * 0.833) 180 0)]
 NIL
 1
 T
@@ -1282,7 +1282,7 @@ BUTTON
 1062
 502
 Diagonal Right
-ask robots with [group_type = 0][ set inputs (list (10 * leader_speed) 45 0)]
+ask robots with [group_type = 0][ set inputs (list (10 * leader_speed * 0.66) 45 0)]
 NIL
 1
 T
@@ -1299,7 +1299,7 @@ BUTTON
 838
 502
 Diagonal Left
-ask robots with [group_type = 0][ set inputs (list (10 * leader_speed) 135 0)]
+ask robots with [group_type = 0][ set inputs (list (10 * leader_speed * 0.66) 135 0)]
 NIL
 1
 T
@@ -1741,7 +1741,7 @@ forward_speed2_B
 forward_speed2_B
 0
 0.3
-0.3
+0.25
 0.05
 1
 m/s
@@ -1756,7 +1756,7 @@ forward_speed1_B
 forward_speed1_B
 0
 0.3
-0.3
+0.25
 0.05
 1
 m/s
@@ -1891,7 +1891,7 @@ forward_speed3
 forward_speed3
 0
 0.3
-0.3
+0.25
 0.05
 1
 m/s
@@ -1921,7 +1921,7 @@ turning-rate3
 turning-rate3
 -150
 150
-0.0
+-10.0
 10
 1
 deg/s
@@ -1973,10 +1973,10 @@ Turning-Rate range specific to random walk alg
 1
 
 MONITOR
-1500
-22
-1606
-67
+1499
+13
+1605
+58
 Time of Escape
 time-of-escape
 17
@@ -1985,9 +1985,9 @@ time-of-escape
 
 MONITOR
 1613
-22
+13
 1726
-67
+58
 Time of Capture
 time-of-capture
 17
@@ -1996,9 +1996,9 @@ time-of-capture
 
 MONITOR
 1253
-25
+15
 1433
-70
+60
 Result
 chosen_winner
 17
@@ -2071,7 +2071,7 @@ BUTTON
 1111
 593
 Diagonal Right - Reverse
-ask robots with [group_type = 0][ set inputs (list (10 * leader_speed) 315 0)]
+ask robots with [group_type = 0][ set inputs (list (10 * leader_speed * 0.66) 315 0)]
 NIL
 1
 T
@@ -2088,7 +2088,7 @@ BUTTON
 852
 594
 Diagonal Left Reverse
-ask robots with [group_type = 0][ set inputs (list (10 * leader_speed) 225 0)]
+ask robots with [group_type = 0][ set inputs (list (10 * leader_speed * 0.66) 225 0)]
 NIL
 1
 T
@@ -2125,7 +2125,7 @@ forward_speed1_C
 forward_speed1_C
 0
 0.30
-0.3
+0.25
 0.05
 1
 m/s
@@ -2155,7 +2155,7 @@ turning-rate1_C
 turning-rate1_C
 -150
 150
-30.0
+0.0
 5
 1
 deg/s
@@ -2170,7 +2170,7 @@ forward_speed2_C
 forward_speed2_C
 0
 0.30
-0.3
+0.25
 0.05
 1
 m/s
@@ -2225,7 +2225,7 @@ forward_speed3_C
 forward_speed3_C
 0
 0.3
-0.3
+0.25
 0.05
 1
 m/s
@@ -2270,7 +2270,7 @@ forward_speed3_B
 forward_speed3_B
 0
 0.3
-0.3
+0.25
 0.05
 1
 m/s
@@ -2300,11 +2300,45 @@ turning-rate3_B
 turning-rate3_B
 -150
 150
-0.0
+-10.0
 5
 1
 deg/s
 HORIZONTAL
+
+BUTTON
+939
+665
+1037
+699
+Turn Right
+ask robots with [group_type = 0][ set inputs (list (0) 90 90)]
+NIL
+1
+T
+OBSERVER
+NIL
+T
+NIL
+NIL
+1
+
+BUTTON
+792
+667
+881
+701
+Turn Left
+ask robots with [group_type = 0][ set inputs (list (0) 90 -90)]
+NIL
+1
+T
+OBSERVER
+NIL
+R
+NIL
+NIL
+1
 
 @#$#@#$#@
 ## WHAT IS IT?
@@ -2698,7 +2732,7 @@ false
 Polygon -7500403 true true 270 75 225 30 30 225 75 270
 Polygon -7500403 true true 30 75 75 30 270 225 225 270
 @#$#@#$#@
-NetLogo 6.4.0
+NetLogo 6.2.0
 @#$#@#$#@
 @#$#@#$#@
 @#$#@#$#@
