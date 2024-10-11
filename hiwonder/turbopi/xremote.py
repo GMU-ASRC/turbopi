@@ -384,3 +384,4 @@ if __name__ == '__main__':
     # main()
     robot = select_robot()
     test()
+    robot.stop()
