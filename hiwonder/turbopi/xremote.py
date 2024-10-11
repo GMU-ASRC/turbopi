@@ -342,7 +342,7 @@ def test():
             angle = math.degrees(np.arctan2(*vec)) + 270
             angle = angle % 360
 
-            vel = np.interp(v, [0, 1], [0, 100])
+            vel = np.interp(v, [0, 1], [0, 60])
             vel = np.clip(vel, 0, 100)
             robot.move(vel, angle, r)
 
