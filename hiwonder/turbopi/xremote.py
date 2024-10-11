@@ -3,10 +3,10 @@ import time
 import math
 import json
 import socket
-import requests
 from dataclasses import dataclass
 
 import pygame
+import requests
 import numpy as np
 
 
