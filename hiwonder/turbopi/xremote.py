@@ -9,12 +9,20 @@ import pygame
 import requests
 import numpy as np
 
+import statistics_tools as st
+
 
 LOBOT_PORT = 9027
 RPC_PORT = 9030
 RE_IDENT_HOSTNAME = re.compile(r'^(?P<model>\S+):(?P<sn>[0-9a-fA-F]{32})(?:\:(?P<hostname>\S+))?$')
 RE_IP = re.compile(r'^(25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9])\.(25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9])\.(25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9])\.(25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9])$')  # noqa
 
+deadzone = st.Deadzone(radius=0.09)
+
+remap_turn = st.Remap(
+    [0, 0.7, 1],
+    [0, 0.5, 1]
+)
 
 @dataclass
 class Ident:
@@ -140,7 +148,6 @@ class RPCRobot:
         self.direction = direction
         self.angular_rate = angular_rate
         return ret
-
 
 
 def select_robot():
@@ -342,13 +349,20 @@ def test():
             angle = math.degrees(np.arctan2(*vec)) + 270
             angle = angle % 360
 
-            vel = np.interp(v, [0, 1], [0, 60])
+            vel = np.interp(deadzone(v), [0, 1], [0, 60])
             vel = np.clip(vel, 0, 100)
-            robot.move(vel, angle, r)
+            turn_rate = remap_turn(abs(r))
+            turn_rate = math.copysign(turn_rate, r)
+            output_turn = deadzone(r) != 0 or vel != 0
+            turn_rate = turn_rate if output_turn else 0
+            robot.move(vel, angle, turn_rate)
 
-            print(f"x: {x:>6.3f},\ty: {y:>6.3f},\tr: {r:>6.3f},\tv: {vel:>6.3f},\tangle: {angle:>6.3f}")
-
-
+            # print(f"x: {x:>6.3f},\ty: {y:>6.3f},\tr: {r:>6.3f},\tv: {vel:>6.3f},\tangle: {angle:>6.3f}")
+            text_print.tprint(screen, f"x:     {x:>6.3f}")
+            text_print.tprint(screen, f"y:     {y:>6.3f}")
+            text_print.tprint(screen, f"r:     {r:>6.3f}")
+            text_print.tprint(screen, f"v:     {v:>6.3f}")
+            text_print.tprint(screen, f"angle: {angle:>6.3f}")
 
             buttons = joystick.get_numbuttons()
             text_print.tprint(screen, f"Number of buttons: {buttons}")
