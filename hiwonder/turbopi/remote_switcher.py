@@ -1,4 +1,5 @@
 import sys
+import re
 import time
 from socket import socket, AF_INET, SOCK_DGRAM, SOL_SOCKET, SO_BROADCAST, gethostbyname, gethostname
 
@@ -33,6 +34,20 @@ def broadcast(cmd):
 def start_all():
     broadcast(b"  resume")
     print("Sent >> resume <<\tcommand to all robots.")
+
+
+def switch(cmd):
+    RE_SWITCH = re.compile(r'((?:switch)|:)( ?.*)?')
+    rmatch = RE_SWITCH.match(cmd)
+    if not rmatch:
+        print("If you see this, something has gone horribly wrong with the switch command.")
+        return
+    mode = rmatch.group(2)
+    if not mode:
+        print("No mode specified. Use `switch <mode>`")
+        return
+    broadcast(f"switch {mode}".encode('ascii'))
+    print(f"Sent >> switch {mode} <<\tcommand to all robots.")
 
 
 def pause_all():
@@ -87,6 +102,9 @@ def prompt(state, cmd=None, delprev=False):
     elif cmd.startswith('pa') or cmd.startswith('a'):
         pause_all()
         return 'paused'
+    elif cmd.startswith('switch') or cmd.startswith(':'):
+        switch(cmd)
+        return 'running'
     elif cmd.startswith('s') and cmd != 'st' or cmd == "'":
         stop_all()
         return 'stopped'
