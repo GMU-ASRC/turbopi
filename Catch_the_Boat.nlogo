@@ -79,6 +79,7 @@ hunters-own [
 ;           body_v_x
 ;           body_v_y
            temp-turning-val
+           random_switch-timer
           ]
 
 
@@ -268,6 +269,21 @@ to go
         ]
 
 
+        if randomize_blindness?
+        [
+          if ticks mod random_switch-timer = 0 and length fov-list-drugboats = 0
+          [
+           ifelse shape = "blind-hunters"
+           [
+             set shape "circle 2"
+           ]
+           [
+             set shape "blind-hunters"
+           ]
+          ]
+        ]
+
+
 
       ]
 
@@ -320,9 +336,15 @@ to drugboat_procedure
                  set detection_response_type "diffuse-response"
                ]
                [
-                 set detection_response_type "turn-away-in-place"
-                 choose_rand_turn
-               ]
+                ifelse selected_algorithm_drugboat = "Diffusing2"
+                 [
+                   set detection_response_type "diffuse-response2"
+                 ]
+                 [
+                   set detection_response_type "turn-away-in-place"
+                   choose_rand_turn
+                 ]
+                 ]
              ]
              set detect_step_count 1;(0.005 / tick-delta)
            ]
@@ -436,11 +458,18 @@ to hunter_procedure
                       set detect_step_count (0.25 / tick-delta)
                     ]
                     [
+                      ifelse selected_algorithm_hunters = "Diffusing2"
+                    [
+                      set detection_response_type "diffuse-response2"
+                      set detect_step_count (0.25 / tick-delta)
+                    ]
+                    [
                       set detection_response_type "180-in-place"
                       choose_rand_turn
                       set sleep_timer 20
                       set detect_step_count (1 / tick-delta)
 
+                    ]
                     ]
                   ]
 
@@ -513,12 +542,20 @@ to hunter_procedure_blind
                       set detect_step_count (0.25 / tick-delta)
                     ]
                     [
+                    ifelse selected_algorithm_hunters_blind = "Diffusing2"
+                    [
+                      set detection_response_type "diffuse-response2"
+                      set detect_step_count (0.25 / tick-delta)
+                    ]
+                    [
                       set detection_response_type "180-in-place"
                       choose_rand_turn
                       set sleep_timer 20
                       set detect_step_count (1 / tick-delta)
+                      ]
+                      ]
 
-                    ]
+
                   ]
 
                 ]
@@ -551,7 +588,7 @@ end
 
 
 to background_procedures
- clear-paint
+; clear-paint
 
 ifelse paint_fov?
   [
@@ -637,6 +674,9 @@ to select_alg_procedure1
   if selected_algorithm_hunters = "Diffusing"
   [dispersal]
 
+  if selected_algorithm_hunters = "Diffusing2"
+  [dispersal2]
+
   if selected_algorithm_hunters = "Standard Random"
   [standard_random_walk]
 
@@ -664,6 +704,9 @@ to select_alg_procedure_blind
   if selected_algorithm_hunters_blind = "Diffusing"
   [dispersal]
 
+  if selected_algorithm_hunters = "Diffusing2"
+  [dispersal2]
+
   if selected_algorithm_hunters_blind = "Standard Random"
   [standard_random_walk]
 
@@ -690,6 +733,9 @@ to select_alg_procedure2
 
   if selected_algorithm_hunters = "Diffusing"
   [dispersal]
+
+  if selected_algorithm_hunters = "Diffusing2"
+  [dispersal2]
 
   if selected_algorithm_hunters = "Standard Random"
   [standard_random_walk]
@@ -747,6 +793,14 @@ to dispersal ; control rule for if nothing is detected (for diffusion)
   do_sensing
 
   set inputs (list (0 * speed-w-noise) 90 ( 1  * turning-w-noise))
+
+end
+
+to dispersal2 ; control rule for if nothing is detected (for diffusion)
+  set_actuating_and_extra_variables
+  do_sensing
+
+  set inputs (list (1 * speed-w-noise) 90 ( 1  * turning-w-noise))
 
 end
 
@@ -914,6 +968,11 @@ to detection_response_procedure
     if detection_response_type = "diffuse-response"
     [
       set inputs (list (- speed-w-noise) 90 0)
+    ]
+
+    if detection_response_type = "diffuse-response2"
+    [
+      set inputs (list (1 * speed-w-noise) 90 ( 2 * turning-w-noise))
     ]
 
     if detection_response_type = "mill-response"
@@ -1191,6 +1250,8 @@ to make_hunter
      set detect_hunters? false
 
     set detection_response_type "turn-away-in-place"
+
+    set random_switch-timer round random-normal 200 50
     ]
 end
 
@@ -1228,6 +1289,7 @@ to make_hunter_blind
      set detect_hunters? false
 
     set detection_response_type "turn-away-in-place"
+    set random_switch-timer round random-normal 200 50
     ]
 end
 
@@ -1406,6 +1468,38 @@ to hunter_setup_strict; if you want to more precisely place the hunters (i.e. hu
        set j j + 1
      ]
    ]
+
+
+  if Hunter_setup = "Perfect Circle"
+   [
+      let irr1  (07 * ([size] of hunter (number-of-sanctuaries + number-of-drugboats)) / (2 * pi) ) + 1
+      let irr2  (24 * ([size] of hunter (number-of-sanctuaries + number-of-drugboats)) / (2 * pi) ) + 1
+      let j number-of-sanctuaries + number-of-drugboats
+      let heading_num1 360 / number-of-blind-hunters 
+      let heading_num2 360 / (number-of-hunters - number-of-blind-hunters)
+      let random-rotation random 90
+
+      while [j < number-of-sanctuaries + number-of-drugboats + number-of-blind-hunters]
+      [ask hunter (j)
+        [
+          setxy (irr1 * -1 * cos(j * heading_num1)) (irr1 * sin(j * heading_num1))       set heading 180 + towardsxy 0 0
+        ]
+
+        set j j + 1
+      ]
+
+      while [j < number-of-sanctuaries + number-of-drugboats + number-of-hunters]
+      [ask hunter (j)
+        [
+          setxy (irr2 * -1 * cos(j * heading_num2)) (irr2 * sin(j * heading_num2))       set heading 180 + towardsxy 0 0
+        ]
+
+        set j j + 1
+      ]
+
+
+   ]
+
 
 
   if Hunter_setup = "Custom - Precise"; specify exactly where you want each robot to be placed to create shapes and better formations
@@ -1877,7 +1971,7 @@ seed-no
 seed-no
 1
 50
-14.0
+12.0
 1
 1
 NIL
@@ -1922,7 +2016,7 @@ speed1
 speed1
 0
 0.3
-0.0
+0.2
 0.05
 1
 m/s
@@ -2018,7 +2112,7 @@ SWITCH
 145
 paint_fov?
 paint_fov?
-0
+1
 1
 -1000
 
@@ -2029,7 +2123,7 @@ SWITCH
 182
 draw_path?
 draw_path?
-0
+1
 1
 -1000
 
@@ -2076,7 +2170,7 @@ number-of-hunters
 number-of-hunters
 0
 30
-2.0
+18.0
 1
 1
 NIL
@@ -2191,7 +2285,7 @@ CHOOSER
 selected_algorithm_hunters
 selected_algorithm_hunters
 "Milling" "Diffusing" "Lie and Wait" "Standard Random" "Straight" "Spiral" "Custom"
-4
+0
 
 CHOOSER
 1764
@@ -2247,7 +2341,7 @@ noise-actuating-speed
 noise-actuating-speed
 0
 1
-0.0
+0.1
 0.1
 1
 m/s
@@ -2262,7 +2356,7 @@ noise-actuating-turning
 noise-actuating-turning
 0
 30
-0.0
+20.0
 5
 1
 deg/s
@@ -2322,7 +2416,7 @@ vision-distance-drugboats
 vision-distance-drugboats
 0
 2
-2.0
+0.9
 0.1
 1
 m
@@ -2352,7 +2446,7 @@ speed-drugboats
 speed-drugboats
 0
 0.25
-0.25
+0.23
 0.05
 1
 m/s
@@ -2381,7 +2475,7 @@ CHOOSER
 selected_algorithm_drugboat
 selected_algorithm_drugboat
 "Auto" "Manual Control"
-0
+1
 
 MONITOR
 795
@@ -2401,8 +2495,8 @@ CHOOSER
 131
 Hunter_setup
 Hunter_setup
-"Random" "Inverted V" "Center Band" "Barrier" "Circle - Center" "Circle - Center - Facing Out" "Circle - Random" "Perfect Picket" "Imperfect Picket" "Custom - Region" "Custom - Precise"
-0
+"Random" "Inverted V" "Center Band" "Barrier" "Circle - Center" "Circle - Center - Facing Out" "Circle - Random" "Perfect Circle" "Perfect Picket" "Imperfect Picket" "Custom - Region" "Custom - Precise"
+7
 
 BUTTON
 1159
@@ -2620,7 +2714,7 @@ SWITCH
 278
 can_hunters_see_each_other?
 can_hunters_see_each_other?
-1
+0
 1
 -1000
 
@@ -2668,7 +2762,7 @@ blind_percentage
 blind_percentage
 0
 100
-0.0
+30.0
 10
 1
 NIL
@@ -2681,8 +2775,19 @@ CHOOSER
 243
 selected_algorithm_hunters_blind
 selected_algorithm_hunters_blind
-"Milling" "Diffusing" "Lie and Wait" "Standard Random" "Straight" "Spiral" "Custom"
-4
+"Milling" "Diffusing" "Diffusing2" "Lie and Wait" "Standard Random" "Straight" "Spiral" "Custom"
+2
+
+SWITCH
+263
+523
+458
+556
+randomize_blindness?
+randomize_blindness?
+1
+1
+-1000
 
 @#$#@#$#@
 ## WHAT IS IT?
