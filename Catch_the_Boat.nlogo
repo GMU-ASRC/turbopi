@@ -588,7 +588,7 @@ end
 
 
 to background_procedures
-; clear-paint
+clear-paint
 
 ifelse paint_fov?
   [
@@ -2112,7 +2112,7 @@ SWITCH
 145
 paint_fov?
 paint_fov?
-1
+0
 1
 -1000
 
