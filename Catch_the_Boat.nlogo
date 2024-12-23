@@ -26,7 +26,7 @@ globals [ tick-delta
           stuck_flag
           total_velocity_squared
           total_distance_traveled
-          number-of-blind-hunters
+          number-of-second-hunters
          ]
 
 
@@ -129,6 +129,7 @@ drugboats-own [
 
 patches-own [
             real-bearing-patch
+            closest-hunter-dist
           ]
 
 discs-own [
@@ -184,7 +185,7 @@ to setup
 
   set n number-of-robots
 
-  set number-of-blind-hunters round number-of-hunters * (blind_percentage * .01)
+  set number-of-second-hunters round number-of-hunters * (second_percentage * .01)
 
   while [n > (number-of-hunters)]
   [
@@ -192,9 +193,9 @@ to setup
    set n (n - 1)
   ]
 
-  while [n > (number-of-hunters - number-of-blind-hunters)]
+  while [n > (number-of-hunters - number-of-second-hunters)]
   [
-   make_hunter_blind
+   make_hunter_second
    set n (n - 1)
   ]
 
@@ -258,10 +259,17 @@ to go
           set detect_hunters? false
 
         ]
-        ifelse shape = "blind-hunters"
+        ifelse shape = "second-hunters"
         [
-          set detect_drugboats? false
-          hunter_procedure_blind
+          ifelse second-non-chasers?
+          [
+           set detect_drugboats? false
+          ]
+          [
+           set detect_drugboats? true
+          ]
+
+          hunter_procedure_second
         ]
         [
           set detect_drugboats? true
@@ -269,16 +277,16 @@ to go
         ]
 
 
-        if randomize_blindness?
+        if randomize_switching?
         [
           if ticks mod random_switch-timer = 0 and length fov-list-drugboats = 0
           [
-           ifelse shape = "blind-hunters"
+           ifelse shape = "second-hunters"
            [
              set shape "circle 2"
            ]
            [
-             set shape "blind-hunters"
+             set shape "second-hunters"
            ]
           ]
         ]
@@ -288,6 +296,14 @@ to go
       ]
 
   measure_results
+
+  if heat-map?
+  [
+    ask patches [color-patches-by-density]
+  ]
+
+  do-plots
+
 
   if end_flag = 1
   [
@@ -304,6 +320,20 @@ to go
 
   tick-advance 1
 end
+
+to do-plots
+  set-current-plot "Patches Color Plot"
+ set-current-plot-pen "patches-color"
+
+  plot (count patches with [closest-hunter-dist >= 15])
+end
+
+
+to color-patches-by-density
+  set closest-hunter-dist distance min-one-of hunters [distance myself]
+  set pcolor scale-color red closest-hunter-dist 0 30 ; Adjust range as needed
+end
+
 
 to drugboat_procedure
   set_actuating_and_extra_variables ;does the procedure to set the speed and turning rate etc.
@@ -501,7 +531,7 @@ to hunter_procedure
 
 end
 
-to hunter_procedure_blind
+to hunter_procedure_second
   set_actuating_and_extra_variables ;does the procedure to set the speed and turning rate etc.
   do_sensing ; does the sensing to detect whatever the hunter is set to detect
 
@@ -530,19 +560,19 @@ to hunter_procedure_blind
             [
               ifelse length fov-list-hunters > 0 and sleep_timer < 0 ; if one or more hunters are detected, it reacts according to whatever the selected algorithm is (default is turn away in place. (sleep timer is added so it doesnt get stuck in infite loop of turning when face to face
                 [
-                  ifelse selected_algorithm_hunters_blind = "Milling"
+                  ifelse selected_algorithm_hunters_second = "Milling"
                   [
                     set detection_response_type "mill-response"
                     set detect_step_count (0.25 / tick-delta)
                   ]
                   [
-                    ifelse selected_algorithm_hunters_blind = "Diffusing"
+                    ifelse selected_algorithm_hunters_second = "Diffusing"
                     [
                       set detection_response_type "diffuse-response"
                       set detect_step_count (0.25 / tick-delta)
                     ]
                     [
-                    ifelse selected_algorithm_hunters_blind = "Diffusing2"
+                    ifelse selected_algorithm_hunters_second = "Diffusing2"
                     [
                       set detection_response_type "diffuse-response2"
                       set detect_step_count (0.25 / tick-delta)
@@ -568,7 +598,7 @@ to hunter_procedure_blind
                      set stuck_count 0
                     ]
                     [
-                      select_alg_procedure_blind
+                      select_alg_procedure_second
                       set color violet
                     ]
 
@@ -588,7 +618,7 @@ end
 
 
 to background_procedures
-clear-paint
+; clear-paint
 
 ifelse paint_fov?
   [
@@ -697,32 +727,32 @@ to select_alg_procedure1
 
 end
 
-to select_alg_procedure_blind
-  if selected_algorithm_hunters_blind = "Milling"
+to select_alg_procedure_second
+  if selected_algorithm_hunters_second = "Milling"
   [mill]
 
-  if selected_algorithm_hunters_blind = "Diffusing"
+  if selected_algorithm_hunters_second = "Diffusing"
   [dispersal]
 
   if selected_algorithm_hunters = "Diffusing2"
   [dispersal2]
 
-  if selected_algorithm_hunters_blind = "Standard Random"
+  if selected_algorithm_hunters_second = "Standard Random"
   [standard_random_walk]
 
-  if selected_algorithm_hunters_blind = "Levy"
+  if selected_algorithm_hunters_second = "Levy"
   [real_levy]
 
-  if selected_algorithm_hunters_blind = "Lie and Wait"
+  if selected_algorithm_hunters_second = "Lie and Wait"
   [lie-and-wait]
 
-  if selected_algorithm_hunters_blind = "Straight"
+  if selected_algorithm_hunters_second = "Straight"
   [straight]
 
-  if selected_algorithm_hunters_blind = "Spiral"
+  if selected_algorithm_hunters_second = "Spiral"
   [spiral]
 
-  if selected_algorithm_hunters_blind = "Custom"
+  if selected_algorithm_hunters_second = "Custom"
   [custom_alg]
 
 end
@@ -1255,7 +1285,7 @@ to make_hunter
     ]
 end
 
-to make_hunter_blind
+to make_hunter_second
   create-hunters 1
     [
       set velocity [ 0 0]
@@ -1271,7 +1301,7 @@ to make_hunter_blind
       place_hunters
 
 
-      set shape "blind-hunters"
+      set shape "second-hunters"
       set color red
       set mass size
 
@@ -1475,11 +1505,11 @@ to hunter_setup_strict; if you want to more precisely place the hunters (i.e. hu
       let irr1  (07 * ([size] of hunter (number-of-sanctuaries + number-of-drugboats)) / (2 * pi) ) + 1
       let irr2  (24 * ([size] of hunter (number-of-sanctuaries + number-of-drugboats)) / (2 * pi) ) + 1
       let j number-of-sanctuaries + number-of-drugboats
-      let heading_num1 360 / number-of-blind-hunters 
-      let heading_num2 360 / (number-of-hunters - number-of-blind-hunters)
+      let heading_num1 360 / number-of-second-hunters 
+      let heading_num2 360 / (number-of-hunters - number-of-second-hunters)
       let random-rotation random 90
 
-      while [j < number-of-sanctuaries + number-of-drugboats + number-of-blind-hunters]
+      while [j < number-of-sanctuaries + number-of-drugboats + number-of-second-hunters]
       [ask hunter (j)
         [
           setxy (irr1 * -1 * cos(j * heading_num1)) (irr1 * sin(j * heading_num1))       set heading 180 + towardsxy 0 0
@@ -1938,11 +1968,11 @@ end
 GRAPHICS-WINDOW
 498
 74
-902
-479
+916
+493
 -1
 -1
-6.5
+6.72414
 1
 10
 1
@@ -2112,7 +2142,7 @@ SWITCH
 145
 paint_fov?
 paint_fov?
-0
+1
 1
 -1000
 
@@ -2169,8 +2199,8 @@ SLIDER
 number-of-hunters
 number-of-hunters
 0
-30
-18.0
+50
+10.0
 1
 1
 NIL
@@ -2285,7 +2315,7 @@ CHOOSER
 selected_algorithm_hunters
 selected_algorithm_hunters
 "Milling" "Diffusing" "Lie and Wait" "Standard Random" "Straight" "Spiral" "Custom"
-0
+1
 
 CHOOSER
 1764
@@ -2298,20 +2328,20 @@ distribution_for_direction
 0
 
 TEXTBOX
-263
-385
-478
-411
+261
+464
+476
+490
 for random walk algorithms parameters
 11
 0.0
 1
 
 SLIDER
-264
-444
-437
-477
+262
+523
+435
+556
 step_length_fixed
 step_length_fixed
 0
@@ -2393,10 +2423,10 @@ NIL
 HORIZONTAL
 
 SLIDER
-1760
-152
-1937
-185
+1145
+376
+1322
+409
 number-of-drugboats
 number-of-drugboats
 0
@@ -2468,10 +2498,10 @@ deg/s
 HORIZONTAL
 
 CHOOSER
-256
-236
-464
-281
+254
+315
+462
+360
 selected_algorithm_drugboat
 selected_algorithm_drugboat
 "Auto" "Manual Control"
@@ -2496,7 +2526,7 @@ CHOOSER
 Hunter_setup
 Hunter_setup
 "Random" "Inverted V" "Center Band" "Barrier" "Circle - Center" "Circle - Center - Facing Out" "Circle - Random" "Perfect Circle" "Perfect Picket" "Imperfect Picket" "Custom - Region" "Custom - Precise"
-7
+4
 
 BUTTON
 1159
@@ -2686,13 +2716,13 @@ NIL
 1
 
 SWITCH
-258
-198
-423
-231
+256
+277
+421
+310
 protected_spawn?
 protected_spawn?
-1
+0
 1
 -1000
 
@@ -2739,10 +2769,10 @@ Controls for 'selected_algorithm_drugboat' = Manual Control
 1
 
 SLIDER
-263
-405
-437
-438
+261
+484
+435
+517
 turning-rate-rw
 turning-rate-rw
 0
@@ -2754,15 +2784,15 @@ deg/s
 HORIZONTAL
 
 SLIDER
-286
-312
-458
-345
-blind_percentage
-blind_percentage
+39
+578
+213
+611
+second_percentage
+second_percentage
 0
 100
-30.0
+0.0
 10
 1
 NIL
@@ -2771,21 +2801,61 @@ HORIZONTAL
 CHOOSER
 15
 198
-218
+264
 243
-selected_algorithm_hunters_blind
-selected_algorithm_hunters_blind
+selected_algorithm_hunters_second
+selected_algorithm_hunters_second
 "Milling" "Diffusing" "Diffusing2" "Lie and Wait" "Standard Random" "Straight" "Spiral" "Custom"
-2
+1
 
 SWITCH
-263
-523
-458
-556
-randomize_blindness?
-randomize_blindness?
+0
+617
+195
+650
+randomize_switching?
+randomize_switching?
 1
+1
+-1000
+
+SWITCH
+279
+208
+402
+241
+heat-map?
+heat-map?
+0
+1
+-1000
+
+PLOT
+1172
+433
+1372
+583
+Patches Color Plot
+NIL
+NIL
+0.0
+10.0
+0.0
+10.0
+true
+false
+"" ""
+PENS
+"patches-color" 1.0 0 -16777216 true "" ""
+
+SWITCH
+197
+616
+391
+649
+second-non-chasers?
+second-non-chasers?
+0
 1
 -1000
 
@@ -2840,14 +2910,6 @@ arrow
 true
 0
 Polygon -7500403 true true 150 0 0 150 105 150 105 293 195 293 195 150 300 150
-
-blind-hunters
-true
-0
-Circle -16777216 true false 0 0 300
-Circle -7500403 true true 0 0 300
-Polygon -1 true false 150 0 105 135 195 135 150 0
-Polygon -1 false false 75 165 210 225 90 225 210 165 210 225 255 135 60 135 90 225
 
 boat
 true
@@ -3070,6 +3132,14 @@ true
 0
 Line -7500403 true 135 135 135 30
 Circle -7500403 true true 0 0 300
+
+second-hunters
+true
+0
+Circle -16777216 true false 0 0 300
+Circle -7500403 true true 0 0 300
+Polygon -1 true false 150 0 105 135 195 135 150 0
+Polygon -1 false false 75 165 210 225 90 225 210 165 210 225 255 135 60 135 90 225
 
 sheep
 false
