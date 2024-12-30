@@ -481,14 +481,23 @@ to pseudo-setup
 
   set time-of-stuck-drugboat 0
 
+
   ;creates robots
   set number-of-robots (number-of-drugboats + number-of-hunters)
 
   set n number-of-robots
 
+  set number-of-second-hunters round number-of-hunters * (second_percentage * .01)
+
   while [n > (number-of-hunters)]
   [
    make_drugboat
+   set n (n - 1)
+  ]
+
+  while [n > (number-of-hunters - number-of-second-hunters)]
+  [
+   make_hunter_second
    set n (n - 1)
   ]
 
@@ -524,6 +533,15 @@ to drugboat_procedure
   set_actuating_and_extra_variables ;does the procedure to set the speed and turning rate etc.
   do_sensing ; does the sensing to detect whatever the drugboat is set to detect
 
+  let start_time1 0
+
+  if delayed_start?
+  [
+    set start_time1 start_time
+  ]
+
+  if ticks > start_time1
+  [
   ifelse length fov-list-sanctuaries > 0 ; if one or more sanctuaries are detected, it does what is in the first set of brackets (forward towards closest sanctuary)
     [
       set detection_response_type "forward"
@@ -559,6 +577,7 @@ to drugboat_procedure
                    ifelse selected_algorithm_drugboat = "Better-Auto"
                    [
                      set detection_response_type "best_patch"
+
                    ]
                    [
                      set detection_response_type "turn-away-in-place"
@@ -607,6 +626,8 @@ to drugboat_procedure
     [
       set trapped_count 0
     ]
+
+]
 
  update_agent_state; updates states of agents (i.e. position and heading)
 
@@ -2270,7 +2291,7 @@ seed-no
 seed-no
 1
 50
-49.0
+20.0
 1
 1
 NIL
@@ -2730,7 +2751,7 @@ vision-cone-drugboats
 vision-cone-drugboats
 0
 360
-270.0
+160.0
 10
 1
 deg
@@ -3220,6 +3241,32 @@ score
 17
 1
 11
+
+SWITCH
+188
+496
+334
+529
+delayed_start?
+delayed_start?
+0
+1
+-1000
+
+SLIDER
+340
+494
+473
+527
+start_time
+start_time
+0
+500
+500.0
+10
+1
+ticks
+HORIZONTAL
 
 @#$#@#$#@
 ## WHAT IS IT?
