@@ -27,6 +27,9 @@ globals [ tick-delta
           total_velocity_squared
           total_distance_traveled
           number-of-second-hunters
+          sim_ran_count
+          score_list
+          score
          ]
 
 
@@ -159,6 +162,7 @@ to setup
 
 
   set time-to-first-see-list (list )
+  set score_list (list )
 
   ask patches
     [
@@ -340,6 +344,175 @@ to do-plots
   histogram [closest-hunter-dist] of patches
 
 end
+
+to score_procedure
+
+ background_procedures ; for general functions like showing FOV
+
+  ask drugboats
+    [
+
+      ; set whether or not the drugboat can detect specific types of agents
+      set detect_sanctuaries? true
+      set detect_drugboats? false
+      set detect_hunters? true
+
+      ifelse selected_algorithm_drugboat = "Manual Control"
+      [
+        drugboat_procedure_manual
+      ]
+      [
+       drugboat_procedure
+      ]
+
+    ]
+
+ ask hunters
+    [
+      ; set whether or not the hunter can detect specific types of agents
+      set detect_sanctuaries? false
+
+      ifelse can_hunters_see_each_other?
+        [
+          set detect_hunters? true
+        ]
+        [
+          set detect_hunters? false
+
+        ]
+        ifelse shape = "second-hunters"
+        [
+          ifelse second-non-chasers?
+          [
+           set detect_drugboats? false
+          ]
+          [
+           set detect_drugboats? true
+          ]
+
+          hunter_procedure_second
+        ]
+        [
+          set detect_drugboats? true
+          hunter_procedure
+        ]
+
+
+        if randomize_switching?
+        [
+          if ticks mod random_switch-timer = 0 and length fov-list-drugboats = 0
+          [
+           ifelse shape = "second-hunters"
+           [
+             set shape "circle 2"
+           ]
+           [
+             set shape "second-hunters"
+           ]
+          ]
+        ]
+
+
+
+      ]
+
+  measure_results
+
+  ask patches
+  [
+   set closest-hunter-dist distance min-one-of hunters [distance myself]
+
+    if heat-map?
+     [
+       color-patches-by-density
+     ]
+  ]
+
+
+  do-plots
+
+  if end_flag < 50  and ticks > 0 and (time-to-first-arrival > 0 or time-of-first-drugboat-detected > 0 or time-of-stuck-drugboat > 0 )
+  [
+    set end_flag 0
+    print (end_flag)
+    set seed-no seed-no + 1
+    set sim_ran_count sim_ran_count + 1
+    ifelse time-to-first-arrival = 0
+     [
+       set score_list fput 1 score_list
+     ]
+     [
+       set score_list fput 0 score_list
+     ]
+
+    set score (sum score_list) / length score_list
+
+    if sim_ran_count > 49
+    [
+     stop
+    ]
+
+    pseudo-setup
+
+  ]
+
+  tick-advance 1
+
+end
+
+to pseudo-setup
+  ct
+  random-seed seed-no
+
+  set end_flag 0
+
+  let gr (range  -25 25 1)
+
+  set rand-xcor one-of gr
+  set rand-ycor one-of gr
+
+  clear-drawing
+
+  add_sanctuary
+
+  set time-of-first-drugboat-detected 0
+
+  set time-to-first-arrival 0
+
+  set time-of-stuck-drugboat 0
+
+  ;creates robots
+  set number-of-robots (number-of-drugboats + number-of-hunters)
+
+  set n number-of-robots
+
+  while [n > (number-of-hunters)]
+  [
+   make_drugboat
+   set n (n - 1)
+  ]
+
+  while [n > 0]
+  [
+   make_hunter
+   set n (n - 1)
+  ]
+
+   hunter_setup_strict
+
+  ; adds extra "ghost" turtles that make adding and removing agents during simulation a bit easier
+  create-place-holders 20
+  [
+    setxy max-pxcor max-pycor
+    ht
+  ]
+
+  set-default-shape discs "ring"
+
+  reset-ticks
+
+end
+
 
 
 to color-patches-by-density
@@ -2097,7 +2270,7 @@ seed-no
 seed-no
 1
 50
-25.0
+49.0
 1
 1
 NIL
@@ -2296,7 +2469,7 @@ number-of-hunters
 number-of-hunters
 0
 50
-29.0
+32.0
 1
 1
 NIL
@@ -2424,20 +2597,20 @@ distribution_for_direction
 0
 
 TEXTBOX
-502
-544
-717
-570
+496
+581
+711
+607
 for random walk algorithms parameters
 11
 0.0
 1
 
 SLIDER
-503
-603
-676
-636
+497
+640
+670
+673
 step_length_fixed
 step_length_fixed
 0
@@ -2601,7 +2774,7 @@ CHOOSER
 selected_algorithm_drugboat
 selected_algorithm_drugboat
 "Auto" "Manual Control" "Better-Auto"
-1
+2
 
 MONITOR
 795
@@ -2865,10 +3038,10 @@ Controls for 'selected_algorithm_drugboat' = Manual Control
 1
 
 SLIDER
-502
-564
-676
-597
+496
+601
+670
+634
 turning-rate-rw
 turning-rate-rw
 0
@@ -2996,20 +3169,20 @@ for secondary species
 1
 
 TEXTBOX
-776
-551
-926
-569
+770
+588
+920
+606
 for spiral algorithm
 11
 0.0
 1
 
 SLIDER
-771
-571
-994
-604
+765
+608
+988
+641
 spiral-max-turning-rate
 spiral-max-turning-rate
 0
@@ -3019,6 +3192,34 @@ spiral-max-turning-rate
 1
 deg/s
 HORIZONTAL
+
+BUTTON
+556
+508
+694
+541
+NIL
+score_procedure
+T
+1
+T
+OBSERVER
+NIL
+NIL
+NIL
+NIL
+1
+
+MONITOR
+721
+505
+778
+550
+Score
+score
+17
+1
+11
 
 @#$#@#$#@
 ## WHAT IS IT?
