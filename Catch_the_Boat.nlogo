@@ -618,7 +618,7 @@ end
 
 
 to background_procedures
-; clear-paint
+ clear-paint
 
 ifelse paint_fov?
   [
@@ -843,7 +843,7 @@ to spiral
 
   ]
   [
-     set temp-turning-val 60
+     set temp-turning-val spiral-max-turning-rate
   ]
 end
 
@@ -1116,8 +1116,14 @@ to set_actuating_and_extra_variables
 
   ifelse member? self hunters
   [
-    set speed-w-noise random-normal (speed1 * 10) (noise-actuating-speed)
-    set turning-w-noise random-normal (turning-rate1) noise-actuating-turning
+    ifelse shape = "second-hunters"[
+       set speed-w-noise random-normal (speed2 * 10) (noise-actuating-speed)
+       set turning-w-noise random-normal (turning-rate2) noise-actuating-turning
+    ]
+    [
+      set speed-w-noise random-normal (speed1 * 10) (noise-actuating-speed)
+      set turning-w-noise random-normal (turning-rate1) noise-actuating-turning
+    ]
   ]
   [
     set speed-w-noise random-normal (speed-drugboats * 10) (noise-actuating-speed  * 0.1)
@@ -2008,10 +2014,10 @@ NIL
 HORIZONTAL
 
 SLIDER
-18
-329
-190
-362
+17
+290
+189
+323
 vision-distance
 vision-distance
 0
@@ -2023,10 +2029,10 @@ m
 HORIZONTAL
 
 SLIDER
-16
-366
-188
-399
+15
+327
+187
+360
 vision-cone
 vision-cone
 0
@@ -2038,10 +2044,10 @@ deg
 HORIZONTAL
 
 SLIDER
-15
-406
-194
-439
+14
+367
+193
+400
 speed1
 speed1
 0
@@ -2053,10 +2059,10 @@ m/s
 HORIZONTAL
 
 SLIDER
-13
-442
-193
-475
+12
+403
+192
+436
 turning-rate1
 turning-rate1
 0
@@ -2102,10 +2108,10 @@ NIL
 1
 
 BUTTON
-10
-485
-113
-520
+9
+444
+112
+479
 NIL
 add_hunter
 NIL
@@ -2119,10 +2125,10 @@ NIL
 1
 
 BUTTON
-9
-525
-135
-560
+8
+484
+134
+519
 NIL
 remove_hunter
 NIL
@@ -2192,15 +2198,15 @@ NIL
 1
 
 SLIDER
-20
-289
-205
-322
+19
+250
+204
+283
 number-of-hunters
 number-of-hunters
 0
 50
-10.0
+5.0
 1
 1
 NIL
@@ -2328,20 +2334,20 @@ distribution_for_direction
 0
 
 TEXTBOX
-261
-464
-476
-490
+502
+544
+717
+570
 for random walk algorithms parameters
 11
 0.0
 1
 
 SLIDER
-262
-523
-435
-556
+503
+603
+676
+636
 step_length_fixed
 step_length_fixed
 0
@@ -2498,10 +2504,10 @@ deg/s
 HORIZONTAL
 
 CHOOSER
-254
-315
-462
-360
+251
+296
+459
+341
 selected_algorithm_drugboat
 selected_algorithm_drugboat
 "Auto" "Manual Control"
@@ -2716,10 +2722,10 @@ NIL
 1
 
 SWITCH
-256
-277
-421
-310
+261
+254
+426
+287
 protected_spawn?
 protected_spawn?
 0
@@ -2738,10 +2744,10 @@ loop_sim?
 -1000
 
 SWITCH
-16
-245
-234
-278
+15
+206
+233
+239
 can_hunters_see_each_other?
 can_hunters_see_each_other?
 0
@@ -2769,10 +2775,10 @@ Controls for 'selected_algorithm_drugboat' = Manual Control
 1
 
 SLIDER
-261
-484
-435
-517
+502
+564
+676
+597
 turning-rate-rw
 turning-rate-rw
 0
@@ -2784,10 +2790,10 @@ deg/s
 HORIZONTAL
 
 SLIDER
-39
-578
-213
-611
+11
+537
+185
+570
 second_percentage
 second_percentage
 0
@@ -2799,10 +2805,10 @@ NIL
 HORIZONTAL
 
 CHOOSER
-15
-198
-264
-243
+218
+534
+430
+579
 selected_algorithm_hunters_second
 selected_algorithm_hunters_second
 "Milling" "Diffusing" "Diffusing2" "Lie and Wait" "Standard Random" "Straight" "Spiral" "Custom"
@@ -2810,9 +2816,9 @@ selected_algorithm_hunters_second
 
 SWITCH
 0
-617
+589
 195
-650
+622
 randomize_switching?
 randomize_switching?
 1
@@ -2826,7 +2832,7 @@ SWITCH
 241
 heat-map?
 heat-map?
-0
+1
 1
 -1000
 
@@ -2850,14 +2856,79 @@ PENS
 
 SWITCH
 197
-616
+588
 391
-649
+621
 second-non-chasers?
 second-non-chasers?
 0
 1
 -1000
+
+SLIDER
+33
+644
+205
+677
+speed2
+speed2
+0
+0.3
+0.25
+0.05
+1
+m/s
+HORIZONTAL
+
+SLIDER
+218
+642
+397
+675
+turning-rate2
+turning-rate2
+0
+360
+50.0
+10
+1
+deg/s
+HORIZONTAL
+
+TEXTBOX
+41
+628
+191
+646
+for secondary species
+11
+0.0
+1
+
+TEXTBOX
+776
+551
+926
+569
+for spiral algorithm
+11
+0.0
+1
+
+SLIDER
+771
+571
+994
+604
+spiral-max-turning-rate
+spiral-max-turning-rate
+0
+360
+60.0
+10
+1
+deg/s
+HORIZONTAL
 
 @#$#@#$#@
 ## WHAT IS IT?
