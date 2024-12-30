@@ -125,6 +125,7 @@ drugboats-own [
            trapped_count
            detect_step_count
            fov-list-patches
+           direction_angle
           ]
 
 patches-own [
@@ -297,10 +298,16 @@ to go
 
   measure_results
 
-  if heat-map?
+  ask patches
   [
-    ask patches [color-patches-by-density]
+   set closest-hunter-dist distance min-one-of hunters [distance myself]
+
+    if heat-map?
+     [
+       color-patches-by-density
+     ]
   ]
+
 
   do-plots
 
@@ -323,14 +330,19 @@ end
 
 to do-plots
   set-current-plot "Patches Color Plot"
- set-current-plot-pen "patches-color"
+  set-current-plot-pen "patches-color"
 
-  plot (count patches with [closest-hunter-dist >= 15])
+  set-plot-x-range 0 30
+  set-plot-y-range 0 count hunters
+  set-histogram-num-bars 10
+
+  ; plot (count patches with [closest-hunter-dist >= 15])
+  histogram [closest-hunter-dist] of patches
+
 end
 
 
 to color-patches-by-density
-  set closest-hunter-dist distance min-one-of hunters [distance myself]
   set pcolor scale-color red closest-hunter-dist 0 30 ; Adjust range as needed
 end
 
@@ -371,9 +383,16 @@ to drugboat_procedure
                    set detection_response_type "diffuse-response2"
                  ]
                  [
-                   set detection_response_type "turn-away-in-place"
-                   choose_rand_turn
+                   ifelse selected_algorithm_drugboat = "Better-Auto"
+                   [
+                     set detection_response_type "best_patch"
+                   ]
+                   [
+                     set detection_response_type "turn-away-in-place"
+                     choose_rand_turn
+                   ]
                  ]
+
                  ]
              ]
              set detect_step_count 1;(0.005 / tick-delta)
@@ -954,6 +973,74 @@ to detection_response_procedure
         [set inputs (list (speed-w-noise) 90(- turning-w-noise))]
         [set inputs (list (speed-w-noise) 90( turning-w-noise))]
      ]
+
+
+  ; THIS IS AN GREEDY ALGORITHM THAT TRIES TO GO TO THE MORE "REDDER" PATCH
+;   IN ITS SURROUNDING
+  if detection_response_type = "best_patch"
+    [
+      ; Drugboat position
+      let db_x [xcor] of drugboat 1
+      let db_y [ycor] of drugboat 1
+      ; x and y deltas (will be applied to the drugboat's position)
+      let delta_x 1
+      let delta_y 1
+
+      ; The patch with the biggest distance
+
+      let max_patch_dx -10
+      let max_patch_dy -10
+      let max_dist -30000
+
+
+      while [delta_y >= -1]
+        [
+          while [delta_x >= -1]
+            [
+              let new_x db_x + delta_x
+              let new_y db_y + delta_y
+
+              if min-pxcor <= new_x and new_x <= max-pxcor and min-pycor <= new_y and new_y <= max-pycor
+                [
+                  if delta_x != 0 and delta_y != 0
+                    [
+                      let patch_dist [closest-hunter-dist] of patch new_x new_y
+                      if patch_dist > max_dist
+                      [
+                        set max_dist patch_dist
+                        set max_patch_dx delta_x
+                        set max_patch_dy delta_y
+                      ]
+                ]
+            ]
+
+              set delta_x delta_x - 1
+           ]
+          set delta_y delta_y - 1
+      ]
+
+      set direction_angle -1000
+      (ifelse max_patch_dx > 0
+      [
+        set direction_angle (atan max_patch_dx max_patch_dy)
+      ]
+      max_patch_dx = 0
+      [
+          ifelse max_patch_dy > 0
+          [
+            set direction_angle 90
+          ]
+          [
+            set direction_angle 270
+          ]
+      ]
+      [
+        set direction_angle atan max_patch_dx max_patch_dy + 180
+      ])
+      set inputs (list (speed-w-noise) direction_angle 0)
+
+     ]
+
 
   if detection_response_type = "turn-away-in-place-sometimes"
     [
@@ -1878,13 +1965,16 @@ to paint-patches-in-new-FOV
           [set real-bearing-patch real-bearing-patch - 360]
       ]
 
-
+    let current-closest-hunter-distance distance myself
 
 
      if (real-bearing-patch < ((vision-cc / 2)) and real-bearing-patch > ((-1 * (vision-cc / 2))))
      [
       ifelse member? myself hunters
-      [set pcolor orange]
+      [
+        set pcolor orange
+;       set pcolor scale-color red current-closest-hunter-distance 0 10 ; Adjust range as needed
+      ]
       [set pcolor yellow]
      ]
   ]
@@ -2007,7 +2097,7 @@ seed-no
 seed-no
 1
 50
-12.0
+25.0
 1
 1
 NIL
@@ -2036,7 +2126,7 @@ SLIDER
 vision-cone
 vision-cone
 0
-50
+360
 50.0
 5
 1
@@ -2206,7 +2296,7 @@ number-of-hunters
 number-of-hunters
 0
 50
-5.0
+29.0
 1
 1
 NIL
@@ -2377,7 +2467,7 @@ noise-actuating-speed
 noise-actuating-speed
 0
 1
-0.1
+0.0
 0.1
 1
 m/s
@@ -2392,7 +2482,7 @@ noise-actuating-turning
 noise-actuating-turning
 0
 30
-20.0
+0.0
 5
 1
 deg/s
@@ -2452,7 +2542,7 @@ vision-distance-drugboats
 vision-distance-drugboats
 0
 2
-0.9
+1.4
 0.1
 1
 m
@@ -2467,7 +2557,7 @@ vision-cone-drugboats
 vision-cone-drugboats
 0
 360
-360.0
+270.0
 10
 1
 deg
@@ -2482,7 +2572,7 @@ speed-drugboats
 speed-drugboats
 0
 0.25
-0.23
+0.25
 0.05
 1
 m/s
@@ -2497,7 +2587,7 @@ turning-rate-drugboats
 turning-rate-drugboats
 0
 180
-40.0
+30.0
 10
 1
 deg/s
@@ -2510,7 +2600,7 @@ CHOOSER
 341
 selected_algorithm_drugboat
 selected_algorithm_drugboat
-"Auto" "Manual Control"
+"Auto" "Manual Control" "Better-Auto"
 1
 
 MONITOR
@@ -2837,10 +2927,10 @@ heat-map?
 -1000
 
 PLOT
-1172
+1049
 433
-1372
-583
+1368
+675
 Patches Color Plot
 NIL
 NIL
@@ -2852,7 +2942,7 @@ true
 false
 "" ""
 PENS
-"patches-color" 1.0 0 -16777216 true "" ""
+"patches-color" 1.0 1 -16777216 true "" "histogram [closest-hunter-dist] of patches"
 
 SWITCH
 197
@@ -2924,7 +3014,7 @@ spiral-max-turning-rate
 spiral-max-turning-rate
 0
 360
-60.0
+40.0
 10
 1
 deg/s
