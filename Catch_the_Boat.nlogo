@@ -83,6 +83,7 @@ hunters-own [
 ;           body_v_y
            temp-turning-val
            random_switch-timer
+           alternating_procedure_val
           ]
 
 
@@ -689,30 +690,92 @@ to hunter_procedure
             [
               ifelse length fov-list-hunters > 0 and sleep_timer < 0 ; if one or more hunters are detected, it reacts according to whatever the selected algorithm is (default is turn away in place. (sleep timer is added so it doesnt get stuck in infite loop of turning when face to face
                 [
-                  ifelse selected_algorithm_hunters = "Milling"
+                  ifelse selected_algorithm_hunters = "Alternating"
                   [
-                    set detection_response_type "mill-response"
-                    set detect_step_count (0.25 / tick-delta)
+                    ifelse alternating_procedure_val = 1
+                    [
+                      ifelse Procedure1_for_alternating = "Milling"
+                      [
+                        set detection_response_type "mill-response"
+                        set detect_step_count (0.25 / tick-delta)
+                      ]
+                      [
+                        ifelse Procedure1_for_alternating = "Diffusing"
+                        [
+                          set detection_response_type "diffuse-response"
+                          set detect_step_count (0.25 / tick-delta)
+                        ]
+                        [
+                          ifelse Procedure1_for_alternating = "Diffusing2"
+                        [
+                          set detection_response_type "diffuse-response2"
+                          set detect_step_count (0.25 / tick-delta)
+                        ]
+                        [
+                          set detection_response_type "180-in-place"
+                          choose_rand_turn
+                          set sleep_timer 20
+                          set detect_step_count (1 / tick-delta)
+
+                        ]
+                        ]
+                      ]
+                    ]
+                    [
+                      ifelse Procedure2_for_alternating = "Milling"
+                      [
+                        set detection_response_type "mill-response"
+                        set detect_step_count (0.25 / tick-delta)
+                      ]
+                      [
+                        ifelse Procedure2_for_alternating = "Diffusing"
+                        [
+                          set detection_response_type "diffuse-response"
+                          set detect_step_count (0.25 / tick-delta)
+                        ]
+                        [
+                          ifelse Procedure2_for_alternating = "Diffusing2"
+                        [
+                          set detection_response_type "diffuse-response2"
+                          set detect_step_count (0.25 / tick-delta)
+                        ]
+                        [
+                          set detection_response_type "180-in-place"
+                          choose_rand_turn
+                          set sleep_timer 20
+                          set detect_step_count (1 / tick-delta)
+
+                        ]
+                        ]
+                      ]
+                    ]
                   ]
                   [
-                    ifelse selected_algorithm_hunters = "Diffusing"
+                    ifelse selected_algorithm_hunters = "Milling"
                     [
-                      set detection_response_type "diffuse-response"
+                      set detection_response_type "mill-response"
                       set detect_step_count (0.25 / tick-delta)
                     ]
                     [
-                      ifelse selected_algorithm_hunters = "Diffusing2"
-                    [
-                      set detection_response_type "diffuse-response2"
-                      set detect_step_count (0.25 / tick-delta)
-                    ]
-                    [
-                      set detection_response_type "180-in-place"
-                      choose_rand_turn
-                      set sleep_timer 20
-                      set detect_step_count (1 / tick-delta)
+                      ifelse selected_algorithm_hunters = "Diffusing"
+                      [
+                        set detection_response_type "diffuse-response"
+                        set detect_step_count (0.25 / tick-delta)
+                      ]
+                      [
+                        ifelse selected_algorithm_hunters = "Diffusing2"
+                      [
+                        set detection_response_type "diffuse-response2"
+                        set detect_step_count (0.25 / tick-delta)
+                      ]
+                      [
+                        set detection_response_type "180-in-place"
+                        choose_rand_turn
+                        set sleep_timer 20
+                        set detect_step_count (1 / tick-delta)
 
-                    ]
+                      ]
+                      ]
                     ]
                   ]
 
@@ -938,6 +1001,13 @@ to select_alg_procedure1
   if selected_algorithm_hunters = "Custom"
   [custom_alg]
 
+  if selected_algorithm_hunters = "Alternating"
+  [Alternating]
+
+  if selected_algorithm_hunters = "Spiral Reverse"
+  [spiral_reverse]
+
+
 end
 
 to select_alg_procedure_second
@@ -992,7 +1062,102 @@ to select_alg_procedure2
   if selected_algorithm_hunters = "Straight"
   [straight]
 
+  if selected_algorithm_hunters = "Alternating"
+  [Alternating]
+
 end
+
+to Alternating
+
+  if ticks mod ticks_for_alternating = 0 ;the amount of ticks is determined by the slider with the same name
+  [
+    ifelse random 2 = 0 ;randomly selects a number from 0-1
+      [
+        set alternating_procedure_val 1
+      ]
+
+      [
+        set alternating_procedure_val 2
+      ]
+  ]
+
+  ifelse alternating_procedure_val = 1
+  [
+    procedure1 ;if the random value is 0, procedure1 is selected with the chooser
+  ]
+  [
+    procedure2 ;if the random value is 1, procedure2 is selected with the chooser
+  ]
+
+end
+
+
+
+
+to procedure1 ;different options for the procedure1 chooser
+
+  if Procedure1_for_alternating = "Milling"
+  [mill]
+
+  if Procedure1_for_alternating = "Diffusing"
+  [dispersal]
+
+  if Procedure1_for_alternating = "Diffusing2"
+  [dispersal2]
+
+  if Procedure1_for_alternating = "Standard Random"
+  [standard_random_walk]
+
+  if Procedure1_for_alternating = "Levy"
+  [real_levy]
+
+  if Procedure1_for_alternating = "Lie and Wait"
+  [lie-and-wait]
+
+  if Procedure1_for_alternating = "Straight"
+  [straight]
+
+  if Procedure1_for_alternating = "Spiral"
+  [spiral]
+
+  if Procedure1_for_alternating = "Spiral Reverse"
+  [spiral_reverse]
+
+end
+
+
+to procedure2 ;different options for the procedure2 chooser
+
+  if Procedure2_for_alternating = "Milling"
+  [mill]
+
+  if Procedure2_for_alternating = "Diffusing"
+  [dispersal]
+
+  if Procedure2_for_alternating = "Diffusing2"
+  [dispersal2]
+
+  if Procedure2_for_alternating = "Standard Random"
+  [standard_random_walk]
+
+  if Procedure2_for_alternating = "Levy"
+  [real_levy]
+
+  if Procedure2_for_alternating = "Lie and Wait"
+  [lie-and-wait]
+
+  if Procedure2_for_alternating = "Straight"
+  [straight]
+
+  if Procedure2_for_alternating = "Spiral"
+  [spiral]
+
+  if Procedure2_for_alternating = "Spiral Reverse"
+  [spiral_reverse]
+
+end
+
+
 
 
 to straight
@@ -1058,6 +1223,23 @@ to spiral
   [
      set temp-turning-val spiral-max-turning-rate
   ]
+
+
+end
+
+to spiral_reverse
+ ifelse temp-turning-val > 0 ; while step count is less than the set step_length, it should either be turning in place or going straight
+  [
+
+    set temp-turning-val (temp-turning-val - 0.1)
+    set inputs (list speed-w-noise 90 (-1 * temp-turning-val))
+
+  ]
+  [
+     set temp-turning-val spiral-max-turning-rate
+  ]
+
+
 end
 
 
@@ -2290,8 +2472,8 @@ SLIDER
 seed-no
 seed-no
 1
-50
-20.0
+150
+194.0
 1
 1
 NIL
@@ -2443,7 +2625,7 @@ SWITCH
 182
 draw_path?
 draw_path?
-1
+0
 1
 -1000
 
@@ -2490,7 +2672,7 @@ number-of-hunters
 number-of-hunters
 0
 50
-32.0
+1.0
 1
 1
 NIL
@@ -2604,8 +2786,8 @@ CHOOSER
 193
 selected_algorithm_hunters
 selected_algorithm_hunters
-"Milling" "Diffusing" "Lie and Wait" "Standard Random" "Straight" "Spiral" "Custom"
-1
+"Milling" "Diffusing" "Lie and Wait" "Standard Random" "Straight" "Spiral" "Custom" "Alternating" "Spiral Reverse"
+7
 
 CHOOSER
 1764
@@ -2788,10 +2970,10 @@ deg/s
 HORIZONTAL
 
 CHOOSER
-251
-296
-459
-341
+245
+256
+453
+301
 selected_algorithm_drugboat
 selected_algorithm_drugboat
 "Auto" "Manual Control" "Better-Auto"
@@ -3006,10 +3188,10 @@ NIL
 1
 
 SWITCH
-261
+260
+221
+425
 254
-426
-287
 protected_spawn?
 protected_spawn?
 0
@@ -3110,10 +3292,10 @@ randomize_switching?
 -1000
 
 SWITCH
-279
-208
-402
-241
+278
+186
+401
+219
 heat-map?
 heat-map?
 1
@@ -3261,8 +3443,43 @@ SLIDER
 start_time
 start_time
 0
-500
-500.0
+1500
+1000.0
+10
+1
+ticks
+HORIZONTAL
+
+CHOOSER
+265
+416
+423
+461
+Procedure2_for_alternating
+Procedure2_for_alternating
+"Milling" "Diffusing" "Lie and Wait" "Standard Random" "Straight" "Spiral" "Custom" "Spiral Reverse"
+7
+
+CHOOSER
+266
+367
+432
+412
+Procedure1_for_alternating
+Procedure1_for_alternating
+"Milling" "Diffusing" "Lie and Wait" "Standard Random" "Straight" "Spiral" "Custom" "Spiral Reverse"
+5
+
+SLIDER
+263
+330
+476
+363
+ticks_for_alternating
+ticks_for_alternating
+0
+200
+100.0
 10
 1
 ticks
