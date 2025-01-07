@@ -526,7 +526,13 @@ end
 
 
 to color-patches-by-density
-  set pcolor scale-color red closest-hunter-dist 0 30 ; Adjust range as needed
+  ifelse closest-hunter-dist > 6
+  [
+    set pcolor white
+  ]
+  [
+    set pcolor scale-color red closest-hunter-dist 0 30 ; Adjust range as needed
+  ]
 end
 
 
@@ -956,7 +962,7 @@ to measure_results
 
       if time-of-stuck-drugboat = 0
         [
-          if count drugboats > 0 and max [trapped_count] of drugboats > 10000
+          if count drugboats > 0 and max [trapped_count] of drugboats > 2000
            [
              set time-of-stuck-drugboat ticks
            ]
@@ -2473,7 +2479,7 @@ seed-no
 seed-no
 1
 150
-194.0
+299.0
 1
 1
 NIL
@@ -2625,7 +2631,7 @@ SWITCH
 182
 draw_path?
 draw_path?
-0
+1
 1
 -1000
 
@@ -2671,8 +2677,8 @@ SLIDER
 number-of-hunters
 number-of-hunters
 0
-50
-1.0
+250
+13.0
 1
 1
 NIL
@@ -2787,7 +2793,7 @@ CHOOSER
 selected_algorithm_hunters
 selected_algorithm_hunters
 "Milling" "Diffusing" "Lie and Wait" "Standard Random" "Straight" "Spiral" "Custom" "Alternating" "Spiral Reverse"
-7
+1
 
 CHOOSER
 1764
@@ -3264,7 +3270,7 @@ second_percentage
 second_percentage
 0
 100
-0.0
+50.0
 10
 1
 NIL
@@ -3444,7 +3450,7 @@ start_time
 start_time
 0
 1500
-1000.0
+600.0
 10
 1
 ticks
@@ -3895,105 +3901,16 @@ NetLogo 6.4.0
 @#$#@#$#@
 @#$#@#$#@
 <experiments>
-  <experiment name="Comaparing_Algs" repetitions="1" runMetricsEveryStep="false">
+  <experiment name="Scoring_parameter_sweep" repetitions="1" runMetricsEveryStep="false">
     <setup>setup</setup>
-    <go>go</go>
-    <timeLimit steps="50001"/>
-    <exitCondition>end_flag &gt; 0</exitCondition>
-    <metric>time-to-first-arrival</metric>
-    <metric>time-of-first-runner-detected</metric>
-    <enumeratedValueSet variable="selected_algorithm1">
-      <value value="&quot;Stop&quot;"/>
-      <value value="&quot;Standard Random&quot;"/>
-      <value value="&quot;VNQ&quot;"/>
-    </enumeratedValueSet>
-    <enumeratedValueSet variable="number-of-hunters">
-      <value value="1"/>
-      <value value="4"/>
-      <value value="9"/>
-      <value value="16"/>
-      <value value="25"/>
-      <value value="36"/>
-      <value value="49"/>
-      <value value="64"/>
-      <value value="81"/>
-      <value value="100"/>
-      <value value="121"/>
-      <value value="144"/>
-      <value value="169"/>
-      <value value="196"/>
-      <value value="225"/>
-      <value value="256"/>
-      <value value="289"/>
-      <value value="324"/>
-      <value value="361"/>
-      <value value="400"/>
-      <value value="441"/>
-      <value value="484"/>
-      <value value="529"/>
-      <value value="576"/>
-      <value value="625"/>
-      <value value="676"/>
-      <value value="729"/>
-      <value value="784"/>
-      <value value="841"/>
-      <value value="900"/>
-      <value value="961"/>
-    </enumeratedValueSet>
-    <steppedValueSet variable="seed-no" first="1" step="1" last="40"/>
-  </experiment>
-  <experiment name="Comaparing_Algs_Log_scale" repetitions="1" runMetricsEveryStep="false">
-    <setup>setup</setup>
-    <go>go</go>
-    <timeLimit steps="50001"/>
-    <exitCondition>end_flag &gt; 0</exitCondition>
-    <metric>time-to-first-arrival</metric>
-    <metric>time-of-first-runner-detected</metric>
-    <enumeratedValueSet variable="selected_algorithm1">
-      <value value="&quot;Ambush&quot;"/>
-      <value value="&quot;Straight&quot;"/>
-      <value value="&quot;Levy&quot;"/>
-    </enumeratedValueSet>
-    <enumeratedValueSet variable="number-of-hunters">
-      <value value="1"/>
-      <value value="2"/>
-      <value value="4"/>
-      <value value="6"/>
-      <value value="10"/>
-      <value value="18"/>
-      <value value="32"/>
-      <value value="57"/>
-      <value value="100"/>
-      <value value="178"/>
-      <value value="317"/>
-      <value value="563"/>
-      <value value="1000"/>
-    </enumeratedValueSet>
-    <steppedValueSet variable="seed-no" first="1" step="1" last="40"/>
-  </experiment>
-  <experiment name="Turbo_Pi" repetitions="1" runMetricsEveryStep="false">
-    <setup>setup</setup>
-    <go>go</go>
-    <timeLimit steps="50001"/>
-    <exitCondition>end_flag &gt; 0</exitCondition>
-    <metric>time-to-first-arrival</metric>
-    <metric>time-of-first-runner-detected</metric>
-    <enumeratedValueSet variable="selected_algorithm1">
-      <value value="&quot;Alg A&quot;"/>
-      <value value="&quot;Alg B&quot;"/>
-      <value value="&quot;Standard Random&quot;"/>
-    </enumeratedValueSet>
-    <steppedValueSet variable="number-of-hunters" first="5" step="5" last="150"/>
-    <steppedValueSet variable="seed-no" first="1" step="1" last="40"/>
-  </experiment>
-  <experiment name="ECE101_scoring" repetitions="1" runMetricsEveryStep="false">
-    <setup>setup</setup>
-    <go>go</go>
+    <go>score_procedure</go>
     <timeLimit steps="25001"/>
-    <exitCondition>end_flag &gt; 0</exitCondition>
-    <metric>time-to-first-arrival</metric>
-    <metric>time-of-first-drugboat-detected</metric>
-    <steppedValueSet variable="seed-no" first="1" step="1" last="10"/>
+    <exitCondition>end_flag &gt; 50</exitCondition>
+    <metric>score</metric>
+    <enumeratedValueSet variable="seed-no">
+      <value value="1"/>
+    </enumeratedValueSet>
+    <steppedValueSet variable="number-of-hunters" first="2" step="2" last="100"/>
   </experiment>
 </experiments>
 @#$#@#$#@
