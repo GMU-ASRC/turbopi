@@ -1826,7 +1826,7 @@ to make_drugboat
 
       set furthest_ycor min-pycor
 
-      set sr_patches patches with [pycor < -25 and pxcor != 0]
+      set sr_patches patches with [pycor < -27 and pxcor != 0]
       move-to one-of sr_patches with [(not any? other turtles in-radius ([size] of drugboat (count sanctuaries)))]
       setxy (xcor + .01) (ycor + .01)
 
@@ -2544,7 +2544,7 @@ seed-no
 seed-no
 1
 150
-299.0
+324.0
 1
 1
 NIL
@@ -2743,7 +2743,7 @@ number-of-hunters
 number-of-hunters
 0
 250
-15.0
+18.0
 1
 1
 NIL
@@ -2858,7 +2858,7 @@ CHOOSER
 selected_algorithm_hunters
 selected_algorithm_hunters
 "Milling" "Diffusing" "Diffusing2" "Lie and Wait" "Standard Random" "Straight" "Spiral" "Custom" "Alternating" "Spiral Reverse"
-2
+1
 
 CHOOSER
 1764
@@ -3069,7 +3069,7 @@ CHOOSER
 Hunter_setup
 Hunter_setup
 "Random" "Inverted V" "Center Band" "Barrier" "Circle - Center" "Circle - Center - Facing Out" "Circle - Random" "Perfect Circle" "Perfect Picket" "Imperfect Picket" "Custom - Region" "Custom - Precise"
-7
+4
 
 BUTTON
 1159
@@ -3335,7 +3335,7 @@ second_percentage
 second_percentage
 0
 100
-40.0
+0.0
 10
 1
 NIL
@@ -3369,7 +3369,7 @@ SWITCH
 219
 heat-map?
 heat-map?
-0
+1
 1
 -1000
 
