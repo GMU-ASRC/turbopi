@@ -84,7 +84,10 @@ hunters-own [
            temp-turning-val
            random_switch-timer
            alternating_procedure_val
-          fov-list-hunters-same
+           fov-list-hunters-same1
+           fov-list-hunters-same2
+           fov-list-hunters-other1
+           fov-list-hunters-other2
           ]
 
 
@@ -433,7 +436,7 @@ to score_procedure
 
   do-plots
 
-  if end_flag < 50  and ticks > 0 and (time-to-first-arrival > 0 or time-of-first-drugboat-detected > 0 or time-of-stuck-drugboat > 0 )
+  if end_flag < num-of-runs  and ticks > 0 and (time-to-first-arrival > 0 or time-of-first-drugboat-detected > 0 or time-of-stuck-drugboat > 0 )
   [
     set end_flag 0
     print (end_flag)
@@ -449,7 +452,7 @@ to score_procedure
 
     set score (sum score_list) / length score_list
 
-    if sim_ran_count > 49
+    if sim_ran_count > (num-of-runs - 1)
     [
      stop
     ]
@@ -1612,16 +1615,24 @@ to do_sensing
 
   ifelse detect_hunters?
     [
-      find-hunters-in-FOV
-      if breed = hunters
+      ifelse breed = drugboats
       [
-        find-same-hunters-in-FOV
+         find-hunters-in-FOV
+      ]
+      [
+         find-same-hunters-in-FOV
+         find-other-hunters-in-FOV
+         set fov-list-hunters (sentence fov-list-hunters-same1 fov-list-hunters-same2 fov-list-hunters-other1 fov-list-hunters-other2)
+         set fov-list-hunters remove-duplicates fov-list-hunters
       ]
 
-      if only_detect_same_species? and breed = hunters
-      [
-        set fov-list-hunters fov-list-hunters-same
-      ]
+;      if only_detect_same_species? and breed = hunters
+;      [
+;        set fov-list-hunters fov-list-hunters-same
+;      ]
+
+
+
    ]
     [set fov-list-hunters (list)]
 
@@ -1744,7 +1755,7 @@ to make_hunter
       set fov-list-sanctuaries (list )
       set fov-list-hunters (list )
       set fov-list-drugboats (list )
-      set fov-list-hunters-same (list )
+;      set fov-list-hunters-same (list )
 
 
       place_hunters
@@ -1784,7 +1795,7 @@ to make_hunter_second
       set fov-list-sanctuaries (list )
       set fov-list-hunters (list )
       set fov-list-drugboats (list )
-      set fov-list-hunters-same (list )
+;      set fov-list-hunters-same (list )
 
 
       place_hunters
@@ -2269,7 +2280,7 @@ to find-hunters-in-FOV
     ]
 end
 
-to find-same-hunters-in-FOV
+to find-other-hunters-in-FOV
   let vision-dd 0
   let vision-cc 0
   let real-bearing 0
@@ -2284,7 +2295,8 @@ to find-same-hunters-in-FOV
     set vision-cc vision-cone-drugboats
     ]
 
-  set fov-list-hunters-same (list )
+  set fov-list-hunters-other1 (list )
+  set fov-list-hunters-other2 (list )
   set i (count sanctuaries  + count drugboats)
 
   while [i < (count sanctuaries + count drugboats   + count hunters)]
@@ -2304,9 +2316,74 @@ to find-same-hunters-in-FOV
             [set real-bearing real-bearing - 360]
 
 
-          if (abs(real-bearing) < ((vision-cc / 2))) and (distance-nowrap (hunter (i )) < (vision-dd * 10)) and ([shape] of hunter (i) = ([shape] of self));
+          if (abs(real-bearing) < ((vision-cc / 2))) and (distance-nowrap (hunter (i )) < (vision-dd * 10)) and ([shape] of hunter (i) != ([shape] of self)) and (first_detect_others?) and ([shape] of self = "circle 2");
            [
-             set fov-list-hunters-same fput (hunter (i)) fov-list-hunters-same
+             set fov-list-hunters-other1 fput (hunter (i)) fov-list-hunters-other1
+              if [sanctuary_detected_flag] of hunter (i) = 1
+              [
+               set fov-list-green-hunters fput (hunter (i)) fov-list-green-hunters
+              ]
+           ]
+          if (abs(real-bearing) < ((vision-cc / 2))) and (distance-nowrap (hunter (i )) < (vision-dd * 10)) and ([shape] of hunter (i) != ([shape] of self)) and (second_detect_others?) and ([shape] of self = "second-hunters");
+           [
+             set fov-list-hunters-other2 fput (hunter (i)) fov-list-hunters-other2
+              if [sanctuary_detected_flag] of hunter (i) = 1
+              [
+               set fov-list-green-hunters fput (hunter (i)) fov-list-green-hunters
+              ]
+           ]
+        ]
+     set i (i + 1)
+    ]
+end
+
+to find-same-hunters-in-FOV
+  let vision-dd 0
+  let vision-cc 0
+  let real-bearing 0
+
+  ifelse member? self hunters
+    [
+      set vision-dd vision-distance
+      set vision-cc vision-cone
+    ]
+    [
+      set vision-dd vision-distance-drugboats
+    set vision-cc vision-cone-drugboats
+    ]
+
+  set fov-list-hunters-same1 (list )
+  set fov-list-hunters-same2 (list )
+  set i (count sanctuaries  + count drugboats)
+
+  while [i < (count sanctuaries + count drugboats   + count hunters)]
+    [
+      if self != hunter ((i )  )
+        [
+          let sub-heading towards hunter (i ) - heading
+          set real-bearing sub-heading
+
+          if sub-heading < 0
+            [set real-bearing sub-heading + 360]
+
+          if sub-heading > 180
+            [set real-bearing sub-heading - 360]
+
+          if real-bearing > 180
+            [set real-bearing real-bearing - 360]
+
+
+          if (abs(real-bearing) < ((vision-cc / 2))) and (distance-nowrap (hunter (i )) < (vision-dd * 10)) and ([shape] of hunter (i) = ([shape] of self)) and (first_detect_same?) and ([shape] of self = "circle 2");
+           [
+             set fov-list-hunters-same1 fput (hunter (i)) fov-list-hunters-same1
+              if [sanctuary_detected_flag] of hunter (i) = 1
+              [
+               set fov-list-green-hunters fput (hunter (i)) fov-list-green-hunters
+              ]
+           ]
+          if (abs(real-bearing) < ((vision-cc / 2))) and (distance-nowrap (hunter (i )) < (vision-dd * 10)) and ([shape] of hunter (i) = ([shape] of self)) and (second_detect_same?) and ([shape] of self = "second-hunters");
+           [
+             set fov-list-hunters-same2 fput (hunter (i)) fov-list-hunters-same2
               if [sanctuary_detected_flag] of hunter (i) = 1
               [
                set fov-list-green-hunters fput (hunter (i)) fov-list-green-hunters
@@ -2544,7 +2621,7 @@ seed-no
 seed-no
 1
 150
-324.0
+21.0
 1
 1
 NIL
@@ -2574,7 +2651,7 @@ vision-cone
 vision-cone
 0
 360
-50.0
+55.0
 5
 1
 deg
@@ -2871,9 +2948,9 @@ distribution_for_direction
 0
 
 TEXTBOX
-496
+474
 581
-711
+689
 607
 for random walk algorithms parameters
 11
@@ -3048,7 +3125,7 @@ CHOOSER
 selected_algorithm_drugboat
 selected_algorithm_drugboat
 "Auto" "Manual Control" "Better-Auto"
-2
+0
 
 MONITOR
 795
@@ -3281,10 +3358,10 @@ loop_sim?
 -1000
 
 SWITCH
-15
-206
-233
-239
+1085
+695
+1303
+728
 can_hunters_see_each_other?
 can_hunters_see_each_other?
 0
@@ -3335,7 +3412,7 @@ second_percentage
 second_percentage
 0
 100
-0.0
+50.0
 10
 1
 NIL
@@ -3369,15 +3446,15 @@ SWITCH
 219
 heat-map?
 heat-map?
-1
+0
 1
 -1000
 
 PLOT
-1049
-433
-1368
-675
+1081
+432
+1400
+674
 Patches Color Plot
 NIL
 NIL
@@ -3398,7 +3475,7 @@ SWITCH
 621
 second-non-chasers?
 second-non-chasers?
-0
+1
 1
 -1000
 
@@ -3443,20 +3520,20 @@ for secondary species
 1
 
 TEXTBOX
-770
-588
-920
-606
+387
+693
+537
+711
 for spiral algorithm
 11
 0.0
 1
 
 SLIDER
-765
-608
-988
-641
+354
+708
+577
+741
 spiral-max-turning-rate
 spiral-max-turning-rate
 0
@@ -3468,10 +3545,10 @@ deg/s
 HORIZONTAL
 
 BUTTON
-556
-508
-694
-541
+497
+506
+635
+539
 NIL
 score_procedure
 T
@@ -3485,10 +3562,10 @@ NIL
 1
 
 MONITOR
-721
-505
-778
-550
+662
+503
+719
+548
 Score
 score
 17
@@ -3502,7 +3579,7 @@ SWITCH
 529
 delayed_start?
 delayed_start?
-0
+1
 1
 -1000
 
@@ -3515,7 +3592,7 @@ start_time
 start_time
 0
 1500
-600.0
+500.0
 10
 1
 ticks
@@ -3550,22 +3627,80 @@ ticks_for_alternating
 ticks_for_alternating
 0
 200
-100.0
+90.0
 10
 1
 ticks
 HORIZONTAL
 
 SWITCH
-816
-512
-1010
-545
-only_detect_same_species?
-only_detect_same_species?
-1
+711
+596
+868
+629
+first_detect_same?
+first_detect_same?
+0
 1
 -1000
+
+SWITCH
+880
+595
+1053
+628
+second_detect_same?
+second_detect_same?
+0
+1
+-1000
+
+SWITCH
+711
+634
+870
+667
+first_detect_others?
+first_detect_others?
+0
+1
+-1000
+
+SWITCH
+881
+635
+1065
+668
+second_detect_others?
+second_detect_others?
+0
+1
+-1000
+
+TEXTBOX
+804
+534
+954
+590
+Change whether first (or second) species can detect only their own species, or othe species, or both/none
+11
+0.0
+1
+
+SLIDER
+500
+543
+625
+576
+num-of-runs
+num-of-runs
+0
+100
+50.0
+10
+1
+NIL
+HORIZONTAL
 
 @#$#@#$#@
 ## WHAT IS IT?
