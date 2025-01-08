@@ -1024,7 +1024,7 @@ to select_alg_procedure_second
   if selected_algorithm_hunters_second = "Diffusing"
   [dispersal]
 
-  if selected_algorithm_hunters = "Diffusing2"
+  if selected_algorithm_hunters_second = "Diffusing2"
   [dispersal2]
 
   if selected_algorithm_hunters_second = "Standard Random"
@@ -2854,8 +2854,8 @@ CHOOSER
 193
 selected_algorithm_hunters
 selected_algorithm_hunters
-"Milling" "Diffusing" "Lie and Wait" "Standard Random" "Straight" "Spiral" "Custom" "Alternating" "Spiral Reverse"
-1
+"Milling" "Diffusing" "Diffusing2" "Lie and Wait" "Standard Random" "Straight" "Spiral" "Custom" "Alternating" "Spiral Reverse"
+2
 
 CHOOSER
 1764
@@ -3332,7 +3332,7 @@ second_percentage
 second_percentage
 0
 100
-0.0
+50.0
 10
 1
 NIL
@@ -3346,7 +3346,7 @@ CHOOSER
 selected_algorithm_hunters_second
 selected_algorithm_hunters_second
 "Milling" "Diffusing" "Diffusing2" "Lie and Wait" "Standard Random" "Straight" "Spiral" "Custom"
-2
+1
 
 SWITCH
 0
@@ -3560,7 +3560,7 @@ SWITCH
 545
 only_detect_same_species?
 only_detect_same_species?
-0
+1
 1
 -1000
 
