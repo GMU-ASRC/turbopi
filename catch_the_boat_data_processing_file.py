@@ -32,7 +32,8 @@ def create_score_plot(x_values, score_data, extra_info):
     fig, ax = plt.subplots(figsize=(12, 8))
 
 
-    plt.errorbar(x_values, score_data, yerr = 0, fmt = 'o',color='green',
+    for i in range(len(score_data)):
+        plt.errorbar(x_values, score_data[i], yerr = 0, fmt = 'o', label=f'{extra_info[i]}', color=colors[i],
                 linestyle='-')
 
     x_values_inc = np.array(list(range(10, 110, 10)))
@@ -42,12 +43,16 @@ def create_score_plot(x_values, score_data, extra_info):
     ax.set_xticks(ticks=x_values_inc, labels=x_values_inc, rotation=0)
     ax.set_ylim(0, 1)
     plt.yticks(np.arange(0, 1.1, 0.1))  # Create ticks at 0.1 intervals
+    plt.legend()
     ax.grid(True)
 
 
 
 file_paths = []
 extra_info = []
+
+file_paths.append('/Users/rvega/Catch_the_Boat Scoring_parameter_sweep-spreadsheet_test1.csv')
+extra_info.append('100% Diffusing and Chasing')
 
 file_paths.append('/Users/rvega/Catch_the_Boat Scoring_parameter_sweep-spreadsheet_test2_half-non-chasers.csv')
 extra_info.append('100% Diffusing, only 50% Chasing')
@@ -58,8 +63,10 @@ num_of_algs = 1 # you can run more than one stategy at a time in Netlogo's Behav
 x_values = np.array(list(range(2,102, 2))) # enter the range of the number of hunters (or whatever you are sweeping across) from the starting to the end + one increment value
                                             # for example, I swept through 2 to 100 hunters in increments of 2.
 sweep_increment_length = len(x_values)
-Data_dicts = []
-score_data = extract_and_split_data_from_csv(file_paths[0], num_of_algs, sweep_increment_length)
+score_data = []
+colors = ['green', 'purple', 'orange', 'blue', 'red', 'brown', 'teal']
+for i in range(len(extra_info)):
+    score_data.append(extract_and_split_data_from_csv(file_paths[i], num_of_algs, sweep_increment_length))
 
 create_score_plot(x_values, score_data, extra_info)
 
