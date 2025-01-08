@@ -1613,9 +1613,12 @@ to do_sensing
   ifelse detect_hunters?
     [
       find-hunters-in-FOV
-      find-same-hunters-in-FOV
+      if breed = hunters
+      [
+        find-same-hunters-in-FOV
+      ]
 
-      if only_detect_same_species?
+      if only_detect_same_species? and breed = hunters
       [
         set fov-list-hunters fov-list-hunters-same
       ]
@@ -2852,7 +2855,7 @@ CHOOSER
 selected_algorithm_hunters
 selected_algorithm_hunters
 "Milling" "Diffusing" "Lie and Wait" "Standard Random" "Straight" "Spiral" "Custom" "Alternating" "Spiral Reverse"
-0
+1
 
 CHOOSER
 1764
@@ -2968,7 +2971,7 @@ number-of-drugboats
 number-of-drugboats
 0
 1
-0.0
+1.0
 1
 1
 NIL
@@ -3063,7 +3066,7 @@ CHOOSER
 Hunter_setup
 Hunter_setup
 "Random" "Inverted V" "Center Band" "Barrier" "Circle - Center" "Circle - Center - Facing Out" "Circle - Random" "Perfect Circle" "Perfect Picket" "Imperfect Picket" "Custom - Region" "Custom - Precise"
-4
+0
 
 BUTTON
 1159
@@ -3329,7 +3332,7 @@ second_percentage
 second_percentage
 0
 100
-30.0
+0.0
 10
 1
 NIL
@@ -3405,7 +3408,7 @@ speed2
 speed2
 0
 0.3
-0.25
+0.2
 0.05
 1
 m/s
@@ -3557,7 +3560,7 @@ SWITCH
 545
 only_detect_same_species?
 only_detect_same_species?
-1
+0
 1
 -1000
 
