@@ -84,6 +84,7 @@ hunters-own [
            temp-turning-val
            random_switch-timer
            alternating_procedure_val
+          fov-list-hunters-same
           ]
 
 
@@ -1222,7 +1223,7 @@ to spiral
  ifelse temp-turning-val > 0 ; while step count is less than the set step_length, it should either be turning in place or going straight
   [
 
-    set temp-turning-val (temp-turning-val - 0.1)
+    set temp-turning-val (temp-turning-val - (0.1))
     set inputs (list speed-w-noise 90 temp-turning-val)
 
   ]
@@ -1610,7 +1611,15 @@ to do_sensing
     [set fov-list-drugboats (list)]
 
   ifelse detect_hunters?
-    [find-hunters-in-FOV]
+    [
+      find-hunters-in-FOV
+      find-same-hunters-in-FOV
+
+      if only_detect_same_species?
+      [
+        set fov-list-hunters fov-list-hunters-same
+      ]
+   ]
     [set fov-list-hunters (list)]
 
 end
@@ -1732,6 +1741,7 @@ to make_hunter
       set fov-list-sanctuaries (list )
       set fov-list-hunters (list )
       set fov-list-drugboats (list )
+      set fov-list-hunters-same (list )
 
 
       place_hunters
@@ -1771,6 +1781,7 @@ to make_hunter_second
       set fov-list-sanctuaries (list )
       set fov-list-hunters (list )
       set fov-list-drugboats (list )
+      set fov-list-hunters-same (list )
 
 
       place_hunters
@@ -2252,6 +2263,54 @@ to find-hunters-in-FOV
     ]
 end
 
+to find-same-hunters-in-FOV
+  let vision-dd 0
+  let vision-cc 0
+  let real-bearing 0
+
+  ifelse member? self hunters
+    [
+      set vision-dd vision-distance
+      set vision-cc vision-cone
+    ]
+    [
+      set vision-dd vision-distance-drugboats
+    set vision-cc vision-cone-drugboats
+    ]
+
+  set fov-list-hunters-same (list )
+  set i (count sanctuaries  + count drugboats)
+
+  while [i < (count sanctuaries + count drugboats   + count hunters)]
+    [
+      if self != hunter ((i )  )
+        [
+          let sub-heading towards hunter (i ) - heading
+          set real-bearing sub-heading
+
+          if sub-heading < 0
+            [set real-bearing sub-heading + 360]
+
+          if sub-heading > 180
+            [set real-bearing sub-heading - 360]
+
+          if real-bearing > 180
+            [set real-bearing real-bearing - 360]
+
+
+          if (abs(real-bearing) < ((vision-cc / 2))) and (distance-nowrap (hunter (i )) < (vision-dd * 10)) and ([shape] of hunter (i) = ([shape] of self));
+           [
+             set fov-list-hunters-same fput (hunter (i)) fov-list-hunters-same
+              if [sanctuary_detected_flag] of hunter (i) = 1
+              [
+               set fov-list-green-hunters fput (hunter (i)) fov-list-green-hunters
+              ]
+           ]
+        ]
+     set i (i + 1)
+    ]
+end
+
 
 
 to find-sanctuaries-in-FOV
@@ -2539,7 +2598,7 @@ turning-rate1
 turning-rate1
 0
 360
-25.0
+30.0
 5
 1
 deg/s
@@ -2678,7 +2737,7 @@ number-of-hunters
 number-of-hunters
 0
 250
-13.0
+15.0
 1
 1
 NIL
@@ -2793,7 +2852,7 @@ CHOOSER
 selected_algorithm_hunters
 selected_algorithm_hunters
 "Milling" "Diffusing" "Lie and Wait" "Standard Random" "Straight" "Spiral" "Custom" "Alternating" "Spiral Reverse"
-1
+0
 
 CHOOSER
 1764
@@ -2909,7 +2968,7 @@ number-of-drugboats
 number-of-drugboats
 0
 1
-1.0
+0.0
 1
 1
 NIL
@@ -3270,7 +3329,7 @@ second_percentage
 second_percentage
 0
 100
-50.0
+30.0
 10
 1
 NIL
@@ -3284,7 +3343,7 @@ CHOOSER
 selected_algorithm_hunters_second
 selected_algorithm_hunters_second
 "Milling" "Diffusing" "Diffusing2" "Lie and Wait" "Standard Random" "Straight" "Spiral" "Custom"
-1
+2
 
 SWITCH
 0
@@ -3361,7 +3420,7 @@ turning-rate2
 turning-rate2
 0
 360
-50.0
+30.0
 10
 1
 deg/s
@@ -3490,6 +3549,17 @@ ticks_for_alternating
 1
 ticks
 HORIZONTAL
+
+SWITCH
+816
+512
+1010
+545
+only_detect_same_species?
+only_detect_same_species?
+1
+1
+-1000
 
 @#$#@#$#@
 ## WHAT IS IT?
