@@ -527,13 +527,13 @@ end
 
 
 to color-patches-by-density
-  ifelse closest-hunter-dist > 6
-  [
-    set pcolor white
-  ]
-  [
+;  ifelse closest-hunter-dist > 6
+;  [
+;    set pcolor white
+;  ]
+;  [
     set pcolor scale-color red closest-hunter-dist 0 30 ; Adjust range as needed
-  ]
+;  ]
 end
 
 
@@ -1991,10 +1991,13 @@ to hunter_setup_strict; if you want to more precisely place the hunters (i.e. hu
 
   if Hunter_setup = "Perfect Circle"
    [
+
       let irr1  (07 * ([size] of hunter (number-of-sanctuaries + number-of-drugboats)) / (2 * pi) ) + 1
       let irr2  (24 * ([size] of hunter (number-of-sanctuaries + number-of-drugboats)) / (2 * pi) ) + 1
       let j number-of-sanctuaries + number-of-drugboats
-      let heading_num1 360 / number-of-second-hunters 
+      let heading_num1 0
+      if number-of-second-hunters > 0
+      [set heading_num1 360 / number-of-second-hunters ]
       let heading_num2 360 / (number-of-hunters - number-of-second-hunters)
       let random-rotation random 90
 
@@ -3066,7 +3069,7 @@ CHOOSER
 Hunter_setup
 Hunter_setup
 "Random" "Inverted V" "Center Band" "Barrier" "Circle - Center" "Circle - Center - Facing Out" "Circle - Random" "Perfect Circle" "Perfect Picket" "Imperfect Picket" "Custom - Region" "Custom - Precise"
-0
+7
 
 BUTTON
 1159
@@ -3332,7 +3335,7 @@ second_percentage
 second_percentage
 0
 100
-50.0
+40.0
 10
 1
 NIL
@@ -3366,7 +3369,7 @@ SWITCH
 219
 heat-map?
 heat-map?
-1
+0
 1
 -1000
 
