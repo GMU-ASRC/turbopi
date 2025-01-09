@@ -2621,7 +2621,7 @@ seed-no
 seed-no
 1
 150
-21.0
+51.0
 1
 1
 NIL
@@ -2935,7 +2935,7 @@ CHOOSER
 selected_algorithm_hunters
 selected_algorithm_hunters
 "Milling" "Diffusing" "Diffusing2" "Lie and Wait" "Standard Random" "Straight" "Spiral" "Custom" "Alternating" "Spiral Reverse"
-1
+6
 
 CHOOSER
 1764
@@ -3081,7 +3081,7 @@ vision-cone-drugboats
 vision-cone-drugboats
 0
 360
-160.0
+360.0
 10
 1
 deg
@@ -3125,7 +3125,7 @@ CHOOSER
 selected_algorithm_drugboat
 selected_algorithm_drugboat
 "Auto" "Manual Control" "Better-Auto"
-0
+2
 
 MONITOR
 795
@@ -3412,7 +3412,7 @@ second_percentage
 second_percentage
 0
 100
-50.0
+0.0
 10
 1
 NIL
@@ -3579,7 +3579,7 @@ SWITCH
 529
 delayed_start?
 delayed_start?
-1
+0
 1
 -1000
 
@@ -4115,13 +4115,13 @@ NetLogo 6.4.0
   <experiment name="Scoring_parameter_sweep" repetitions="1" runMetricsEveryStep="false">
     <setup>setup</setup>
     <go>score_procedure</go>
-    <timeLimit steps="25001"/>
+    <timeLimit steps="125001"/>
     <exitCondition>end_flag &gt; 50</exitCondition>
     <metric>score</metric>
     <enumeratedValueSet variable="seed-no">
       <value value="1"/>
     </enumeratedValueSet>
-    <steppedValueSet variable="number-of-hunters" first="2" step="2" last="100"/>
+    <steppedValueSet variable="number-of-hunters" first="2" step="2" last="40"/>
   </experiment>
 </experiments>
 @#$#@#$#@
