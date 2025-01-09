@@ -676,7 +676,15 @@ to hunter_procedure
   do_sensing ; does the sensing to detect whatever the hunter is set to detect
 
 
-  ifelse length fov-list-drugboats > 0 ; if one or more drugboats are detected, it does what is in the first set of brackets (forward towards closest drugboat)
+  let start_time1 0
+
+  if delayed_start?
+  [
+    set start_time1 start_time
+  ]
+
+
+  ifelse length fov-list-drugboats > 0  and ticks > start_time1; if one or more drugboats are detected, it does what is in the first set of brackets (forward towards closest drugboat)
     [
       set detection_response_type "forward"
       detection_response_procedure
@@ -693,7 +701,7 @@ to hunter_procedure
         [
           ifelse length fov-list-sanctuaries > 0 ; if value is positive, it performs whatever the detection response is (i.e. if set to 'turn-away-in-place" it will make sure it turns in place for a full second even if it detects something else
             [
-              set detection_response_type "turn-away-in-place"
+              set detection_response_type "180-in-place"
               choose_rand_turn
               set detect_step_count (0.25 / tick-delta)
             ]
@@ -821,8 +829,15 @@ to hunter_procedure_second
   set_actuating_and_extra_variables ;does the procedure to set the speed and turning rate etc.
   do_sensing ; does the sensing to detect whatever the hunter is set to detect
 
+  let start_time1 0
 
-  ifelse length fov-list-drugboats > 0 ; if one or more drugboats are detected, it does what is in the first set of brackets (forward towards closest drugboat)
+  if delayed_start?
+  [
+    set start_time1 start_time
+  ]
+
+
+  ifelse length fov-list-drugboats > 0  and ticks > start_time1; if one or more drugboats are detected, it does what is in the first set of brackets (forward towards closest drugboat)
     [
       set detection_response_type "forward"
       detection_response_procedure
@@ -1517,6 +1532,7 @@ to detection_response_procedure
           [set target_bearing target_bearing]
         ]
 
+
       ifelse (target_bearing) > 0
         [set inputs (list (speed-w-noise) 90 turning-w-noise)]
         [set inputs (list (speed-w-noise) 90 (- turning-w-noise))]
@@ -1591,11 +1607,25 @@ to set_actuating_and_extra_variables
   [
     ifelse shape = "second-hunters"[
        set speed-w-noise random-normal (speed2 * 10) (noise-actuating-speed)
+
+      ifelse selected_algorithm_hunters_second = "Spiral"
+      [
+        set turning-w-noise random-normal (30) noise-actuating-turning
+      ]
+      [
        set turning-w-noise random-normal (turning-rate2) noise-actuating-turning
+      ]
     ]
     [
+      ifelse selected_algorithm_hunters = "Spiral"
+      [
+        set turning-w-noise random-normal (30) noise-actuating-turning
+      ]
+      [
+       set turning-w-noise random-normal (turning-rate1) noise-actuating-turning
+      ]
+
       set speed-w-noise random-normal (speed1 * 10) (noise-actuating-speed)
-      set turning-w-noise random-normal (turning-rate1) noise-actuating-turning
     ]
   ]
   [
@@ -2621,7 +2651,7 @@ seed-no
 seed-no
 1
 150
-51.0
+21.0
 1
 1
 NIL
@@ -2820,7 +2850,7 @@ number-of-hunters
 number-of-hunters
 0
 250
-18.0
+20.0
 1
 1
 NIL
@@ -3081,7 +3111,7 @@ vision-cone-drugboats
 vision-cone-drugboats
 0
 360
-360.0
+160.0
 10
 1
 deg
@@ -3426,7 +3456,7 @@ CHOOSER
 selected_algorithm_hunters_second
 selected_algorithm_hunters_second
 "Milling" "Diffusing" "Diffusing2" "Lie and Wait" "Standard Random" "Straight" "Spiral" "Custom"
-1
+6
 
 SWITCH
 0
@@ -3446,15 +3476,15 @@ SWITCH
 219
 heat-map?
 heat-map?
-0
+1
 1
 -1000
 
 PLOT
-1081
-432
-1400
-674
+734
+752
+1053
+994
 Patches Color Plot
 NIL
 NIL
@@ -3579,7 +3609,7 @@ SWITCH
 529
 delayed_start?
 delayed_start?
-0
+1
 1
 -1000
 
@@ -3696,7 +3726,7 @@ num-of-runs
 num-of-runs
 0
 100
-50.0
+20.0
 10
 1
 NIL
