@@ -1770,6 +1770,20 @@ to add_sanctuary
   ]
 end
 
+to show-drugboat
+  ask drugboats
+  [
+    hatch-discs 1
+              [
+                set size 2
+                set heading ([heading] of myself)
+                palette:set-transparency 50
+              ]
+
+  ]
+end
+
+
 to make_hunter
   create-hunters 1
     [
@@ -2619,11 +2633,11 @@ end
 GRAPHICS-WINDOW
 535
 69
-1000
-535
+962
+497
 -1
 -1
-6.13115
+5.612
 1
 10
 1
@@ -2652,7 +2666,7 @@ seed-no
 seed-no
 1
 150
-12.0
+14.0
 1
 1
 NIL
@@ -2667,7 +2681,7 @@ vision-distance
 vision-distance
 0
 30
-24.0
+10.0
 0.5
 1
 m
@@ -2933,10 +2947,10 @@ NIL
 HORIZONTAL
 
 MONITOR
-557
-14
-742
-59
+599
+13
+784
+58
 Time of Drugboat Escaping
 time-to-first-arrival
 17
@@ -3732,6 +3746,23 @@ num-of-runs
 1
 NIL
 HORIZONTAL
+
+BUTTON
+463
+22
+573
+56
+Enlarge Drugboat
+show-drugboat
+NIL
+1
+T
+OBSERVER
+NIL
+NIL
+NIL
+NIL
+1
 
 @#$#@#$#@
 ## WHAT IS IT?
