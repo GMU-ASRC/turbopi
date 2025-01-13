@@ -955,6 +955,16 @@ ifelse paint_fov?
                   palette:set-transparency 50
                 ]
           ]
+          vision-cone = 45
+          [
+            hatch-discs 1
+                [
+                  set size 2 * (vision-distance * .1)
+                  set heading ([heading] of myself)
+                  set shape "45-deg-fov"
+                  palette:set-transparency 50
+                ]
+          ]
           [
             paint-patches-in-new-FOV
           ]
@@ -2729,7 +2739,7 @@ vision-cone
 vision-cone
 0
 360
-90.0
+45.0
 5
 1
 deg
