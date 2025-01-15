@@ -994,16 +994,69 @@ ifelse paint_fov?
 
     ask drugboats
       [
-         ifelse vision-cone-drugboats != 360
-          [paint-patches-in-new-FOV]
+         (ifelse vision-cone-drugboats = 360
           [
-           hatch-discs 1
-              [
-                set size 2 * (vision-distance-drugboats * .10)
-                set heading ([heading] of myself)
-                palette:set-transparency 50
-              ]
+            hatch-discs 1
+                [
+                  set size 2 * (vision-distance-drugboats * .1)
+                  set heading ([heading] of myself)
+                  palette:set-transparency 50
+                ]
           ]
+          vision-cone-drugboats = 180
+          [
+            hatch-discs 1
+                [
+                  set size 2 * (vision-distance-drugboats * .1)
+                  set heading ([heading] of myself)
+                  set shape "180-deg-fov"
+                  palette:set-transparency 50
+                ]
+          ]
+          vision-cone-drugboats = 90
+          [
+            hatch-discs 1
+                [
+                  set size 2 * (vision-distance-drugboats * .1)
+                  set heading ([heading] of myself)
+                  set shape "90-deg-fov"
+                  palette:set-transparency 50
+                ]
+          ]
+          vision-cone-drugboats = 45
+          [
+            hatch-discs 1
+                [
+                  set size 2 * (vision-distance-drugboats * .1)
+                  set heading ([heading] of myself)
+                  set shape "45-deg-fov"
+                  palette:set-transparency 50
+                ]
+          ]
+          vision-cone-drugboats = 60
+          [
+            hatch-discs 1
+                [
+                  set size 2 * (vision-distance-drugboats * .1)
+                  set heading ([heading] of myself)
+                  set shape "60-deg-fov"
+                  palette:set-transparency 50
+                ]
+          ]
+          vision-cone-drugboats = 30
+          [
+            hatch-discs 1
+                [
+                  set size 2 * (vision-distance-drugboats * .1)
+                  set heading ([heading] of myself)
+                  set shape "30-deg-fov"
+                  palette:set-transparency 50
+                ]
+          ]
+          [
+            paint-patches-in-new-FOV
+          ]
+          )
        ]
   ]
   [
@@ -1751,20 +1804,20 @@ to update_agent_state
      set stuck_count stuck_count + 1
    ]
 
-;  ifelse protected_spawn? and member? self hunters ; if the switch is on, it makes the orange line inpassable using same method above
-;  [
-;    if nycor > max-pycor or nycor < -25
-;    [ set nycor ycor
-;      set nxcor xcor
-;      set stuck_count stuck_count + 1
-;    ]
-;  ]
-;  [
+  ifelse protected_spawn? and member? self hunters ; if the switch is on, it makes the green ring inpassable using same method above
+  [
+    if sqrt((nycor ^ 2) + (nxcor ^ 2)) < (sanctuary-region-size / 2)
+    [ set nycor ycor
+      set nxcor xcor
+      set stuck_count stuck_count + 1
+    ]
+  ]
+  [
     if nycor > max-pycor or nycor < min-pycor
     [ set nycor ycor
       set nxcor xcor
       set stuck_count stuck_count + 1]
-;  ]
+  ]
 
   setxy nxcor nycor
 
@@ -2041,6 +2094,13 @@ to place_hunters; defines region and/or orientation of where the hunters should 
   if Hunter_setup = "Circle - Center"
    [
     set sr_patches patches with [(distancexy 0 0 < (sqrt(number-of-hunters) * ([size] of hunter (count sanctuaries  + count drugboats)) * (10) ) + 1) and pxcor != 0 and pycor != 0]
+    move-to one-of sr_patches with [(not any? other turtles in-radius ([size] of hunter (count sanctuaries + count drugboats)))]
+     setxy (xcor + 0.01) (ycor + 0.01)
+   ]
+
+  if Hunter_setup = "Donut"
+   [
+    set sr_patches patches with [(distancexy 0 0 < (10)) and (distancexy 0 0 > (sanctuary-region-size / 2)) and pxcor != 0 and pycor != 0]
     move-to one-of sr_patches with [(not any? other turtles in-radius ([size] of hunter (count sanctuaries + count drugboats)))]
      setxy (xcor + 0.01) (ycor + 0.01)
    ]
@@ -2759,7 +2819,7 @@ vision-cone
 vision-cone
 0
 360
-60.0
+45.0
 5
 1
 deg
@@ -2928,7 +2988,7 @@ number-of-hunters
 number-of-hunters
 0
 250
-43.0
+20.0
 1
 1
 NIL
@@ -3043,7 +3103,7 @@ CHOOSER
 selected_algorithm_hunters
 selected_algorithm_hunters
 "Milling" "Diffusing" "Diffusing2" "Lie and Wait" "Standard Random" "Straight" "Spiral" "Custom" "Alternating" "Spiral Reverse"
-0
+1
 
 CHOOSER
 1764
@@ -3159,7 +3219,7 @@ number-of-drugboats
 number-of-drugboats
 0
 1
-0.0
+1.0
 1
 1
 NIL
@@ -3168,14 +3228,14 @@ HORIZONTAL
 SLIDER
 1760
 190
-1964
+1987
 223
 vision-distance-drugboats
 vision-distance-drugboats
 0
-2
-1.4
-0.1
+30
+1.0
+1
 1
 m
 HORIZONTAL
@@ -3189,7 +3249,7 @@ vision-cone-drugboats
 vision-cone-drugboats
 0
 360
-160.0
+180.0
 10
 1
 deg
@@ -3253,8 +3313,8 @@ CHOOSER
 131
 Hunter_setup
 Hunter_setup
-"Random" "Inverted V" "Center Band" "Barrier" "Circle - Center" "Circle - Center - Facing Out" "Circle - Random" "Perfect Circle" "Perfect Picket" "Imperfect Picket" "Custom - Region" "Custom - Precise"
-4
+"Random" "Inverted V" "Center Band" "Barrier" "Circle - Center" "Circle - Center - Facing Out" "Circle - Random" "Perfect Circle" "Perfect Picket" "Imperfect Picket" "Custom - Region" "Custom - Precise" "Donut"
+12
 
 BUTTON
 1159
@@ -3804,7 +3864,7 @@ num-of-runs
 num-of-runs
 0
 100
-20.0
+30.0
 10
 1
 NIL
