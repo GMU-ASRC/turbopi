@@ -965,6 +965,26 @@ ifelse paint_fov?
                   palette:set-transparency 50
                 ]
           ]
+          vision-cone = 60
+          [
+            hatch-discs 1
+                [
+                  set size 2 * (vision-distance * .1)
+                  set heading ([heading] of myself)
+                  set shape "60-deg-fov"
+                  palette:set-transparency 50
+                ]
+          ]
+          vision-cone = 30
+          [
+            hatch-discs 1
+                [
+                  set size 2 * (vision-distance * .1)
+                  set heading ([heading] of myself)
+                  set shape "30-deg-fov"
+                  palette:set-transparency 50
+                ]
+          ]
           [
             paint-patches-in-new-FOV
           ]
@@ -2739,7 +2759,7 @@ vision-cone
 vision-cone
 0
 360
-45.0
+60.0
 5
 1
 deg
@@ -3854,11 +3874,21 @@ true
 0
 Polygon -7500403 true true 0 150 0 120 15 90 30 60 60 30 90 15 135 0 165 0 210 15 240 30 270 60 285 90 300 120 300 150 0 150
 
+30-deg-fov
+true
+0
+Polygon -7500403 true true 150 150 104 8 110 6 120 4 126 3 141 1 151 0 169 1 180 4 194 7 150 150
+
 45-deg-fov
 true
 0
 Polygon -7500403 true true 105 210
 Polygon -7500403 true true 150 150 210 14 180 0 120 0 90 15 150 150
+
+60-deg-fov
+true
+0
+Polygon -7500403 true true 150 150 69 25 77 19 94 11 114 5 126 2 141 0 154 0 167 0 176 2 192 6 207 12 225 20 229 21 150 150
 
 90-deg-fov
 true
