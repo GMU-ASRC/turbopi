@@ -328,6 +328,9 @@ to go
      ]
 
   ]
+  if manual_removal?[
+  assasinate_hunter
+  ]
 
   tick-advance 1
 end
@@ -1113,6 +1116,9 @@ to select_alg_procedure1
   if selected_algorithm_hunters = "Milling"
   [mill]
 
+  if selected_algorithm_hunters = "Milling2"
+  [mill2]
+
   if selected_algorithm_hunters = "Diffusing"
   [dispersal]
 
@@ -1235,6 +1241,9 @@ to procedure1 ;different options for the procedure1 chooser
   if Procedure1_for_alternating = "Milling"
   [mill]
 
+  if Procedure1_for_alternating = "Milling2"
+  [mill2]
+
   if Procedure1_for_alternating = "Diffusing"
   [dispersal]
 
@@ -1266,6 +1275,9 @@ to procedure2 ;different options for the procedure2 chooser
 
   if Procedure2_for_alternating = "Milling"
   [mill]
+
+  if Procedure2_for_alternating = "Milling2"
+  [mill2]
 
   if Procedure2_for_alternating = "Diffusing"
   [dispersal]
@@ -1332,6 +1344,13 @@ to mill  ;; control rule for if nothing is detected (for milling)
    set inputs (list (1 * speed-w-noise) 90 ( 1  * turning-w-noise))
 end
 
+to mill2  ;; control rule for if nothing is detected (for milling)
+  set_actuating_and_extra_variables
+  do_sensing
+
+   set inputs (list (1 * speed-w-noise) 90 ( -1  * turning-w-noise))
+end
+
 to dispersal ; control rule for if nothing is detected (for diffusion)
   set_actuating_and_extra_variables
   do_sensing
@@ -1382,14 +1401,20 @@ end
 to custom_alg
  ;design your own algorithm of what the hunters should be doing to search the environment (before they see the drugboat)
 
- ;example
- ifelse ticks mod 300 < 150 ; every 150 ticks, do what is in first set of brackets, else do what is in second set
-  [
-    set inputs (list speed-w-noise 90 0) ; move straight forward
-  ]
-  [
-    set inputs (list speed-w-noise 270 0) ; move straight backwards
-  ]
+; ;example
+; ifelse ticks mod 300 < 150 ; every 150 ticks, do what is in first set of brackets, else do what is in second set
+;  [
+;    set inputs (list speed-w-noise 90 0) ; move straight forward
+;  ]
+;  [
+;    set inputs (list speed-w-noise 270 0) ; move straight backwards
+;  ]
+
+   set_actuating_and_extra_variables
+  do_sensing
+
+  set inputs (list (1 * speed-w-noise) 90 ( 0  * turning-w-noise))
+
 end
 
 
@@ -1492,8 +1517,8 @@ to detection_response_procedure
   if detection_response_type = "best_patch"
     [
       ; Drugboat position
-      let db_x [xcor] of drugboat 1
-      let db_y [ycor] of drugboat 1
+      let db_x xcor
+      let db_y ycor
       ; x and y deltas (will be applied to the drugboat's position)
       let delta_x 1
       let delta_y 1
@@ -1804,7 +1829,7 @@ to update_agent_state
      set stuck_count stuck_count + 1
    ]
 
-  ifelse protected_spawn? and member? self hunters ; if the switch is on, it makes the green ring inpassable using same method above
+  if protected_spawn? and member? self hunters ; if the switch is on, it makes the green ring inpassable using same method above
   [
     if sqrt((nycor ^ 2) + (nxcor ^ 2)) < (sanctuary-region-size / 2)
     [ set nycor ycor
@@ -1812,12 +1837,12 @@ to update_agent_state
       set stuck_count stuck_count + 1
     ]
   ]
-  [
+
     if nycor > max-pycor or nycor < min-pycor
     [ set nycor ycor
       set nxcor xcor
       set stuck_count stuck_count + 1]
-  ]
+
 
   setxy nxcor nycor
 
@@ -2176,8 +2201,8 @@ to hunter_setup_strict; if you want to more precisely place the hunters (i.e. hu
   if Hunter_setup = "Perfect Circle"
    [
 
-      let irr1  (1700 * ([size] of hunter (number-of-sanctuaries + number-of-drugboats)) / (2 * pi) ) + 1
-      let irr2  (3000 * ([size] of hunter (number-of-sanctuaries + number-of-drugboats)) / (2 * pi) ) + 1
+      let irr1  (circle1size / 10)
+      let irr2  (circle2size / 10)
       let j number-of-sanctuaries + number-of-drugboats
       let heading_num1 0
       if number-of-second-hunters > 0
@@ -2206,14 +2231,22 @@ to hunter_setup_strict; if you want to more precisely place the hunters (i.e. hu
 
    ]
 
-
-
   if Hunter_setup = "Custom - Precise"; specify exactly where you want each robot to be placed to create shapes and better formations
    [
      ; use examples above to find a way to set them up however you like
    ]
 end
 
+to assasinate_hunter
+  if mouse-down? [
+    ask min-one-of hunters [distancexy mouse-xcor mouse-ycor]
+    [
+      set breed place-holders
+      ht
+    ]
+    set number-of-hunters (number-of-hunters - 1)
+  ]
+end
 
 to clear-paint
 ask patches
@@ -2418,8 +2451,10 @@ to find-hunters-in-FOV
   set fov-list-hunters (list )
   set i (count sanctuaries  + count drugboats)
 
-  while [i < (count sanctuaries + count drugboats   + count hunters)]
+  while [i < (count sanctuaries + count drugboats + count hunters)]
     [
+      if member? self hunters
+      [
       if self != hunter ((i )  )
         [
           let sub-heading towards hunter (i ) - heading
@@ -2435,7 +2470,7 @@ to find-hunters-in-FOV
             [set real-bearing real-bearing - 360]
 
 
-          if (abs(real-bearing) < ((vision-cc / 2))) and (distance-nowrap (hunter (i )) < (vision-dd * 0.10));
+          if (abs(real-bearing) < ((vision-cc / 2))) and (distance-nowrap (hunter (i )) < (vision-dd * 10));
            [
              set fov-list-hunters fput (hunter (i)) fov-list-hunters
               if [sanctuary_detected_flag] of hunter (i) = 1
@@ -2444,8 +2479,9 @@ to find-hunters-in-FOV
               ]
            ]
         ]
+  ]
      set i (i + 1)
-    ]
+      ]
 end
 
 to find-other-hunters-in-FOV
@@ -2469,35 +2505,38 @@ to find-other-hunters-in-FOV
 
   while [i < (count sanctuaries + count drugboats   + count hunters)]
     [
-      if self != hunter ((i )  )
+      if member? (turtle (i)) hunters
         [
-          let sub-heading towards hunter (i ) - heading
-          set real-bearing sub-heading
-
-          if sub-heading < 0
-            [set real-bearing sub-heading + 360]
-
-          if sub-heading > 180
-            [set real-bearing sub-heading - 360]
-
-          if real-bearing > 180
-            [set real-bearing real-bearing - 360]
-
-
-          if (abs(real-bearing) < ((vision-cc / 2))) and (distance-nowrap (hunter (i )) < (vision-dd * 0.10)) and ([shape] of hunter (i) != ([shape] of self)) and (first_detect_others?) and ([shape] of self = "circle 2");
+         if self != hunter ((i )  )
            [
-             set fov-list-hunters-other1 fput (hunter (i)) fov-list-hunters-other1
-              if [sanctuary_detected_flag] of hunter (i) = 1
+             let sub-heading towards hunter (i ) - heading
+             set real-bearing sub-heading
+
+             if sub-heading < 0
+               [set real-bearing sub-heading + 360]
+
+             if sub-heading > 180
+               [set real-bearing sub-heading - 360]
+
+             if real-bearing > 180
+               [set real-bearing real-bearing - 360]
+
+
+             if (abs(real-bearing) < ((vision-cc / 2))) and (distance-nowrap (hunter (i )) < (vision-dd * 0.10)) and ([shape] of hunter (i) != ([shape] of self)) and (first_detect_others?) and ([shape] of self = "circle 2");
               [
-               set fov-list-green-hunters fput (hunter (i)) fov-list-green-hunters
+                set fov-list-hunters-other1 fput (hunter (i)) fov-list-hunters-other1
+                 if [sanctuary_detected_flag] of hunter (i) = 1
+                 [
+                  set fov-list-green-hunters fput (hunter (i)) fov-list-green-hunters
+                 ]
               ]
-           ]
-          if (abs(real-bearing) < ((vision-cc / 2))) and (distance-nowrap (hunter (i )) < (vision-dd * 0.10)) and ([shape] of hunter (i) != ([shape] of self)) and (second_detect_others?) and ([shape] of self = "second-hunters");
-           [
-             set fov-list-hunters-other2 fput (hunter (i)) fov-list-hunters-other2
-              if [sanctuary_detected_flag] of hunter (i) = 1
+             if (abs(real-bearing) < ((vision-cc / 2))) and (distance-nowrap (hunter (i )) < (vision-dd * 0.10)) and ([shape] of hunter (i) != ([shape] of self)) and (second_detect_others?) and ([shape] of self = "second-hunters");
               [
-               set fov-list-green-hunters fput (hunter (i)) fov-list-green-hunters
+                set fov-list-hunters-other2 fput (hunter (i)) fov-list-hunters-other2
+                 if [sanctuary_detected_flag] of hunter (i) = 1
+                 [
+                  set fov-list-green-hunters fput (hunter (i)) fov-list-green-hunters
+                 ]
               ]
            ]
         ]
@@ -2526,38 +2565,41 @@ to find-same-hunters-in-FOV
 
   while [i < (count sanctuaries + count drugboats   + count hunters)]
     [
-      if self != hunter ((i )  )
+       if member? (turtle(i)) hunters
         [
-          let sub-heading towards hunter (i ) - heading
-          set real-bearing sub-heading
-
-          if sub-heading < 0
-            [set real-bearing sub-heading + 360]
-
-          if sub-heading > 180
-            [set real-bearing sub-heading - 360]
-
-          if real-bearing > 180
-            [set real-bearing real-bearing - 360]
-
-
-          if (abs(real-bearing) < ((vision-cc / 2))) and (distance-nowrap (hunter (i )) < (vision-dd * 0.10)) and ([shape] of hunter (i) = ([shape] of self)) and (first_detect_same?) and ([shape] of self = "circle 2");
+         if self != hunter ((i )  )
            [
-             set fov-list-hunters-same1 fput (hunter (i)) fov-list-hunters-same1
-              if [sanctuary_detected_flag] of hunter (i) = 1
+             let sub-heading towards hunter (i ) - heading
+             set real-bearing sub-heading
+
+             if sub-heading < 0
+               [set real-bearing sub-heading + 360]
+
+             if sub-heading > 180
+               [set real-bearing sub-heading - 360]
+
+             if real-bearing > 180
+               [set real-bearing real-bearing - 360]
+
+
+             if (abs(real-bearing) < ((vision-cc / 2))) and (distance-nowrap (hunter (i )) < (vision-dd * 0.10)) and ([shape] of hunter (i) = ([shape] of self)) and (first_detect_same?) and ([shape] of self = "circle 2");
               [
-               set fov-list-green-hunters fput (hunter (i)) fov-list-green-hunters
+                set fov-list-hunters-same1 fput (hunter (i)) fov-list-hunters-same1
+                 if [sanctuary_detected_flag] of hunter (i) = 1
+                 [
+                  set fov-list-green-hunters fput (hunter (i)) fov-list-green-hunters
+                 ]
+              ]
+             if (abs(real-bearing) < ((vision-cc / 2))) and (distance-nowrap (hunter (i )) < (vision-dd * 0.10)) and ([shape] of hunter (i) = ([shape] of self)) and (second_detect_same?) and ([shape] of self = "second-hunters");
+              [
+                set fov-list-hunters-same2 fput (hunter (i)) fov-list-hunters-same2
+                 if [sanctuary_detected_flag] of hunter (i) = 1
+                 [
+                  set fov-list-green-hunters fput (hunter (i)) fov-list-green-hunters
+                 ]
               ]
            ]
-          if (abs(real-bearing) < ((vision-cc / 2))) and (distance-nowrap (hunter (i )) < (vision-dd * 0.10)) and ([shape] of hunter (i) = ([shape] of self)) and (second_detect_same?) and ([shape] of self = "second-hunters");
-           [
-             set fov-list-hunters-same2 fput (hunter (i)) fov-list-hunters-same2
-              if [sanctuary_detected_flag] of hunter (i) = 1
-              [
-               set fov-list-green-hunters fput (hunter (i)) fov-list-green-hunters
-              ]
-           ]
-        ]
+       ]
      set i (i + 1)
     ]
 end
@@ -2789,7 +2831,7 @@ seed-no
 seed-no
 1
 150
-1.0
+115.0
 1
 1
 NIL
@@ -2988,7 +3030,7 @@ number-of-hunters
 number-of-hunters
 0
 250
-20.0
+50.0
 1
 1
 NIL
@@ -3102,8 +3144,8 @@ CHOOSER
 193
 selected_algorithm_hunters
 selected_algorithm_hunters
-"Milling" "Diffusing" "Diffusing2" "Lie and Wait" "Standard Random" "Straight" "Spiral" "Custom" "Alternating" "Spiral Reverse"
-1
+"Milling" "Milling2" "Diffusing" "Diffusing2" "Lie and Wait" "Standard Random" "Straight" "Spiral" "Custom" "Alternating" "Spiral Reverse"
+0
 
 CHOOSER
 1764
@@ -3219,7 +3261,7 @@ number-of-drugboats
 number-of-drugboats
 0
 1
-1.0
+0.0
 1
 1
 NIL
@@ -3314,7 +3356,7 @@ CHOOSER
 Hunter_setup
 Hunter_setup
 "Random" "Inverted V" "Center Band" "Barrier" "Circle - Center" "Circle - Center - Facing Out" "Circle - Random" "Perfect Circle" "Perfect Picket" "Imperfect Picket" "Custom - Region" "Custom - Precise" "Donut"
-12
+7
 
 BUTTON
 1159
@@ -3594,7 +3636,7 @@ CHOOSER
 selected_algorithm_hunters_second
 selected_algorithm_hunters_second
 "Milling" "Diffusing" "Diffusing2" "Lie and Wait" "Standard Random" "Straight" "Spiral" "Custom"
-3
+1
 
 SWITCH
 0
@@ -3774,7 +3816,7 @@ CHOOSER
 Procedure2_for_alternating
 Procedure2_for_alternating
 "Milling" "Diffusing" "Lie and Wait" "Standard Random" "Straight" "Spiral" "Custom" "Spiral Reverse"
-7
+0
 
 CHOOSER
 266
@@ -3784,7 +3826,7 @@ CHOOSER
 Procedure1_for_alternating
 Procedure1_for_alternating
 "Milling" "Diffusing" "Lie and Wait" "Standard Random" "Straight" "Spiral" "Custom" "Spiral Reverse"
-5
+1
 
 SLIDER
 263
@@ -3795,7 +3837,7 @@ ticks_for_alternating
 ticks_for_alternating
 0
 200
-90.0
+200.0
 10
 1
 ticks
@@ -3885,6 +3927,57 @@ NIL
 NIL
 NIL
 NIL
+1
+
+SLIDER
+21
+202
+128
+235
+circle1size
+circle1size
+0
+300
+65.0
+1
+1
+m
+HORIZONTAL
+
+SLIDER
+143
+204
+245
+237
+circle2size
+circle2size
+0
+300
+72.0
+1
+1
+m
+HORIZONTAL
+
+SWITCH
+941
+427
+1095
+460
+manual_removal?
+manual_removal?
+1
+1
+-1000
+
+TEXTBOX
+947
+369
+1097
+421
+Click once on or around a hunter to eliminate.\nClick and drag over the hunters to eliminate multiplew
+10
+0.0
 1
 
 @#$#@#$#@

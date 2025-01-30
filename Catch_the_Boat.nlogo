@@ -530,7 +530,7 @@ end
 
 
 to color-patches-by-density
-;  ifelse closest-hunter-dist > 6
+;  ifelse closest-hunter-dist > 11
 ;  [
 ;    set pcolor white
 ;  ]
@@ -1381,8 +1381,8 @@ to detection_response_procedure
   if detection_response_type = "best_patch"
     [
       ; Drugboat position
-      let db_x [xcor] of drugboat 1
-      let db_y [ycor] of drugboat 1
+      let db_x xcor
+      let db_y ycor
       ; x and y deltas (will be applied to the drugboat's position)
       let delta_x 1
       let delta_y 1
@@ -2018,7 +2018,7 @@ to hunter_setup_strict; if you want to more precisely place the hunters (i.e. hu
      while [j < number-of-sanctuaries + number-of-drugboats + number-of-hunters]
      [ask hunter (j )
        [
-         setxy (((j - jc) * (61 / number-of-hunters)) - 30) (0)
+         setxy (((j - jc) * (61 / number-of-hunters)) - 29) (0)
 
         set heading 180
 
@@ -2618,11 +2618,11 @@ end
 GRAPHICS-WINDOW
 498
 74
-916
-493
+860
+437
 -1
 -1
-6.72414
+5.8033
 1
 10
 1
@@ -2651,7 +2651,7 @@ seed-no
 seed-no
 1
 150
-21.0
+8.0
 1
 1
 NIL
@@ -2850,7 +2850,7 @@ number-of-hunters
 number-of-hunters
 0
 250
-20.0
+21.0
 1
 1
 NIL
@@ -2965,7 +2965,7 @@ CHOOSER
 selected_algorithm_hunters
 selected_algorithm_hunters
 "Milling" "Diffusing" "Diffusing2" "Lie and Wait" "Standard Random" "Straight" "Spiral" "Custom" "Alternating" "Spiral Reverse"
-6
+1
 
 CHOOSER
 1764
@@ -3080,8 +3080,8 @@ SLIDER
 number-of-drugboats
 number-of-drugboats
 0
-1
-1.0
+2
+2.0
 1
 1
 NIL
@@ -3125,8 +3125,8 @@ SLIDER
 speed-drugboats
 speed-drugboats
 0
-0.25
-0.25
+0.5
+0.5
 0.05
 1
 m/s
@@ -3456,7 +3456,7 @@ CHOOSER
 selected_algorithm_hunters_second
 selected_algorithm_hunters_second
 "Milling" "Diffusing" "Diffusing2" "Lie and Wait" "Standard Random" "Straight" "Spiral" "Custom"
-6
+3
 
 SWITCH
 0
@@ -3505,7 +3505,7 @@ SWITCH
 621
 second-non-chasers?
 second-non-chasers?
-1
+0
 1
 -1000
 
