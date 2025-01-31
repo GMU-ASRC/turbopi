@@ -30,6 +30,8 @@ globals [ tick-delta
           sim_ran_count
           score_list
           score
+          start_time1
+          clear_path_occurance
          ]
 
 
@@ -134,6 +136,7 @@ drugboats-own [
            detect_step_count
            fov-list-patches
            direction_angle
+           Im-detected-flag
           ]
 
 patches-own [
@@ -163,6 +166,14 @@ to setup
 
   set rand-xcor one-of gr
   set rand-ycor one-of gr
+
+  set start_time1 0
+  set clear_path_occurance 0
+
+  if delayed_start?
+  [
+    set start_time1 start_time
+  ]
 
 
 
@@ -332,6 +343,15 @@ to go
   assasinate_hunter
   ]
 
+
+
+
+  if clear_path? and ticks > start_time1 and clear_path_occurance = 0
+  [
+    clear_path
+    set clear_path_occurance (clear_path_occurance + 1)
+  ]
+
   tick-advance 1
 end
 
@@ -347,6 +367,33 @@ to do-plots
   histogram [closest-hunter-dist] of patches
 
 end
+
+to clear_path
+
+  let x1 [xcor] of sanctuary 0
+  let y1 [ycor] of sanctuary 0
+  let x2 [xcor] of drugboat 1
+  let y2 [ycor] of drugboat 1
+
+  let slope (y2 - y1) / (x2 - x1)
+
+  let r 20
+
+  ask hunters
+  [
+    if (ycor < (slope * xcor) + 2) and (ycor > (slope * xcor) - 2) and (distance drugboat 1 < [distancexy x1 y1] of drugboat 1 )
+      [
+       set breed place-holders
+       ht
+       set number-of-hunters (number-of-hunters - 1)
+       ]
+
+    ]
+
+
+
+end
+
 
 to score_procedure
 
@@ -542,12 +589,7 @@ to drugboat_procedure
   set_actuating_and_extra_variables ;does the procedure to set the speed and turning rate etc.
   do_sensing ; does the sensing to detect whatever the drugboat is set to detect
 
-  let start_time1 0
 
-  if delayed_start?
-  [
-    set start_time1 start_time
-  ]
 
   if ticks > start_time1
   [
@@ -642,6 +684,8 @@ to drugboat_procedure
 
 
 
+
+
 end
 
 to drugboat_procedure_manual ; buttons control what the inputs of the drugboat is, this is here to make the drugboat actually use those inputs to move
@@ -674,12 +718,7 @@ to hunter_procedure
   do_sensing ; does the sensing to detect whatever the hunter is set to detect
 
 
-  let start_time1 0
 
-  if delayed_start?
-  [
-    set start_time1 start_time
-  ]
 
 
   ifelse length fov-list-drugboats > 0  and ticks > start_time1; if one or more drugboats are detected, it does what is in the first set of brackets (forward towards closest drugboat)
@@ -819,7 +858,12 @@ to hunter_procedure
  update_agent_state; updates states of agents (i.e. position and heading)
 
  if count drugboats > 0 and (count drugboats in-cone (vision-distance * 0.1) vision-cone) > 0
-  [ set drugboat_caught_flag 1]
+  [
+    ask drugboats in-cone (vision-distance * 0.1) vision-cone
+    [
+     set Im-detected-flag 1
+    ]
+  ]
 
 end
 
@@ -827,12 +871,7 @@ to hunter_procedure_second
   set_actuating_and_extra_variables ;does the procedure to set the speed and turning rate etc.
   do_sensing ; does the sensing to detect whatever the hunter is set to detect
 
-  let start_time1 0
 
-  if delayed_start?
-  [
-    set start_time1 start_time
-  ]
 
 
   ifelse length fov-list-drugboats > 0  and ticks > start_time1; if one or more drugboats are detected, it does what is in the first set of brackets (forward towards closest drugboat)
@@ -911,8 +950,12 @@ to hunter_procedure_second
  update_agent_state; updates states of agents (i.e. position and heading)
 
  if count drugboats > 0 and (count drugboats in-cone (vision-distance * 0.1) vision-cone) > 0
-  [ set drugboat_caught_flag 1]
-
+  [
+    ask drugboats in-cone (vision-distance * 0.1) vision-cone
+    [
+     set Im-detected-flag 1
+    ]
+  ]
 end
 
 
@@ -1089,7 +1132,7 @@ to measure_results
        ]
         if time-of-first-drugboat-detected = 0
         [
-          if count hunters with [drugboat_caught_flag = 1] > 0
+          if count drugboats with [Im-detected-flag = 1] = number-of-drugboats
           [set time-of-first-drugboat-detected ticks]
         ]
 
@@ -3030,7 +3073,7 @@ number-of-hunters
 number-of-hunters
 0
 250
-50.0
+91.0
 1
 1
 NIL
@@ -3145,7 +3188,7 @@ CHOOSER
 selected_algorithm_hunters
 selected_algorithm_hunters
 "Milling" "Milling2" "Diffusing" "Diffusing2" "Lie and Wait" "Standard Random" "Straight" "Spiral" "Custom" "Alternating" "Spiral Reverse"
-0
+2
 
 CHOOSER
 1764
@@ -3260,8 +3303,8 @@ SLIDER
 number-of-drugboats
 number-of-drugboats
 0
-1
-0.0
+3
+1.0
 1
 1
 NIL
@@ -3305,7 +3348,7 @@ SLIDER
 speed-drugboats
 speed-drugboats
 0
-5
+10
 5.0
 0.5
 1
@@ -3356,7 +3399,7 @@ CHOOSER
 Hunter_setup
 Hunter_setup
 "Random" "Inverted V" "Center Band" "Barrier" "Circle - Center" "Circle - Center - Facing Out" "Circle - Random" "Perfect Circle" "Perfect Picket" "Imperfect Picket" "Custom - Region" "Custom - Precise" "Donut"
-7
+12
 
 BUTTON
 1159
@@ -3636,7 +3679,7 @@ CHOOSER
 selected_algorithm_hunters_second
 selected_algorithm_hunters_second
 "Milling" "Diffusing" "Diffusing2" "Lie and Wait" "Standard Random" "Straight" "Spiral" "Custom"
-1
+6
 
 SWITCH
 0
@@ -3789,7 +3832,7 @@ SWITCH
 529
 delayed_start?
 delayed_start?
-1
+0
 1
 -1000
 
@@ -3802,7 +3845,7 @@ start_time
 start_time
 0
 1500
-500.0
+100.0
 10
 1
 ticks
@@ -3872,7 +3915,7 @@ SWITCH
 667
 first_detect_others?
 first_detect_others?
-1
+0
 1
 -1000
 
@@ -3906,7 +3949,7 @@ num-of-runs
 num-of-runs
 0
 100
-30.0
+10.0
 10
 1
 NIL
@@ -3979,6 +4022,17 @@ Click once on or around a hunter to eliminate.\nClick and drag over the hunters 
 10
 0.0
 1
+
+SWITCH
+1146
+491
+1273
+524
+clear_path?
+clear_path?
+0
+1
+-1000
 
 @#$#@#$#@
 ## WHAT IS IT?
@@ -4459,6 +4513,22 @@ NetLogo 6.4.0
       <value value="1"/>
     </enumeratedValueSet>
     <steppedValueSet variable="number-of-hunters" first="2" step="2" last="40"/>
+  </experiment>
+  <experiment name="Scoring_parameter_sweep2" repetitions="1" runMetricsEveryStep="false">
+    <setup>setup</setup>
+    <go>score_procedure</go>
+    <timeLimit steps="125001"/>
+    <exitCondition>end_flag &gt; 50</exitCondition>
+    <metric>score</metric>
+    <enumeratedValueSet variable="seed-no">
+      <value value="1"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="speed-drugboats">
+      <value value="5"/>
+      <value value="10"/>
+    </enumeratedValueSet>
+    <steppedValueSet variable="second_percentage" first="0" step="50" last="100"/>
+    <steppedValueSet variable="number-of-hunters" first="20" step="20" last="100"/>
   </experiment>
 </experiments>
 @#$#@#$#@
