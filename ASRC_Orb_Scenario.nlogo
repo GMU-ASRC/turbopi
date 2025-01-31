@@ -377,15 +377,23 @@ to clear_path
 
   let slope (y2 - y1) / (x2 - x1)
 
-  let r 20
+  let r 5
 
   ask hunters
   [
-    if (ycor < (slope * xcor) + 2) and (ycor > (slope * xcor) - 2) and (distance drugboat 1 < [distancexy x1 y1] of drugboat 1 )
+    if (ycor < (slope * xcor) + r) and (ycor > (slope * xcor) - r) and (distance drugboat 1 < [distancexy x1 y1] of drugboat 1 )
       [
        set breed place-holders
        ht
-       set number-of-hunters (number-of-hunters - 1)
+       ]
+
+    ]
+
+  ask patches
+  [
+    if (pycor < (slope * pxcor) + r) and (pycor > (slope * pxcor) - r) and (distance drugboat 1 < [distancexy x1 y1] of drugboat 1 )
+      [
+       set pcolor blue
        ]
 
     ]
@@ -481,6 +489,12 @@ to score_procedure
 
   do-plots
 
+  if clear_path? and ticks > start_time1 and clear_path_occurance = 0
+  [
+    clear_path
+    set clear_path_occurance (clear_path_occurance + 1)
+  ]
+
   if end_flag < num-of-runs  and ticks > 0 and (time-to-first-arrival > 0 or time-of-first-drugboat-detected > 0 or time-of-stuck-drugboat > 0 )
   [
     set end_flag 0
@@ -530,6 +544,14 @@ to pseudo-setup
   set time-to-first-arrival 0
 
   set time-of-stuck-drugboat 0
+
+  set start_time1 0
+  set clear_path_occurance 0
+
+  if delayed_start?
+  [
+    set start_time1 start_time
+  ]
 
 
   ;creates robots
@@ -2874,7 +2896,7 @@ seed-no
 seed-no
 1
 150
-115.0
+125.0
 1
 1
 NIL
@@ -3073,7 +3095,7 @@ number-of-hunters
 number-of-hunters
 0
 250
-91.0
+57.0
 1
 1
 NIL
