@@ -167,31 +167,37 @@ def graph_multiple(datas):
     handles.insert(-1, *a)
     labels.insert(-1, *b)
 
+    show_title = False
+
     # show the legend
     if len(datas) == 1:
         legend = ax.legend(handles=handles, loc='lower center', ncol=3, fancybox=True, shadow=True)
     else:
+        bbox = {'bbox_to_anchor': (0.5, 0.95)} if show_title else {}  # only shift the legend downwards if title shown
         legend = fig.legend(handles=handles, loc='upper center', ncol=3, fancybox=True, shadow=True,
-                            bbox_to_anchor=(0.5, 0.95))
+                            **bbox)
     # set the linewidth of each legend object
     for obj in legend.legend_handles:
         obj.set_linewidth(3.0)
-    s = legend.legend_handles[-1]
-    s.set_linewidth(10.0)
+    s = legend.legend_handles[-1]  # the last column should be the vertical lines.
+    s.set_linewidth(10.0)  # Draw that thicker in the legend
     s.set_alpha(0.25)
 
     if len(datas) == 1:
-        plt.title("Output Values over Time")
+        if show_title:
+            plt.title("Output Values over Time")
         ax.set_xlabel("Time since start (seconds)", loc='center')
         ax.set_ylabel("Forward Velocity (m/s)")
         axw.set_ylabel("Angular Velocity (rad/s)")
         fig.subplots_adjust(right=(1 - fig.subplotpars.left))
     else:
-        fig.suptitle("Output Values over Time")
+        if show_title:
+            fig.suptitle("Output Values over Time")
+        top = 0.87 if show_title else 0.88
         fig.supxlabel("Time since start (seconds)", ha='center')
         fig.supylabel("Forward Velocity (m/s)")
         supyrlabel(fig, "Angular Velocity (rad/s)")
-        fig.subplots_adjust(top=0.87, hspace=0.08, right=(1 - fig.subplotpars.left), bottom=0.1)
+        fig.subplots_adjust(top=top, hspace=0.08, right=(1 - fig.subplotpars.left), bottom=0.1)
     # plt.grid(True)
     return plt
 
