@@ -36,19 +36,26 @@ sudo apt update
 # if pyenv is not installed, install it
 if ! command -v pyenv &> /dev/null
 then
+	echo pyenv not found. Installing pyenv.
+	echo Installing dependencies...
 	sudo apt install -y build-essential libssl-dev zlib1g-dev \
 	libbz2-dev libreadline-dev libsqlite3-dev curl git \
 	libncursesw5-dev xz-utils tk-dev libxml2-dev libxmlsec1-dev libffi-dev liblzma-dev
 
+	echo Installing pyenv...
 	curl https://pyenv.run | bash
 
+	echo Adding pyenv to bashrc...
 	echo 'export PYENV_ROOT="$HOME/.pyenv"' >> ~/.bashrc
 	echo 'command -v pyenv >/dev/null || export PATH="$PYENV_ROOT/bin:$PATH"' >> ~/.bashrc
 	echo 'eval "$(pyenv init -)"' >> ~/.bashrc
 
+	echo Done.
 	source ~/.bashrc
+	echo Refreshing environment.
 fi
 
+echo Installing vimrc
 sudo git clone --depth=1 https://github.com/amix/vimrc.git /opt/vim_runtime
 # to install for all users with home directories, note that root will not be included
 sudo bash /opt/vim_runtime/install_awesome_parameterized.sh /opt/vim_runtime --all
@@ -84,9 +91,10 @@ sudo apt install ncdu bat aptitude vim -y
 
 update_bashrc "alias bat='batcat'"
 
+echo Installing exa
 sudo apt install exa -y
 
-
+echo Adding exa aliases to .bashrc
 if command -v exa &> /dev/null
 then
 	update_bashrc "alias e='exa'"

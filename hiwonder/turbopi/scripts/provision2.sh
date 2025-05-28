@@ -13,6 +13,7 @@ sudo apt install ncdu bat aptitude vim python-is-python3 -y
 
 # install pyenv and other useful tools
 bash /home/pi/setupscripts/goodies.sh
+source /home/pi/.bashrc  # reload bashrc
 
 # install our managed git repo, hiwonder_common, and caspyan
 # as well as buttonman

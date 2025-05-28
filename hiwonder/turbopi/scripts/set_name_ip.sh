@@ -1,12 +1,12 @@
-ROBOT_NUMBER = __ASK__  # set this to between 0-154
+ROBOT_NUMBER=__ASK__  # set this to between 0-154
 
-DHCPCDCONF = /etc/dhcpcd.conf
-WINTERFACE = wlan0
-GATEWAY = 192.168.0.1
-NAMESERVER = 192.168.0.1
-CIDR = 20
-BASEIP = 192.168.9.
-BASEN = 100
+DHCPCDCONF=/etc/dhcpcd.conf
+WINTERFACE=wlan0
+GATEWAY=192.168.0.1
+NAMESERVER=192.168.0.1
+CIDR=20
+BASEIP=192.168.9.
+BASEN=100
 
 if [ "$(id -u)" -eq 0 ]; then
         echo 'This script should not be run by root' >&2
@@ -24,38 +24,39 @@ if [ -z "$N" ]; then
 	exit 1
 elif [ $N -gt 154 -a $N -lt 0 ]; then
     echo "Please set \$ROBOT_NUMBER to the number of this robot. Acceptable values are 0-154."
-    echo "N = $N is not a valid number."
+    echo "N=$N is not a valid number."
     exit 1
 fi
 
-NFORMATTED = $(printf "%03d" $N)
-NEWNAME = turbopi-$NFORMATTED
+NFORMATTED=$(printf "%03d" $N)
+NEWNAME=turbopi-$NFORMATTED
 
 # make sure dhcpcd.conf exists
 touch $DHCPCDCONF
 
 if [ -z "$(grep '^interface $WINTERFACE' $DHCPCDCONF)" ]; then
     echo "interface $WINTERFACE already exists in $DHCPCDCONF."
-    echo "Please manually remove it  and the following lines and try again."
+    echo "Please manually remove it and the 'static' and 'domain_name_servers' entries after it and try again."
     echo "i.e. sudo nano $DHCPCDCONF"
-    exit 1
+    read -p "Press any key to skip network configuration, or CTRL-C to exit." -s -N 1
+else
+    echo "We will set up $WINTERFACE with the following options:"
+    echo "Static IP address: $BASEIP$N/$CIDR"
+    echo "Gateway: $GATEWAY"
+    echo "Nameserver: $NAMESERVER"
+    echo "Also, we will set the hostname to:"
+    echo "Hostname: $NEWNAME"
+    read -p "Continuing in 8 seconds. Press any key to continue, or CTRL-C to exit." -s -t 8 -N 1
+
+    echo "Writing 4 lines to $DHCPCDCONF..."
+
+    echo -e "interface $WINTERFACE" | sudo tee -a $DHCPCDCONF
+    echo -e "static ip_address=$BASEIP$N/$CIDR" | sudo tee -a $DHCPCDCONF
+    echo -e "static routers=$GATEWAY" | sudo tee -a $DHCPCDCONF
+    echo -e "domain_name_servers=$NAMESERVER" | sudo tee -a $DHCPCDCONF
 fi
 
-echo "We will set up $WINTERFACE with the following options:"
-echo "Static IP address: $BASEIP$N/$CIDR"
-echo "Gateway: $GATEWAY"
-echo "Nameserver: $NAMESERVER"
-echo "Also, we will set the hostname to:"
-echo "Hostname: $NEWNAME"
-read -p "Continuing in 8 seconds. Press any key to continue, or CTRL-C to exit." -s -t 8 -N 1
-
-echo "Writing 4 lines to $DHCPCDCONF..."
-
-echo -e "interface $WINTERFACE" | sudo tee -a $DHCPCDCONF
-echo -e "static ip_address=$BASEIP$N/$CIDR" | sudo tee -a $DHCPCDCONF
-echo -e "static routers=$GATEWAY" | sudo tee -a $DHCPCDCONF
-echo -e "domain_name_servers=$NAMESERVER" | sudo tee -a $DHCPCDCONF
-
+echo Changing hostname from $(hostname) to $NEWNAME
 # set hostname
 sudo hostnamectl set-hostname $NEWNAME
 
