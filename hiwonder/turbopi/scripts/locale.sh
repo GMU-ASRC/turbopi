@@ -7,8 +7,12 @@ if [ "$(id -u)" -eq 0 ]; then
         exit 1
 fi
 
+TIMEZONE = "America/New_York"
+LANG = "en_US.UTF-8"
+
 # set timezone
-sudo timedatectl set-timezone "America/New_York"
+echo "Setting timezone to $TIMEZONE"
+sudo timedatectl set-timezone $TIMEZONE
 sudo timedatect1 set-ntp true
 sudo systemctl restart systemd-timesyncd
 
@@ -17,7 +21,8 @@ sudo systemctl restart systemd-timesyncd
 # should edit /etc/default/locale
 
 # WARNING: UNTESTED
-export LANG=en_US.UTF-8
-sudo locale-gen en_US.UTF-8
-sudo update-locale LC_ALL=en_US.UTF-8 LANG=en_US.UTF-8
+echo "Setting locale to $LANG"
+export LANG=$LANG
+sudo locale-gen $LANG
+sudo update-locale LC_ALL=$LANG LANG=$LANG
 

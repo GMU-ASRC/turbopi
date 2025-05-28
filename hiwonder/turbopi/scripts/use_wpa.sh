@@ -11,10 +11,14 @@ if [ "$(id -u)" -eq 0 ]; then
 fi
 
 # disable hiwonder wifi AP
+echo "Disabling the hw_wifi service (provides direct wifi AP/hotspot connection to TurboPi)"
+echo Can be temporarily re-enabled with start_ap.sh
 sudo systemctl disable hw_wifi
 
+echo Setting wpa_supplicant and dhcpcd to start on boot and starting services.
 sudo systemctl enable wpa_supplicant
 sudo systemctl enable dhcpcd
 
 sudo systemctl restart wpa_supplicant
 sudo systemctl restart dhcpcd
+echo Done.

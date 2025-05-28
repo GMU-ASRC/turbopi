@@ -44,4 +44,8 @@ fi
 
 echo -e "\n" | sudo tee -a $WPA_SUPPLICANT
 
+echo "Adding new ssid: $NEW_WPA_SSID to $WPA_SUPPLICANT"
+
 wpa_passphrase $NEW_WPA_SSID $NEW_WPA_PASSPHRASE | sudo tee -a $WPA_SUPPLICANT
+
+echo Done.

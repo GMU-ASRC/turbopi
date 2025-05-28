@@ -28,7 +28,8 @@ elif [ $N -gt 154 -a $N -lt 0 ]; then
     exit 1
 fi
 
-$NFORMATTED = $(printf "%03d" $N)
+NFORMATTED = $(printf "%03d" $N)
+NEWNAME = turbopi-$NFORMATTED
 
 # make sure dhcpcd.conf exists
 touch $DHCPCDCONF
@@ -40,10 +41,22 @@ if [ -z "$(grep '^interface $WINTERFACE' $DHCPCDCONF)" ]; then
     exit 1
 fi
 
+echo "We will set up $WINTERFACE with the following options:"
+echo "Static IP address: $BASEIP$N/$CIDR"
+echo "Gateway: $GATEWAY"
+echo "Nameserver: $NAMESERVER"
+echo "Also, we will set the hostname to:"
+echo "Hostname: $NEWNAME"
+read -p "Continuing in 8 seconds. Press any key to continue, or CTRL-C to exit." -s -t 8 -N 1
+
+echo "Writing 4 lines to $DHCPCDCONF..."
+
 echo -e "interface $WINTERFACE" | sudo tee -a $DHCPCDCONF
 echo -e "static ip_address=$BASEIP$N/$CIDR" | sudo tee -a $DHCPCDCONF
 echo -e "static routers=$GATEWAY" | sudo tee -a $DHCPCDCONF
 echo -e "domain_name_servers=$NAMESERVER" | sudo tee -a $DHCPCDCONF
 
 # set hostname
-sudo hostnamectl set-hostname turbopi-$NFORMATTED
+sudo hostnamectl set-hostname $NEWNAME
+
+echo Done.
