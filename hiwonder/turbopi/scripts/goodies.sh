@@ -9,6 +9,8 @@ set -e  # exit on error
 
 
 BASHRC=$(realpath ~/.bashrc)
+echo $BASHRC
+cat $BASHRC
 
 function update_bashrc {
     LINE=$1  # arg 1
@@ -32,11 +34,16 @@ function removefrom_bashrc {
 
 sudo apt update
 
+sudo apt install ncdu bat aptitude vim python-is-python3 gparted -y
 
+source $BASHRC
+echo $PATH
+echo $PYENV_ROOT
 # if pyenv is not installed, install it
-if ! command -v pyenv &> /dev/null
-then
+if ! command -v pyenv &> /dev/null; then
+	echo
 	echo pyenv not found. Installing pyenv.
+	echo
 	echo Installing dependencies...
 	sudo apt install -y build-essential libssl-dev zlib1g-dev \
 	libbz2-dev libreadline-dev libsqlite3-dev curl git \
@@ -55,11 +62,16 @@ then
 	echo Refreshing environment.
 fi
 
-echo Installing vimrc
-sudo git clone --depth=1 https://github.com/amix/vimrc.git /opt/vim_runtime
-# to install for all users with home directories, note that root will not be included
-sudo bash /opt/vim_runtime/install_awesome_parameterized.sh /opt/vim_runtime --all
-sudo bash /opt/vim_runtime/install_awesome_parameterized.sh /opt/vim_runtime root
+if [ ! -d "/opt/vim_runtime" ]; then
+	echo Installing vimrc
+	sudo git clone --depth=1 https://github.com/amix/vimrc.git /opt/vim_runtime
+	# to install for all users with home directories, note that root will not be included
+	sudo bash /opt/vim_runtime/install_awesome_parameterized.sh /opt/vim_runtime --all
+	sudo bash /opt/vim_runtime/install_awesome_parameterized.sh /opt/vim_runtime root
+else
+	echo "/opt/vim_runtime already exists. Skipping install of vimrc."
+fi
+	
 
 # if zoxide is not installed, install it
 if ! command -v zoxide &> /dev/null
@@ -86,8 +98,6 @@ fi
 # remove old aliases
 removefrom_bashrc "eval \"\$(zoxide init bash)\""
 removefrom_bashrc "alias cd=z"
-
-sudo apt install ncdu bat aptitude vim -y
 
 update_bashrc "alias bat='batcat'"
 

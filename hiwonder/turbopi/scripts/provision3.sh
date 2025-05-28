@@ -10,6 +10,7 @@ fi
 
 set -e  # exit on error
 
+echo "installing python 3.12.9"
 pyenv doctor
 pyenv install 3.12.9 --force
 pyenv global 3.12.9

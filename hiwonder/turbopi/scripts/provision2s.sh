@@ -2,24 +2,15 @@
 
 SETUPSCRIPTS=/home/pi/setupscripts
 
-crontab -u pi -l | grep -v '/home/pi/setupscripts/provision2s.sh' | crontab -u pi -
-
-sleep 10
-
-# restart timesyncd to maybe sync time
-sudo systemctl restart systemd-timesyncd
-
-sleep 10
-
-ping -c 4 192.168.0.1
-
-RET = 0
-
-if [ $? -ne 0 ]; then
-    echo "Failed to ping gateway."
-    RET = 1
+crontab -l | grep -v '$SETUPSCRIPTS/provision2s.sh' | crontab -
+COMMAND="source '$SETUPSCRIPTS/provision2.sh' $1"
+SHOWCOMMAND="lxterminal -e '$COMMAND'"
+if su pi -lc "lxterminal -e 'sleep 1'"; then
+	su pi -s /bin/bash -lc "$SHOWCOMMAND"
 else
-    lxterminal -e "./provision2.sh $1"
+	su pi -s /bin/bash -lc "$COMMAND"
 fi
-read -sN "Press any key to exit."
+read -N 1 -sp "Press any key to exit."
+echo
 exit $RET
+

@@ -40,7 +40,7 @@ echo "Copying setup scripts to $SETUPSCRIPTS"
 mkdir -p $SETUPSCRIPTS
 cp ./* $SETUPSCRIPTS
 chmod +x $SETUPSCRIPTS/*.sh
-# rm $SETUPSCRIPTS/provision.sh
+# rm $SETUPSCRIPTS/*.secret
 cd $SETUPSCRIPTS
 
 # set hostname
@@ -51,20 +51,23 @@ cd $SETUPSCRIPTS
 # sudo ifconfig eth0 192.168.1.100 netmask 255.255.255.0
 
 echo -e "\n\nRunning locale.sh"
-. ./locale.sh
+bash ./locale.sh
 echo -e "\n\nRunning add_wifi.sh"
-. ./add_wifi.sh
+bash ./add_wifi.sh
 echo -e "\n\nRunning set_name_ip.sh"
-. ./set_name_ip.sh
+bash ./set_name_ip.sh
 echo -e "\n\nRunning use_wpa.sh"
-. ./use_wpa.sh
+bash ./use_wpa.sh
 echo -e "\n\nExpanding rootfs"
-. ./expand.sh
+bash ./expand.sh
 echo
 echo -e "-------"
 echo -e " DONE! "
 echo -e "-------"
 echo -e Scheduling provision2s.sh to be run after reboot.
-echo -e "@reboot $SETUPSCRIPTS/provision2s.sh $1" | crontab -
+echo -e "@reboot $SETUPSCRIPTS/provision2s.sh $ARG1" | sudo crontab -
+echo "The following commands have been added to the crontab:"
+crontab -l
 echo -e Rebooting now. See ya on the other side!
-sudo reboot 3
+sleep 5
+sudo reboot now

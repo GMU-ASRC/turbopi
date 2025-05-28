@@ -8,8 +8,9 @@ if [ "$(id -u)" -eq 0 ]; then
 fi
 
 TIMEZONE="America/New_York"
-LANG=en_US.UTF-8
-LANGUAGE=$(echo $LANG | cut -d'.' -f1)
+NEWLANG=en_US.UTF-8
+NEWLANGUAGE=$(echo $NEWLANG | cut -d'.' -f1)
+NEWLCALL=$NEWLANG
 
 # set timezone
 echo "Setting timezone to $TIMEZONE"
@@ -23,11 +24,13 @@ sudo systemctl restart systemd-timesyncd
 
 # WARNING: UNTESTED
 echo "Setting locale to $LANG"
-export LANG=$LANG
-export LANGUAGE=$LANGUAGE
-export LC_ALL=$LANGUAGE
-sudo locale-gen $LANG
-sudo localectl set-locale LANG=$LANG
-sudo update-locale LC_ALL=$LC_ALL LANG=$LANG LANGUAGE=$LANGUAGE
-sudo raspi-config nonint do_change_locale $LANG
+sudo locale-gen $NEWLANGUAGE $NEWLANG
+# sudo dpkg-reconfigure locales
+export LANG=$NEWLANG
+export LANGUAGE=$NEWLANGUAGE
+export LC_ALL=$NEWLCALL
+echo LC_ALL = $LC_ALL
+sudo localectl set-locale LANG=$NEWLANG
+sudo update-locale LC_ALL=$NEWCALL LANG=$NEWLANG LANGUAGE=$NEWLANGUAGE
+sudo raspi-config nonint do_change_locale $NEWLANG
 

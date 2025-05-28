@@ -7,12 +7,40 @@ if [ "$(id -u)" -eq 0 ]; then
         exit 1
 fi
 
-sudo apt update
 
-sudo apt install ncdu bat aptitude vim python-is-python3 -y
+echo waiting for connection...
+
+for i in {1..10}; do
+    if ping -c 1 8.8.8.8; then
+        break
+    fi
+done
+set -e
+sleep 1
+
+echo ensuring connectivity...
+ping -c 4 8.8.8.8
+RET=0
+
+if [ $? -ne 0 ]; then
+    echo "Failed to ping dns."
+    read -N 1 -sp "Press any key to exit."
+    echo
+    exit 1
+fi
+echo
+
+
+
+echo restarting time server
+# restart timesyncd to maybe sync time
+sudo systemctl restart systemd-timesyncd
+sleep 1
 
 # install pyenv and other useful tools
+set +e
 bash /home/pi/setupscripts/goodies.sh
+set +e
 source /home/pi/.bashrc  # reload bashrc
 
 # install our managed git repo, hiwonder_common, and caspyan
@@ -21,5 +49,6 @@ source /home/pi/.bashrc  # reload bashrc
 if [ "$1" == "INSTALL_REPO" ]; then
     bash /home/pi/setupscripts/provision3.sh
 fi
-
-read -sN "Press any key to exit."
+sleep 5
+read -N 1 -sp "End of provision2.sh: Press any key to exit."
+echo
