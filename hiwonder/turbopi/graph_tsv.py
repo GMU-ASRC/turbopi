@@ -75,7 +75,7 @@ def graph(data):
             if si > sn:
                 xnot.append(xi)
         if not sense.empty and sense.iloc[-1]:
-            xnot.append(len(sense) - 1)
+            xnot.append(ts.iloc[-1])
 
         # breakpoint()
         # Plot the binary detection
@@ -167,7 +167,7 @@ def graph_multiple(datas):
     handles.insert(-1, *a)
     labels.insert(-1, *b)
 
-    show_title = False
+    show_title = True
 
     # show the legend
     if len(datas) == 1:
@@ -234,6 +234,10 @@ if __name__ == "__main__":
         except ValueError as err:
             print(err)
             sys.exit(1)
+
+    # plt.rcParams["figure.dpi"] = 600
+    plt.rcParams["savefig.dpi"] = 600
+    plt.rcParams["figure.figsize"] = [7.00, 5.00]
 
     plt = graph_multiple(runs)
     plt.show()
