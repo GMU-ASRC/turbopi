@@ -1,0 +1,6 @@
+# Specify filepatterns you want to assign special attributes.
+*                   text=auto
+*.sh                text eol=lf
+*.slurm             text eol=lf
+*.slurmtemplate     text eol=lf
+*.xlsx binary
