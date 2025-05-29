@@ -1,4 +1,4 @@
-ROBOT_NUMBER=23 # set this to between 0-154
+ROBOT_NUMBER=__ALL__ # set this to between 0-154
 
 DHCPCDCONF=/etc/dhcpcd.conf
 WINTERFACE="wlan0"

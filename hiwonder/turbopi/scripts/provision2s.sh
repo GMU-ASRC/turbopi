@@ -1,14 +1,21 @@
 #!/bin/bash
+# this file will automatically be run as root
 
 SETUPSCRIPTS=/home/pi/setupscripts
 
-crontab -l | grep -v '$SETUPSCRIPTS/provision2s.sh' | crontab -
-COMMAND="source '$SETUPSCRIPTS/provision2.sh' $1"
-SHOWCOMMAND="lxterminal -e '$COMMAND'"
-if su pi -lc "lxterminal -e 'sleep 1'"; then
-	su pi -s /bin/bash -lc "$SHOWCOMMAND"
+crontab -lu root | grep -v "${SETUPSCRIPTS}/provision2s.sh" | crontab -u root -
+touch /home/pi/setupscripts/setup2sran
+CMD="$SETUPSCRIPTS/provision2.sh $1"
+RUNCOMMAND='/bin/bash -i "$CMD"'
+DISPLAYCMD="echo ${SETUPSCRIPTS}/provision2.sh ${1} | /bin/bash -is"
+SHOWCOMMAND="lxterminal -e '$DISPLAYCMD'"
+if su pi -c "lxterminal -e 'echo hi'"; then
+	echo running in lxterminal
+	sleep 0.1
+	su pi -Pc "$SHOWCOMMAND"
 else
-	su pi -s /bin/bash -lc "$COMMAND"
+	echo running here
+	su pi -Pc "$RUNCOMMAND"
 fi
 read -N 1 -sp "Press any key to exit."
 echo

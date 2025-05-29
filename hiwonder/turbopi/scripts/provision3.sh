@@ -10,6 +10,9 @@ fi
 
 set -e  # exit on error
 
+source ~/.bashrc
+touch ~/setupscripts/setup3ran
+
 echo "installing python 3.12.9"
 pyenv doctor
 pyenv install 3.12.9 --force
@@ -40,3 +43,6 @@ git switch main
 git pull
 sudo pip install -e .
 cd /home/pi
+
+echo ALL DONE!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+sleep 5

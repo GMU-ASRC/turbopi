@@ -8,6 +8,16 @@ if [ "$(id -u)" -eq 0 ]; then
 fi
 
 
+USER="$(whoami)"
+HOME="/home/$USER"
+touch $HOME/setupscripts/setup2ran
+export USER=$USER
+export HOME=$HOME
+set -i
+echo $-
+source /home/pi/.bashrc  # reload bashrc
+
+
 echo waiting for connection...
 
 for i in {1..10}; do
@@ -39,16 +49,23 @@ sleep 1
 
 # install pyenv and other useful tools
 set +e
-bash /home/pi/setupscripts/goodies.sh
+bash -i /home/pi/setupscripts/goodies.sh
 set +e
 source /home/pi/.bashrc  # reload bashrc
 
 # install our managed git repo, hiwonder_common, and caspyan
 # as well as buttonman
 
-if [ "$1" == "INSTALL_REPO" ]; then
-    bash /home/pi/setupscripts/provision3.sh
+echo provision2.sh complete
+
+if [[ "$1" == "INSTALL_REPO" ]]; then
+    echo running provision3.sh
+    bash -i /home/pi/setupscripts/provision3.sh
+else
+    echo skipping provision3.sh
 fi
 sleep 5
-read -N 1 -sp "End of provision2.sh: Press any key to exit."
+
+read -sp "Quitting provision2.sh in 8 seconds. Press any key to continue, or CTRL-C to exit." -t 8 -N 1
+echo
 echo

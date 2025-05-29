@@ -10,7 +10,6 @@ set -e  # exit on error
 
 BASHRC=$(realpath ~/.bashrc)
 echo $BASHRC
-cat $BASHRC
 
 function update_bashrc {
     LINE=$1  # arg 1
@@ -31,9 +30,12 @@ function removefrom_bashrc {
     return
 }
 
-
+echo
+echo running apt update
 sudo apt update
 
+echo
+echo installing ncdu, bat, aptitude, vim, python-is-python3, gparted
 sudo apt install ncdu bat aptitude vim python-is-python3 gparted -y
 
 source $BASHRC
@@ -93,12 +95,15 @@ then
 	echo "Installing fzf"
 	git clone --depth 1 https://github.com/junegunn/fzf.git $HOME/.fzf
 	$HOME/.fzf/install --all
+else
+	echo Skipping fzf as it is already installed
 fi
 
 # remove old aliases
-removefrom_bashrc "eval \"\$(zoxide init bash)\""
-removefrom_bashrc "alias cd=z"
+# removefrom_bashrc "eval \"\$(zoxide init bash)\""
+# removefrom_bashrc "alias cd=z"
 
+echo adding alias to bat
 update_bashrc "alias bat='batcat'"
 
 echo Installing exa

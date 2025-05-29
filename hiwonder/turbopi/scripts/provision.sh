@@ -43,10 +43,11 @@ chmod +x $SETUPSCRIPTS/*.sh
 # rm $SETUPSCRIPTS/*.secret
 cd $SETUPSCRIPTS
 
-# set hostname
-# TODO: make this a prompt
+echo DONE COPYING
+sleep 1
 
-# set IP
+
+
 # TODO
 # sudo ifconfig eth0 192.168.1.100 netmask 255.255.255.0
 
@@ -65,9 +66,9 @@ echo -e "-------"
 echo -e " DONE! "
 echo -e "-------"
 echo -e Scheduling provision2s.sh to be run after reboot.
-echo -e "@reboot $SETUPSCRIPTS/provision2s.sh $ARG1" | sudo crontab -
+echo -e "@reboot $SETUPSCRIPTS/provision2s.sh $ARG1" | sudo crontab -u root -
 echo "The following commands have been added to the crontab:"
-crontab -l
+sudo crontab -lu root
 echo -e Rebooting now. See ya on the other side!
 sleep 5
 sudo reboot now
