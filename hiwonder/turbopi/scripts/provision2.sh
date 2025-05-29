@@ -17,23 +17,24 @@ fi
 touch $SETUPSCRIPTS/setup2ran
 export USER=$U
 export HOME=$H
-set -i
 echo $-
 source $H/.bashrc  # reload bashrc
 
+CONNECTIVITY_CHECK=8.8.8.8
 
 echo waiting for connection...
 
-for i in {1..10}; do
-    if ping -c 1 8.8.8.8; then
+for i in {1..30}; do
+    if ping -c 1 $CONNECTIVITY_CHECK; then
         break
     fi
+    sleep 1
 done
 set -e
 sleep 1
 
-echo ensuring connectivity...
-ping -c 4 8.8.8.8
+echo ensuring stable connectivity...
+ping -c 4 $CONNECTIVITY_CHECK
 RET=0
 
 if [ $? -ne 0 ]; then

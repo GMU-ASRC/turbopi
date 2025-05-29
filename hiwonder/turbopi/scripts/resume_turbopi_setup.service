@@ -9,3 +9,6 @@ ExecStart=/bin/bash /home/pi/setupscripts/resume_turbopi_setup.sh
 
 [Install]
 WantedBy=multi-user.target
+
+[Journal]
+Storage=volatile

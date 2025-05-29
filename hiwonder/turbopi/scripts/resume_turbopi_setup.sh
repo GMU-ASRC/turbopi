@@ -9,7 +9,8 @@ echo in $PWD
 source ./config  # EDITTAG:configsource
 
 # crontab -lu root | grep -v "${SETUPSCRIPTS}/provision2s.sh" | crontab -u root -
-rm -f /etc/systemd/system/resume_turbopi_setup.service
+# rm -f /etc/systemd/system/resume_turbopi_setup.service
+systemctl disable resume_turbopi_setup.service
 touch $SETUPSCRIPTS/setup2sran
 CMD="$SETUPSCRIPTS/provision2.sh $1"
 RUNCOMMAND="echo ${SETUPSCRIPTS}/provision2.sh ${1} | /bin/bash -is"
@@ -22,7 +23,8 @@ else
 	echo running here
 	su $U -Pc "$RUNCOMMAND"
 fi
-read -N 1 -sp "Press any key to exit."
+# read -N 1 -sp "Press any key to exit."
 echo
-exit $RET
+# exit $RET
+echo Reached end of resume_turbopi_setup.sh.
 
