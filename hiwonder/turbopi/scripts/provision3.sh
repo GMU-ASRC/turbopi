@@ -10,8 +10,9 @@ fi
 
 set -e  # exit on error
 
+source ./config
 source ~/.bashrc
-touch ~/setupscripts/setup3ran
+touch $SETUPSCRIPTS/setup3ran
 
 echo "installing python 3.12.9"
 pyenv doctor
@@ -19,7 +20,7 @@ pyenv install 3.12.9 --force
 pyenv global 3.12.9
 
 # Put our git repo in /home/pi
-cd /home/pi
+cd $H
 
 git init
 git remote add origin https://github.com/GMU-ASRC/turbopi-root.git
@@ -34,15 +35,15 @@ sudo python -m pip install pip -U
 
 sudo pip install -e hiwonder_common
 
-cd /home/pi/boot
+cd $H/boot
 chmod 766 install_buttonman.sh
 sudo ./install_buttonman.sh
 
-cd caspyan
+cd $H/caspyan
 git switch main
 git pull
 sudo pip install -e .
-cd /home/pi
+cd $H
 
 echo ALL DONE!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 sleep 5

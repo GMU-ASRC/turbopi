@@ -7,6 +7,8 @@ if [ "$(id -u)" -eq 0 ]; then
         exit 1
 fi
 
+source ./config
+
 TIMEZONE="America/New_York"
 NEWLANG=en_US.UTF-8
 NEWLANGUAGE=$(echo $NEWLANG | cut -d'.' -f1)

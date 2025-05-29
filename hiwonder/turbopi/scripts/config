@@ -1,0 +1,26 @@
+# WARNING: This is a shell/bash script. Do not change the order of the variables!
+
+# ROBOT NUMBER
+ROBOT_NUMBER=__ASK__ # set this to between 0-154
+# ROBOT_NUMBER=__ASK__  # or set it to '__ASK__' to be prompted at run time
+
+# LOCALE SETTINGS
+TIMEZONE="America/New_York"
+NEWLANG=en_US.UTF-8
+
+# NETWORKING SETTINGS
+WINTERFACE="wlan0"  # required: name of wifi interface
+GATEWAY=192.168.0.1  # set this to your router's ip address
+NAMESERVER=$GATEWAY
+CIDR=20  # This is the subnet mask. 20 is /20 or 255.255.255.240
+BASEIP=192.168.9.
+BASEN=100
+NEWNAME=turbopi-$NFORMATTED
+NFORMATTED=$(printf "%02d" $N)
+
+# username of linux account
+U=pi
+H=/home/$U
+# location to copy setup scripts to
+SETUPSCRIPTS=$H/setupscripts
+MANAGED_DIR=$H

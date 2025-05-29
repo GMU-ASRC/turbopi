@@ -1,23 +1,35 @@
-ROBOT_NUMBER=__ALL__ # set this to between 0-154
+#!/bin/bash
 
-DHCPCDCONF=/etc/dhcpcd.conf
-WINTERFACE="wlan0"
-GATEWAY=192.168.0.1
-NAMESERVER=192.168.0.1
-CIDR=20
-BASEIP=192.168.9.
-BASEN=100
+# This script will set the hostname and networking
 
 if [ "$(id -u)" -eq 0 ]; then
         echo 'This script should not be run by root' >&2
         exit 1
 fi
 
+source ./config
+
+ROBOT_NUMBER=${ROBOT_NUMBER:-__ASK__}
+
+WINTERFACE=${WINTERFACE:-'wlan0'}
+GATEWAY=${GATEWAY:-'192.168.0.1'}
+NAMESERVER=${NAMESERVER:-$GATEWAY}
+CIDR=${CIDR:-'20'}
+BASEIP=${BASEIP:-'192.168.9.'}
+BASEN=${BASEN:-100}
+
 if [ "$ROBOT_NUMBER" == "__ASK__" ]; then
     read -p "Enter robot number (0-154): " N
 else
     N=$ROBOT_NUMBER
 fi
+if [ -z "$NFORMATTED" ]; then
+    NFORMATTED=$(printf "%02d" $N)
+fi
+DEFAULTNAME=turbopi-$NFORMATTED
+NEWNAME=${NEWNAME:-$DEFAULTNAME}
+
+DHCPCDCONF=/etc/dhcpcd.conf
 
 if [ -z "$N" ]; then
 	echo "Please set \$ROBOT_NUMBER to the number of this robot. Acceptable values are 0-154."
@@ -27,9 +39,6 @@ elif [ $N -gt 154 -a $N -lt 0 ]; then
     echo "N=$N is not a valid number."
     exit 1
 fi
-
-NFORMATTED=$(printf "%02d" $N)
-NEWNAME=turbopi-$NFORMATTED
 
 # make sure dhcpcd.conf exists
 sudo touch $DHCPCDCONF

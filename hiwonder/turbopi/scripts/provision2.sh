@@ -7,15 +7,19 @@ if [ "$(id -u)" -eq 0 ]; then
         exit 1
 fi
 
+source ./config
 
-USER="$(whoami)"
-HOME="/home/$USER"
-touch $HOME/setupscripts/setup2ran
-export USER=$USER
-export HOME=$HOME
+if [ "$(whoami)" != "$U" ]; then
+    echo "ERROR: This script should be run as user '$U' but you are $(whoami)."
+    exit 1
+fi
+
+touch $SETUPSCRIPTS/setup2ran
+export USER=$U
+export HOME=$H
 set -i
 echo $-
-source /home/pi/.bashrc  # reload bashrc
+source $H/.bashrc  # reload bashrc
 
 
 echo waiting for connection...
@@ -40,8 +44,6 @@ if [ $? -ne 0 ]; then
 fi
 echo
 
-
-
 echo restarting time server
 # restart timesyncd to maybe sync time
 sudo systemctl restart systemd-timesyncd
@@ -49,18 +51,19 @@ sleep 1
 
 # install pyenv and other useful tools
 set +e
-bash -i /home/pi/setupscripts/goodies.sh
+echo "Running goodies.sh"
+bash -i $SETUPSCRIPTS/goodies.sh
 set +e
-source /home/pi/.bashrc  # reload bashrc
+source $H/.bashrc  # reload bashrc
+
+echo provision2.sh complete
 
 # install our managed git repo, hiwonder_common, and caspyan
 # as well as buttonman
 
-echo provision2.sh complete
-
 if [[ "$1" == "INSTALL_REPO" ]]; then
     echo running provision3.sh
-    bash -i /home/pi/setupscripts/provision3.sh
+    bash -i $SETUPSCRIPTS/provision3.sh
 else
     echo skipping provision3.sh
 fi

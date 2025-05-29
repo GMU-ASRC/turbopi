@@ -10,8 +10,8 @@ if [ "$(id -u)" -eq 0 ]; then
         exit 1
 fi
 
-SETUPSCRIPTS=/home/pi/setupscripts
-# THIS ALSO NEEDS TO BE CHANGED IN provision2s.sh
+source ./config
+
 
 # exit on error
 set -e
@@ -34,7 +34,6 @@ elif [ "$IF_INSTALL" == "__ASK__" ]; then
     fi
 fi
 
-
 echo "Copying setup scripts to $SETUPSCRIPTS"
 
 mkdir -p $SETUPSCRIPTS
@@ -42,6 +41,11 @@ cp ./* $SETUPSCRIPTS
 chmod +x $SETUPSCRIPTS/*.sh
 # rm $SETUPSCRIPTS/*.secret
 cd $SETUPSCRIPTS
+
+# modify resume_turbopi_setup.service with the correct path to setupscripts
+NEWCOMMAND="$SETUPSCRIPTS/resume_turbopi_setup.sh $ARG1"
+REPLACESTRING="/ExecStart=/c\\ExecStart=$NEWCOMMAND"
+set -i "$REPLACESTRING" "$SETUPSCRIPTS/resume_turbopi_setup.service"
 
 echo DONE COPYING
 sleep 1
@@ -66,9 +70,11 @@ echo -e "-------"
 echo -e " DONE! "
 echo -e "-------"
 echo -e Scheduling provision2s.sh to be run after reboot.
-echo -e "@reboot $SETUPSCRIPTS/provision2s.sh $ARG1" | sudo crontab -u root -
-echo "The following commands have been added to the crontab:"
-sudo crontab -lu root
+sudo ln -sf "$SETUPSCRIPTS/resume_turbopi_setup.service" /etc/systemd/system/resume_turbopi_setup.service
+sudo systemctl enable resume_turbopi_setup.service
+# echo -e "@reboot $SETUPSCRIPTS/provision2s.sh $ARG1" | sudo crontab -u root -
+# echo "The following commands have been added to the crontab:"
+# sudo crontab -lu root
 echo -e Rebooting now. See ya on the other side!
 sleep 5
 sudo reboot now
