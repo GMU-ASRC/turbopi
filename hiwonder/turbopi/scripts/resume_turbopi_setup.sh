@@ -1,14 +1,19 @@
 #!/bin/bash
 # this file will automatically be run as root
 
-source ./config
+echo Starting resume_turbopi_setup.sh
+echo $1
+echo $2
+cd $2
+echo in $PWD
+source ./config  # EDITTAG:configsource
 
-crontab -lu root | grep -v "${SETUPSCRIPTS}/provision2s.sh" | crontab -u root -
+# crontab -lu root | grep -v "${SETUPSCRIPTS}/provision2s.sh" | crontab -u root -
+rm -f /etc/systemd/system/resume_turbopi_setup.service
 touch $SETUPSCRIPTS/setup2sran
 CMD="$SETUPSCRIPTS/provision2.sh $1"
-RUNCOMMAND='/bin/bash -i "$CMD"'
-DISPLAYCMD="echo ${SETUPSCRIPTS}/provision2.sh ${1} | /bin/bash -is"
-SHOWCOMMAND="lxterminal -e '$DISPLAYCMD'"
+RUNCOMMAND="echo ${SETUPSCRIPTS}/provision2.sh ${1} | /bin/bash -is"
+SHOWCOMMAND="lxterminal -e '$RUNCOMMAND'"
 if su $U -c "lxterminal -e 'echo hi'"; then  # test if lxterminal is available
 	echo running in lxterminal
 	sleep 0.1

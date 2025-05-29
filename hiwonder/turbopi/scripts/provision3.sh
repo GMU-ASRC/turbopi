@@ -36,7 +36,7 @@ sudo python -m pip install pip -U
 sudo pip install -e hiwonder_common
 
 cd $H/boot
-chmod 766 install_buttonman.sh
+chmod +x install_buttonman.sh
 sudo ./install_buttonman.sh
 
 cd $H/caspyan

@@ -73,7 +73,7 @@ if [ ! -d "/opt/vim_runtime" ]; then
 else
 	echo "/opt/vim_runtime already exists. Skipping install of vimrc."
 fi
-	
+
 
 # if zoxide is not installed, install it
 if ! command -v zoxide &> /dev/null

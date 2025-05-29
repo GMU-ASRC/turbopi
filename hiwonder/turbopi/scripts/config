@@ -15,8 +15,12 @@ NAMESERVER=$GATEWAY
 CIDR=20  # This is the subnet mask. 20 is /20 or 255.255.255.240
 BASEIP=192.168.9.
 BASEN=100
-NEWNAME=turbopi-$NFORMATTED
-NFORMATTED=$(printf "%02d" $N)
+
+# if uncommented, this function will be used to set the robot name
+function robot_name () { echo turbopi-$(printf "%02d" $1); }
+# or you can hardcode the name into NEWNAME, and the ROBOT_NUMBER won't be used to set the hostname
+# NEWNAME=turbopi-$(printf "%02d" $ROBOT_NUMBER)
+
 
 # username of linux account
 U=pi

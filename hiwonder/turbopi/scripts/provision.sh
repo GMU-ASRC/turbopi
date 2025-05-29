@@ -10,8 +10,8 @@ if [ "$(id -u)" -eq 0 ]; then
         exit 1
 fi
 
+dos2unix ./config
 source ./config
-
 
 # exit on error
 set -e
@@ -36,16 +36,20 @@ fi
 
 echo "Copying setup scripts to $SETUPSCRIPTS"
 
+dos2unix *.sh
 mkdir -p $SETUPSCRIPTS
 cp ./* $SETUPSCRIPTS
 chmod +x $SETUPSCRIPTS/*.sh
+chmod +x $SETUPSCRIPTS/*.secret
+chmod +x $SETUPSCRIPTS/config
 # rm $SETUPSCRIPTS/*.secret
 cd $SETUPSCRIPTS
 
 # modify resume_turbopi_setup.service with the correct path to setupscripts
-NEWCOMMAND="$SETUPSCRIPTS/resume_turbopi_setup.sh $ARG1"
+NEWCOMMAND="$SETUPSCRIPTS/resume_turbopi_setup.sh $ARG1 $SETUPSCRIPTS"
 REPLACESTRING="/ExecStart=/c\\ExecStart=$NEWCOMMAND"
-set -i "$REPLACESTRING" "$SETUPSCRIPTS/resume_turbopi_setup.service"
+sed -i "$REPLACESTRING" "$SETUPSCRIPTS/resume_turbopi_setup.service"
+
 
 echo DONE COPYING
 sleep 1

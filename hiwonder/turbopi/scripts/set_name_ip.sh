@@ -23,13 +23,6 @@ if [ "$ROBOT_NUMBER" == "__ASK__" ]; then
 else
     N=$ROBOT_NUMBER
 fi
-if [ -z "$NFORMATTED" ]; then
-    NFORMATTED=$(printf "%02d" $N)
-fi
-DEFAULTNAME=turbopi-$NFORMATTED
-NEWNAME=${NEWNAME:-$DEFAULTNAME}
-
-DHCPCDCONF=/etc/dhcpcd.conf
 
 if [ -z "$N" ]; then
 	echo "Please set \$ROBOT_NUMBER to the number of this robot. Acceptable values are 0-154."
@@ -39,6 +32,15 @@ elif [ $N -gt 154 -a $N -lt 0 ]; then
     echo "N=$N is not a valid number."
     exit 1
 fi
+
+if typeset -f robot_name > /dev/null; then
+    NEWNAME=$(robot_name $N)
+fi
+
+DEFAULTNAME=turbopi-$(printf "%02d" $N)
+NEWNAME=${NEWNAME:-$DEFAULTNAME}
+
+DHCPCDCONF=/etc/dhcpcd.conf
 
 # make sure dhcpcd.conf exists
 sudo touch $DHCPCDCONF
