@@ -24,14 +24,14 @@ CONNECTIVITY_CHECK=8.8.8.8
 
 echo waiting for connection...
 
-for i in {1..30}; do
+for i in {1..100}; do
     if ping -c 1 $CONNECTIVITY_CHECK; then
         break
     fi
     sleep 1
 done
 set -e
-sleep 1
+sleep 2
 
 echo ensuring stable connectivity...
 ping -c 4 $CONNECTIVITY_CHECK
@@ -48,7 +48,7 @@ echo
 echo restarting time server
 # restart timesyncd to maybe sync time
 sudo systemctl restart systemd-timesyncd
-sleep 1
+# sleep 5
 
 # install pyenv and other useful tools
 set +e
