@@ -40,7 +40,8 @@ sudo apt install ncdu bat aptitude vim python-is-python3 gparted -y
 
 echo $PATH
 PYENV_ROOT=$HOME/.pyenv
-PATH=$PYENV_ROOT/bin:$PATH
+export PATH=$PYENV_ROOT/bin:$PATH
+echo $PATH
 # if pyenv is not installed, install it
 if ! command -v pyenv &> /dev/null; then
 	echo
@@ -87,16 +88,16 @@ then
 	echo "Installing zoxide"
 	curl -sSfL https://raw.githubusercontent.com/ajeetdsouza/zoxide/main/install.sh | sh
 	echo "updating bashrc with zoxide init"
-	update_bashrc "export PATH=\"\$HOME/.local/bin:\$PATH\""
-	update_bashrc "eval \"\$(zoxide init bash --cmd cd)\""
+	update_bashrc "export PATH=\"\$HOME/.local/bin:\$PATH\""  || true
+	update_bashrc "eval \"\$(zoxide init bash --cmd cd)\""  || true
 else
 	echo "updating bashrc with zoxide init"
-	update_bashrc "export PATH=\"\$HOME/.local/bin:\$PATH\""
-	update_bashrc "eval \"\$(zoxide init bash --cmd cd)\""
+	update_bashrc "export PATH=\"\$HOME/.local/bin:\$PATH\""  || true
+	update_bashrc "eval \"\$(zoxide init bash --cmd cd)\""  || true
 fi
 
 # if fzf is not installed, install it
-if [ -d "$HOME/.fzf" ]; then
+if [ ! -d "$HOME/.fzf" ]; then
 	echo "Installing fzf"
 	git clone --depth 1 https://github.com/junegunn/fzf.git $HOME/.fzf
 	$HOME/.fzf/install --all
@@ -109,12 +110,13 @@ fi
 # removefrom_bashrc "alias cd=z"
 
 echo adding alias to bat
-update_bashrc "alias bat='batcat'"
+update_bashrc "alias bat='batcat'" || true
 
 echo Installing exa
 sudo apt install exa -y
 
 echo Adding exa aliases to .bashrc
+set +e
 if command -v exa &> /dev/null
 then
 	update_bashrc "alias e='exa'"

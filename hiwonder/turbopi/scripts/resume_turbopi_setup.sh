@@ -17,7 +17,7 @@ touch $SETUPSCRIPTS/setup2sran
 CMD="$SETUPSCRIPTS/provision2.sh $1"
 RUNCOMMAND="echo ${SETUPSCRIPTS}/provision2.sh ${1} | /bin/bash -is"
 SHOWCOMMAND=""
-if lxterminal -e echo hi"; then  # test if lxterminal is available
+if lxterminal -e echo hi; then  # test if lxterminal is available
 	echo running in lxterminal
 	sleep 0.1
 	# su $U -Pc "$SHOWCOMMAND"
