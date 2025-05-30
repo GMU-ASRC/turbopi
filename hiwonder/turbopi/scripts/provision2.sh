@@ -53,7 +53,7 @@ sudo systemctl restart systemd-timesyncd
 # install pyenv and other useful tools
 set +e
 echo "Running goodies.sh"
-bash -i $SETUPSCRIPTS/goodies.sh
+source $SETUPSCRIPTS/goodies.sh
 set +e
 source $H/.bashrc  # reload bashrc
 
@@ -63,8 +63,9 @@ echo provision2.sh complete
 # as well as buttonman
 
 if [[ "$1" == "INSTALL_REPO" ]]; then
+    cd $SETUPSCRIPTS
     echo running provision3.sh
-    bash -i $SETUPSCRIPTS/provision3.sh
+    source $SETUPSCRIPTS/provision3.sh
 else
     echo skipping provision3.sh
 fi

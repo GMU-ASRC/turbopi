@@ -52,8 +52,8 @@ SETUPSERVICE="$SETUPSCRIPTS/resume_turbopi_setup.service"
 NEWCOMMAND="$SETUPSCRIPTS/resume_turbopi_setup.sh $ARG1"
 REPLACESTRING="/ExecStart=/c\\ExecStart=$NEWCOMMAND"
 sed -i "$REPLACESTRING" $SETUPSERVICE
-sed -i "$/WorkingDirectory=/c\\WorkingDirectory=${SETUPSCRIPTS}" $SETUPSERVICE
-sed -i "$/User=/c\\User=${U}" $SETUPSERVICE
+sed -i "/WorkingDirectory=/c\\WorkingDirectory=${SETUPSCRIPTS}" $SETUPSERVICE
+sed -i "/User=/c\\User=${U}" $SETUPSERVICE
 
 
 echo DONE COPYING

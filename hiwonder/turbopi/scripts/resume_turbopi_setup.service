@@ -7,7 +7,6 @@ Type=oneshot
 RemainAfterExit=yes
 User=pi
 WorkingDirectory=/home/pi/setupscripts
-SetLoginEnvironment=true
 ExecStart=/bin/bash /home/pi/setupscripts/resume_turbopi_setup.sh
 
 [Install]

@@ -38,30 +38,36 @@ echo
 echo installing ncdu, bat, aptitude, vim, python-is-python3, gparted
 sudo apt install ncdu bat aptitude vim python-is-python3 gparted -y
 
-source $BASHRC
 echo $PATH
-echo $PYENV_ROOT
+PYENV_ROOT=$HOME/.pyenv
+PATH=$PYENV_ROOT/bin:$PATH
 # if pyenv is not installed, install it
 if ! command -v pyenv &> /dev/null; then
 	echo
 	echo pyenv not found. Installing pyenv.
 	echo
-	echo Installing dependencies...
-	sudo apt install -y build-essential libssl-dev zlib1g-dev \
-	libbz2-dev libreadline-dev libsqlite3-dev curl git \
-	libncursesw5-dev xz-utils tk-dev libxml2-dev libxmlsec1-dev libffi-dev liblzma-dev
+	if [ -d "$HOME/.pyenv" ]; then
+		echo "Skipping pyenv install as $HOME/.pyenv already exists"
+	else
+		echo Installing dependencies...
+		sudo apt install -y build-essential libssl-dev zlib1g-dev \
+		libbz2-dev libreadline-dev libsqlite3-dev curl git \
+		libncursesw5-dev xz-utils tk-dev libxml2-dev libxmlsec1-dev libffi-dev liblzma-dev
 
-	echo Installing pyenv...
-	curl https://pyenv.run | bash
+		echo Installing pyenv...
+		curl https://pyenv.run | bash
 
-	echo Adding pyenv to bashrc...
-	echo 'export PYENV_ROOT="$HOME/.pyenv"' >> ~/.bashrc
-	echo 'command -v pyenv >/dev/null || export PATH="$PYENV_ROOT/bin:$PATH"' >> ~/.bashrc
-	echo 'eval "$(pyenv init -)"' >> ~/.bashrc
+		echo Adding pyenv to bashrc...
+		echo 'export PYENV_ROOT="$HOME/.pyenv"' >> ~/.bashrc
+		echo 'command -v pyenv >/dev/null || export PATH="$PYENV_ROOT/bin:$PATH"' >> ~/.bashrc
+		echo 'eval "$(pyenv init -)"' >> ~/.bashrc
 
-	echo Done.
-	source ~/.bashrc
-	echo Refreshing environment.
+		echo Done.
+		source ~/.bashrc
+		echo Refreshing environment.
+	fi
+else
+	echo "Found pyenv. Skipping pyenv install."
 fi
 
 if [ ! -d "/opt/vim_runtime" ]; then
@@ -74,8 +80,8 @@ else
 	echo "/opt/vim_runtime already exists. Skipping install of vimrc."
 fi
 
-
 # if zoxide is not installed, install it
+export PATH="$HOME/.local/bin:$PATH"
 if ! command -v zoxide &> /dev/null
 then
 	echo "Installing zoxide"
@@ -90,13 +96,12 @@ else
 fi
 
 # if fzf is not installed, install it
-if ! command -v fzf &> /dev/null
-then
+if [ -d "$HOME/.fzf" ]; then
 	echo "Installing fzf"
 	git clone --depth 1 https://github.com/junegunn/fzf.git $HOME/.fzf
 	$HOME/.fzf/install --all
 else
-	echo Skipping fzf as it is already installed
+	echo Skipping fzf as $HOME/.fzf already exists
 fi
 
 # remove old aliases
