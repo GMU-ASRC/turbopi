@@ -1,14 +1,14 @@
 [Unit]
 Description=Call scripts to resume turbopi setup after a reboot
-After=multi-user.target
+After=graphical.target network.target
 
 [Service]
 Type=oneshot
 RemainAfterExit=yes
+User=pi
+WorkingDirectory=/home/pi/setupscripts
+SetLoginEnvironment=true
 ExecStart=/bin/bash /home/pi/setupscripts/resume_turbopi_setup.sh
 
 [Install]
 WantedBy=multi-user.target
-
-[Journal]
-Storage=volatile

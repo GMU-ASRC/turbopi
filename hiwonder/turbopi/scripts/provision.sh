@@ -48,9 +48,12 @@ chmod +x $SETUPSCRIPTS/config
 cd $SETUPSCRIPTS
 
 # modify resume_turbopi_setup.service with the correct path to setupscripts
-NEWCOMMAND="$SETUPSCRIPTS/resume_turbopi_setup.sh $ARG1 $SETUPSCRIPTS"
+SETUPSERVICE="$SETUPSCRIPTS/resume_turbopi_setup.service"
+NEWCOMMAND="$SETUPSCRIPTS/resume_turbopi_setup.sh $ARG1"
 REPLACESTRING="/ExecStart=/c\\ExecStart=$NEWCOMMAND"
-sed -i "$REPLACESTRING" "$SETUPSCRIPTS/resume_turbopi_setup.service"
+sed -i "$REPLACESTRING" $SETUPSERVICE
+sed -i "$/WorkingDirectory=/c\\WorkingDirectory=${SETUPSCRIPTS}" $SETUPSERVICE
+sed -i "$/User=/c\\User=${U}" $SETUPSERVICE
 
 
 echo DONE COPYING
