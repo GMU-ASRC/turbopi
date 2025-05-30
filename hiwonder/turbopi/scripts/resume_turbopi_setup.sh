@@ -6,9 +6,11 @@ echo in $PWD
 echo as $USER $(whoami)
 export DISPLAY=:0
 echo DISPLAY = $DISPLAY
+export XDG_RUNTIME_DIR=/run/user/$(id -u)
 
 set -e  # exit on error
 source ./config  # EDITTAG:configsource
+sleep 10
 
 # crontab -lu root | grep -v "${SETUPSCRIPTS}/provision2s.sh" | crontab -u root -
 # rm -f /etc/systemd/system/resume_turbopi_setup.service

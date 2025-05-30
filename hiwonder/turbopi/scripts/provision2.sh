@@ -50,6 +50,13 @@ echo restarting time server
 sudo systemctl restart systemd-timesyncd
 # sleep 5
 
+# check if interactive
+if [[ $- == *i* ]]; then
+    IS_INTERACTIVE=1
+else
+    IS_INTERACTIVE=0
+fi
+
 # install pyenv and other useful tools
 set +e
 echo "Running goodies.sh"
@@ -71,6 +78,8 @@ else
 fi
 sleep 5
 
-read -sp "Quitting provision2.sh in 8 seconds. Press any key to continue, or CTRL-C to exit." -t 8 -N 1
+if [ $IS_INTERACTIVE -eq 1 ]; then
+    read -sp "Done with setup. Press any key to exit, or CTRL-C to exit." -N 1
+fi
 echo
 echo
