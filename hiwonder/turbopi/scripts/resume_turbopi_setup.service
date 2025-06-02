@@ -1,0 +1,15 @@
+[Unit]
+Description=Call scripts to resume turbopi setup after a reboot
+After=graphical.target
+
+[Service]
+Type=idle
+RemainAfterExit=yes
+User=pi
+WorkingDirectory=/home/pi/setupscripts
+ExecStart=/bin/bash /home/pi/setupscripts/resume_turbopi_setup.sh
+TimeoutSec=3600
+TimeoutStartSec=3600
+
+[Install]
+WantedBy=graphical.target
