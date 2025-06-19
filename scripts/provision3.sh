@@ -12,6 +12,7 @@ set -e  # exit on error
 
 source ./config
 
+rm -f $SETUPSCRIPTS/setup3done
 touch $SETUPSCRIPTS/setup3ran
 
 source ~/.bashrc
@@ -22,10 +23,10 @@ if ! command -v pyenv &> /dev/null; then
     eval "$(pyenv init -)"
 fi
 
-echo "installing python 3.12.9"
+echo "installing python 3.13.4"
 pyenv doctor
-pyenv install 3.12.9 --force
-pyenv global 3.12.9
+pyenv install 3.13.4 --force
+pyenv global 3.13.4
 
 # Put our git repo in /home/pi
 cd $H
@@ -52,6 +53,9 @@ git switch main
 git pull
 sudo pip install -e .
 cd $H
+
+touch $SETUPSCRIPTS/setup3ran
+cp $SETUPSCRIPTS/setup3ran $SETUPSCRIPTS/setup3done
 
 echo ALL DONE!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 sleep 5
