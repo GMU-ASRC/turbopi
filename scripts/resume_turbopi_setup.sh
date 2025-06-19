@@ -8,9 +8,21 @@ export DISPLAY=:0
 echo DISPLAY = $DISPLAY
 export XDG_RUNTIME_DIR=/run/user/$(id -u)
 
-set -e  # exit on error
 source ./config  # EDITTAG:configsource
-sleep 10
+
+sleep 3
+
+if lxterminal -e echo hi; then  # test if lxterminal is available
+	echo showing lxterminal sleep
+	sleep 0.1
+	# su $U -Pc "$SHOWCOMMAND"
+	lxterminal -e "echo 'sleeping for 30 seconds'; sleep 30"
+else
+	echo sleeping for 30 seconds
+	sleep 30
+fi
+echo attempting to run provision2.sh
+set -e  # exit on error
 
 # crontab -lu root | grep -v "${SETUPSCRIPTS}/provision2s.sh" | crontab -u root -
 # rm -f /etc/systemd/system/resume_turbopi_setup.service
