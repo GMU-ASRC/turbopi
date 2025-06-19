@@ -23,10 +23,10 @@ if ! command -v pyenv &> /dev/null; then
     eval "$(pyenv init -)"
 fi
 
-echo "installing python 3.12.9"
+echo "installing python 3.13.4"
 pyenv doctor
-pyenv install 3.12.9 --force
-pyenv global 3.12.9
+pyenv install 3.13.4 --force
+pyenv global 3.13.4
 
 # Put our git repo in /home/pi
 cd $H
