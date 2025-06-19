@@ -12,6 +12,7 @@ set -e  # exit on error
 
 source ./config
 
+rm -f $SETUPSCRIPTS/setup3done
 touch $SETUPSCRIPTS/setup3ran
 
 source ~/.bashrc
@@ -52,6 +53,9 @@ git switch main
 git pull
 sudo pip install -e .
 cd $H
+
+touch $SETUPSCRIPTS/setup3ran
+cp $SETUPSCRIPTS/setup3ran $SETUPSCRIPTS/setup3done
 
 echo ALL DONE!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 sleep 5

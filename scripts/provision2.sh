@@ -14,6 +14,7 @@ if [ "$(whoami)" != "$U" ]; then
     exit 1
 fi
 
+rm -f $SETUPSCRIPTS/setup2done
 touch $SETUPSCRIPTS/setup2ran
 export USER=$U
 export HOME=$H
@@ -65,6 +66,8 @@ set +e
 source $H/.bashrc  # reload bashrc
 
 echo provision2.sh complete
+touch $SETUPSCRIPTS/setup2ran
+cp $SETUPSCRIPTS/setup2ran $SETUPSCRIPTS/setup2done
 
 # install our managed git repo, hiwonder_common, and caspyan
 # as well as buttonman
