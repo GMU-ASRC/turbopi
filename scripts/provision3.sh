@@ -58,4 +58,4 @@ touch $SETUPSCRIPTS/setup3ran
 cp $SETUPSCRIPTS/setup3ran $SETUPSCRIPTS/setup3done
 
 echo ALL DONE!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-sleep 5
+sleep 3600
