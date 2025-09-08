@@ -24,6 +24,7 @@ remap_turn = st.Remap(
     [0, 0.5, 1]
 )
 
+
 @dataclass
 class Ident:
     """Class for keeping track of an item in inventory."""
@@ -86,7 +87,8 @@ def jrpc(ip: str, function: str, *args):
     msg_counts[url] = msg_id + 1
 
     if not response['jsonrpc']:
-        raise ValueError(f"Invalid response: {response}")
+        msg = f"Invalid response: {response}"
+        raise ValueError(msg)
 
     return response
 

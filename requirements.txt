@@ -1,0 +1,6 @@
+pygame-ce
+matplotlib
+pandas
+requests
+fabric
+InquirerPy
