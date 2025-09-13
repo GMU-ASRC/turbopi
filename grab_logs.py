@@ -59,15 +59,18 @@ def battchk(c):
 
 if __name__ == '__main__':
     res = select_robots()
-    folder = time.strftime('%y%m%d-%H%M%S')
+    timestamp = time.strftime('%y%m%d-%H%M%S')
+    logspath = pl.Path("logs")
+    destination = logspath / timestamp
+    destination.mkdir(exist_ok=True, parents=True)
     for robot in res:
         print(robot)
         c = fabric.Connection(robot.ip, user='pi', connect_kwargs={'password': 'raspberry'})
         run_name = c.run(f'ls {PI_LOGS_PATH} -1t | head -n 1').stdout.strip()
-        run_dir = PI_LOGS_PATH / run_name
+        # run_dir = PI_LOGS_PATH / run_name
         c.run(f"rm -f /tmp/{run_name}.zip")
-        c.run(f"zip -r /tmp/{run_name}.zip {run_dir}")
-        download_path = f"{folder}/{robot.hostname}-{run_name}.zip"
+        c.run(f"cd {PI_LOGS_PATH / run_name}; zip -r /tmp/{run_name}.zip *")
+        download_path = f"{destination}/{robot.hostname}-{run_name}.zip"
         c.get(f"/tmp/{run_name}.zip", download_path)
         c.run(f"rm -f /tmp/{run_name}.zip")
         print(f"Downloaded {download_path}")

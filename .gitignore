@@ -1,3 +1,4 @@
 logs/*
 !logs/.keep
 **/__pycache__/
+*.secret
