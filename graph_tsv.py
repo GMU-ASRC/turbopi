@@ -5,13 +5,17 @@ import pathlib as pl
 import colorsys
 import itertools
 from ast import literal_eval as eval
+import tempfile
+import zipfile
+import sys
 
 try:
     from hiwonder_common import project
     import hiwonder_common.graph_tsv as g
 except ImportError:
     import sys
-    path = pl.Path("pi/hiwonder_common/src")
+    cwd = pl.Path(__file__).resolve().parent
+    path = cwd / "pi/hiwonder_common/src"
     sys.path.append(str(path.resolve()))
     import hiwonder_common.project as project
     import hiwonder_common.graph_tsv as g
@@ -202,26 +206,61 @@ def graph_multiple(datas):
     return plt
 
 
+tempdirs = []
+
+
+def get_tsv_paths(filename):
+    # There's different behavior depending on whether we're given a single file or a directory
+    # single project zip file
+    if filename.suffix == '.zip':
+        # if the file is a zip file, extract it to a temporary directory
+        tempdir = tempfile.TemporaryDirectory(prefix=filename.name)
+        tempdirs.append(tempdir)
+        with zipfile.ZipFile(filename) as d:
+            d.extractall(tempdir.name)
+        return [pl.Path(tempdir.name) / 'io.tsv']
+    # single io.tsv file
+    elif filename.is_file():
+        return [filename]  # if file, assume it's a single data file
+    # single project folder containing io.tsv file
+    elif (f := g.make_project(filename).root / 'io.tsv').exists():
+        return [f]
+
+    # folder containing multiple projects
+    def is_folder_or_zip(p):
+        return p.is_dir() or p.suffix == '.zip'
+    # filter down to only folders or zip files
+    projects = [proj for proj in filename.iterdir() if is_folder_or_zip(proj)]
+    if not projects:
+        print(f"No projects found in folder:\n{filename:s}\nPlease specify a directory containing project folders.")
+        sys.exit(1)
+    # if any of the projects are zip files, assume we only care about .zip files and
+    # extract them to a temporary directory with the same name as the folder originally containing them
+    if any(p.suffix == '.zip' for p in projects):
+        tempdir = tempfile.TemporaryDirectory(prefix=filename.name)
+        tempdirs.append(tempdir)
+        for p in projects:
+            if p.suffix == '.zip':
+                with zipfile.ZipFile(p) as d:
+                    d.extractall(pl.Path(tempdir.name) / p.stem)
+        # now that we've unzipped the projects, update the paths to the temp project folders
+        projects = [pl.Path(tempdir.name) / p.stem for p in projects]
+    # make a list of the io.tsv files in each project folder
+    return [g.make_project(p).root / 'io.tsv' for p in projects]
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("filename", type=pl.Path, help="csv file to be graphed", nargs='?')
+    parser.add_argument("filename", help="csv file to be graphed", nargs='+')
     parser.add_argument("--offset", type=float, help="Number of seconds at the start of the file to skip", default=None)
     parser.add_argument("--offset_end", type=float, help="Number of seconds at the end of the file to ignore", default=None)
     parser.add_argument("--length", type=float, help="Length of time to graph in seconds", default=None)
-    parser.add_argument("--multiple", action='store_true', help="Plot multiple files")
+    # parser.add_argument("--multiple", action='store_true', help="Plot multiple files")
     args = parser.parse_args()
 
-    if args.multiple:
-        projects = [proj for proj in args.filename.iterdir() if proj.is_dir()]
-        if not projects:
-            print(f"No projects found in folder:\n{args.filename:s}\nPlease specify a directory containing project folders.")
-            sys.exit(1)
-        files = [g.make_project(p).root / 'io.tsv' for p in projects]
-    else:
-        if args.filename and args.filename.is_file():
-            files = [args.filename]  # if file, assume it's a single data file
-        else:  # assume provided path is a project. if none provided, ask in logs folder
-            files = [g.make_project(args.filename).root / 'io.tsv']
+    files = []
+    for f in args.filename:
+        files.extend(get_tsv_paths(pl.Path(f)))
 
     if project and any(oversize := [project.inquire_size(f) for f in files]):
         print(f"{oversize[0]} is too large to graph.")
@@ -234,6 +273,9 @@ if __name__ == "__main__":
         except ValueError as err:
             print(err)
             sys.exit(1)
+
+    for tempdir in tempdirs:
+        tempdir.cleanup()
 
     # plt.rcParams["figure.dpi"] = 600
     plt.rcParams["savefig.dpi"] = 600
