@@ -7,6 +7,8 @@ from InquirerPy.separator import Separator
 from xremote import discover
 from ast import literal_eval
 import fabric
+import multiprocessing
+import os
 
 PI_LOGS_PATH = pl.PurePosixPath('/home/pi/logs')
 
@@ -57,21 +59,29 @@ def battchk(c):
     return literal_eval(data)
 
 
+def download_logs(robot, destination):
+    # print(robot)
+    c = fabric.Connection(robot.ip, user='pi', connect_kwargs={'password': 'raspberry'})
+    run_name = c.run(f'ls {PI_LOGS_PATH} -1t | head -n 1').stdout.strip()
+    # run_dir = PI_LOGS_PATH / run_name
+    c.run(f"rm -f /tmp/{run_name}.zip")
+    c.run(f"cd {PI_LOGS_PATH / run_name}; zip -r /tmp/{run_name}.zip *")
+    download_path = f"{destination}/{robot.hostname}-{run_name}.zip"
+    c.get(f"/tmp/{run_name}.zip", download_path)
+    c.run(f"rm -f /tmp/{run_name}.zip")
+    # print(f"Downloaded {download_path}")
+    c.close()
+
+
 if __name__ == '__main__':
     res = select_robots()
     timestamp = time.strftime('%y%m%d-%H%M%S')
     logspath = pl.Path("logs")
     destination = logspath / timestamp
     destination.mkdir(exist_ok=True, parents=True)
-    for robot in res:
-        print(robot)
-        c = fabric.Connection(robot.ip, user='pi', connect_kwargs={'password': 'raspberry'})
-        run_name = c.run(f'ls {PI_LOGS_PATH} -1t | head -n 1').stdout.strip()
-        # run_dir = PI_LOGS_PATH / run_name
-        c.run(f"rm -f /tmp/{run_name}.zip")
-        c.run(f"cd {PI_LOGS_PATH / run_name}; zip -r /tmp/{run_name}.zip *")
-        download_path = f"{destination}/{robot.hostname}-{run_name}.zip"
-        c.get(f"/tmp/{run_name}.zip", download_path)
-        c.run(f"rm -f /tmp/{run_name}.zip")
-        print(f"Downloaded {download_path}")
-        c.close()
+    # single-threaded
+    # for robot in res:
+    #     download_logs(robot, destination)
+    # multi-threaded
+    with multiprocessing.Pool(processes=os.cpu_count()) as pool:
+        pool.map(download_logs, ((robot, destination) for robot in res))
