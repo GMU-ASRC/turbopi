@@ -1,3 +1,14 @@
+"""Zips up the logs from the robot and stores them in a timestamped folder.
+
+This script has no options. It will prompt you to select the robots you want to grab logs from.
+By default, it will grab the most recent logs from all robots online.
+
+The script will create a folder in logs/ with the current timestamp.
+Each robots' _most recent_ logs folder will be zipped up and stored in the timestamped folder.
+
+"""
+
+
 import time
 import pathlib as pl
 
@@ -39,7 +50,7 @@ def select_robots():
     ]
     # print(*robots, sep='\n')
     res = inquirer.checkbox(
-        message="Select robots to grab logs from",
+        message=f"Select robots to grab logs from ({len(robots)} found)",
         choices=choices,
         keybindings={
             'toggle-all': [

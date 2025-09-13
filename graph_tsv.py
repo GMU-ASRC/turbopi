@@ -1,18 +1,40 @@
+"""Graphs the input and output values of TurboPi robot(s) over time.
+
+This script takes as arguments a list of paths, each of which can be:
+* A single ``.tsv`` file
+* A single ``.zip`` file containing a single ``io.tsv`` file
+* A project folder containing an ``io.tsv`` file
+* A folder containing multiple ``.zip`` files or project folders, each containing ``io.tsv`` files
+
+.. note::
+    If a folder containing a ``.zip`` file is specified, the script will ignore
+    any other files or directories in the folder.
+
+
+You can also trim the time range of the graph by specifying the start and end times as arguments:
+``--offset <seconds>``: Skips the specified number of seconds from the start of each log.
+``--offset_end <seconds>``: Skips the specified number of seconds from before the end of each log.
+``--length <seconds>``: Constrains the length of the graph to the specified number of seconds.
+"""
+
+import sys
+import zipfile
 import argparse
-import pandas as pd
-from matplotlib import pyplot as plt
-import pathlib as pl
+import tempfile
 import colorsys
 import itertools
+import pathlib as pl
 from ast import literal_eval as eval
-import tempfile
-import zipfile
-import sys
+
+import pandas as pd
+from matplotlib import pyplot as plt
 
 try:
+    # if hiwonder_common is installed, use it
     from hiwonder_common import project
     import hiwonder_common.graph_tsv as g
 except ImportError:
+    # otherwise, use path hack to import the local version
     import sys
     cwd = pl.Path(__file__).resolve().parent
     path = cwd / "pi/hiwonder_common/src"
@@ -258,14 +280,17 @@ if __name__ == "__main__":
     # parser.add_argument("--multiple", action='store_true', help="Plot multiple files")
     args = parser.parse_args()
 
+    # get a list of paths to io.tsv files
     files = []
     for f in args.filename:
         files.extend(get_tsv_paths(pl.Path(f)))
 
+    # make sure the files are not too large to graph
     if project and any(oversize := [project.inquire_size(f) for f in files]):
         print(f"{oversize[0]} is too large to graph.")
         sys.exit(1)
 
+    # read the io.tsv files
     runs = []
     for data_file in files:
         try:
@@ -274,6 +299,7 @@ if __name__ == "__main__":
             print(err)
             sys.exit(1)
 
+    # if we unzipped anything, clean up the temp directories
     for tempdir in tempdirs:
         tempdir.cleanup()
 
