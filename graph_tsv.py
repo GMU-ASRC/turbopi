@@ -175,23 +175,24 @@ def supyrlabel(self, t, **kwargs):
 
 def graph_multiple(datas):
     plt.rcParams["figure.figsize"] = [7.00, 5.00]
-    fig, axs = plt.subplots(len(datas))
+    fig, axs = plt.subplots(len(datas), sharex=True)
     if len(datas) == 1:
         axs = [axs]
 
-
     plots = [g.plot_single(fig, ax, data) for ax, data in zip(axs, datas)]
 
-    fig, ax, axw = plots[-1]
+    for _fig, ax, axw in reversed(plots):
+        try:
+            # Labels and Title
 
-    # Labels and Title
-
-    # make the legend
-    # grab the artists from the last row
-    handles, labels = ax.get_legend_handles_labels()
-    a, b = axw.get_legend_handles_labels()
-    handles.insert(-1, *a)
-    labels.insert(-1, *b)
+            # make the legend
+            # grab the artists from the last row
+            handles, labels = ax.get_legend_handles_labels()
+            a, b = axw.get_legend_handles_labels()
+            handles.insert(-1, *a)
+            labels.insert(-1, *b)
+        except Exception:
+            continue
 
     show_title = True
 
@@ -204,9 +205,9 @@ def graph_multiple(datas):
                             **bbox)
     # set the linewidth of each legend object
     for obj in legend.legend_handles:
-        obj.set_linewidth(3.0)
+        obj.set_linewidth(3.0)  # pyright: ignore[reportAttributeAccessIssue]
     s = legend.legend_handles[-1]  # the last column should be the vertical lines.
-    s.set_linewidth(10.0)  # Draw that thicker in the legend
+    s.set_linewidth(10.0)  # Draw that thicker in the legend   # pyright: ignore[reportAttributeAccessIssue]
     s.set_alpha(0.25)
 
     if len(datas) == 1:
@@ -274,6 +275,8 @@ def get_tsv_paths(filename):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("filename", help="csv file to be graphed", nargs='+')
+    parser.add_argument("--unsync", action='store_true',
+                        help="Independently graph each file, with the epoch being the first timestamp in the file")
     parser.add_argument("--offset", type=float, help="Number of seconds at the start of the file to skip", default=None)
     parser.add_argument("--offset_end", type=float, help="Number of seconds at the end of the file to ignore", default=None)
     parser.add_argument("--length", type=float, help="Length of time to graph in seconds", default=None)
@@ -292,9 +295,19 @@ if __name__ == "__main__":
 
     # read the io.tsv files
     runs = []
+    start = end = offset_end = length = None
+    if args.unsync:
+        offset_end = args.offset_end
+        length = args.length
+    else:
+        starts = [g.get_start_time(g.read_file(f)) for f in files]
+        start = min(starts)  # absolute unix start time, min across all files (seconds with ns precision)
+        if args.length is not None:
+            end = args.length  # relative to start
+
     for data_file in files:
         try:
-            runs.append(g.data_from_file(data_file, args.offset, args.offset_end, args.length))
+            runs.append(g.data_from_file(data_file, args.offset, length, offset_end, start, end))
         except ValueError as err:
             print(err)
             sys.exit(1)
