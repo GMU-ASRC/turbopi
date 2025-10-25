@@ -1,3 +1,4 @@
+import os
 import re
 import time
 import math
@@ -12,6 +13,7 @@ import numpy as np
 import statistics_tools as st
 
 
+os.environ["SDL_JOYSTICK_ALLOW_BACKGROUND_EVENTS"] = "1"
 LOBOT_PORT = 9027
 RPC_PORT = 9030
 RE_IDENT_HOSTNAME = re.compile(r'^(?P<model>\S+):(?P<sn>[0-9a-fA-F]{32})(?:\:(?P<hostname>\S+))?$')
