@@ -74,15 +74,20 @@ cp $SETUPSCRIPTS/setup2ran $SETUPSCRIPTS/setup2done
 
 if [[ "$1" == "INSTALL_REPO" ]]; then
     cd $SETUPSCRIPTS
-    echo running provision3.sh
-    source $SETUPSCRIPTS/provision3.sh
+    echo running install_python.sh
+    source $SETUPSCRIPTS/install_python.sh
+    echo running install_repo.sh
+    source $SETUPSCRIPTS/install_repo.sh
+fi
 else
-    echo skipping provision3.sh
+    echo skipping install_python.sh
+    echo skipping install_repo.sh
 fi
 sleep 5
 
 if [ $IS_INTERACTIVE -eq 1 ]; then
     read -sp "Done with setup. Press any key to exit, or CTRL-C to exit." -N 1
 fi
+sleep 6000
 echo
 echo

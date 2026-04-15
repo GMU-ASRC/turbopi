@@ -12,8 +12,8 @@ set -e  # exit on error
 
 source ./config
 
-rm -f $SETUPSCRIPTS/setup3done
-touch $SETUPSCRIPTS/setup3ran
+rm -f $SETUPSCRIPTS/setup_repo_done
+touch $SETUPSCRIPTS/setup_repo_started
 
 source ~/.bashrc
 
@@ -23,13 +23,13 @@ if ! command -v pyenv &> /dev/null; then
     eval "$(pyenv init -)"
 fi
 
-echo "installing python 3.13.4"
-pyenv doctor
-pyenv install 3.13.4 --force
+echo "activating python 3.13.4"
 pyenv global 3.13.4
 
 # Put our git repo in /home/pi
 cd $H
+
+rm -rf $H/.git
 
 git init
 git remote add origin https://github.com/GMU-ASRC/turbopi-root.git
@@ -54,8 +54,8 @@ git pull
 sudo pip install -e .
 cd $H
 
-touch $SETUPSCRIPTS/setup3ran
-cp $SETUPSCRIPTS/setup3ran $SETUPSCRIPTS/setup3done
+touch $SETUPSCRIPTS/setup_repo_done
+rm -f $SETUPSCRIPTS/setup_repo_started
 
 echo ALL DONE!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 sleep 3600
