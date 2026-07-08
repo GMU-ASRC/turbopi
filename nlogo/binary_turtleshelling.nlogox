@@ -1,0 +1,3278 @@
+<?xml version="1.0" encoding="utf-8"?>
+<model version="NetLogo 7.0.1" snapToGrid="false">
+  <code><![CDATA[extensions [palette
+            matrix]
+;
+; Variable
+;
+breed [ alphas alpha]
+breed [ betas beta]
+breed [centroids centroid]
+breed [tails tail]
+breed [discs disc]
+breed[ place-holders place-holder]
+
+globals [ tick-delta
+          n
+          i
+          rand-xcor
+          rand-ycor
+          end_flag
+          sim_ran_count
+          circliness_list
+          circliness
+          stable_phase
+          stability_val
+          old_circliness_avg
+          phase
+          growth_val
+          shrink_val
+          V-sum
+          avg-speeds
+          radius_list
+          old_radius
+          GM
+          AM
+          DM
+          rank
+          LapM
+          c-mat
+          groups
+          group1
+          alg-con
+          deg
+          val
+          num-of-groups
+          milling_val
+          scatter-sum
+          momentum-sum
+          ang-momentum
+          group-rot-sum
+          group-rot
+          rad_var_comp_sum
+          scatter
+          outer_radius_size
+          rad_var
+          scatter_indiv
+          rad_var_comp1_sum
+          rad_var_comp1_mean
+          rad_var_comp1_mean_sub
+          rad_var_comp1
+          rad_var_comp2
+          momentum_indiv
+          rot_indiv
+          dist-to-closest-sum
+          dist-to-closest-avg
+          dist-to-closest-std-sum
+          dist-to-furthest-sum
+          dist-to-furthest-avg
+          dist-to-furthest-std-sum
+          rad_var_list
+          group-rot_list
+          ang-momentum_list
+          scatter_list
+          outer_radius_size_list
+          alg-con_list
+          num-of-groups_list
+          group-stability_list
+          circliness_list_list
+          v_avg_list
+          dist-to-closest-standard-dev
+          dist-to-furthest-standard-dev
+          diffusion_list
+          diffusion_val
+          diffusion_opp_list
+          diffusion_opp_val
+          combined_phase
+          combined_stability_val
+          beta_distance_list
+          alpha_distance_list
+          circle1size
+          circle2size
+         ]
+
+
+alphas-own [
+          velocity
+           angular-velocity   ;; angular velocity of heading/yaw
+           inputs             ;; input forces
+           closest-turtle     ;; closest target
+           impact-x
+           impact-y
+           impact-angle
+           rand-x
+           rand-y
+           speed-w-noise
+           turning-w-noise
+           mass
+           closest-turtles
+           closest-turtle2
+           body_direct
+           body_direct2
+           coll_angle2
+           detection_response_type
+           fov-list-alphas
+           fov-list-alphas_right
+           fov-list-alphas_left
+           fov-list-sanctuaries
+           fov-list-green-alphas
+           detect_sanctuaries?
+           detect_alphas?
+           detect_drugboats?
+           detect_betas?
+           fov-list-drugboats
+           stuck_count
+           idiosyncratic_val
+           detect_step_count
+           sleep_timer
+           rand-head-distrbuance
+           distance_traveled
+           energy
+           ricky_energy
+           fov-list-patches
+           sanctuary_detected_flag
+           drugboat_caught_flag
+;           body_v_x
+;           body_v_y
+           temp-turning-val
+           random_switch-timer
+           alternating_procedure_val
+           fov-list-alphas-same1
+           fov-list-alphas-same2
+           fov-list-alphas-other1
+           fov-list-alphas-other2
+           caught-flag
+           t_s
+           detection_flag
+           omega_val
+           omega
+           wait_flag
+           true_velocity
+           V
+           dist-to-closest
+           my-dist-to-closest-std
+           dist-to-furthest
+           my-dist-to-furthest-std
+           fov-list-betas
+           detection_flag_left
+           detection_flag_right
+           detection_flag_beta
+          ]
+
+betas-own [
+          velocity
+           angular-velocity   ;; angular velocity of heading/yaw
+           inputs             ;; input forces
+           closest-turtle     ;; closest target
+           impact-x
+           impact-y
+           impact-angle
+           rand-x
+           rand-y
+           speed-w-noise
+           turning-w-noise
+           mass
+           closest-turtles
+           closest-turtle2
+           body_direct
+           body_direct2
+           coll_angle2
+           detection_response_type
+           fov-list-alphas
+           fov-list-sanctuaries
+           fov-list-green-alphas
+           detect_sanctuaries?
+           detect_alphas?
+           detect_drugboats?
+           detect_betas?
+           fov-list-drugboats
+           stuck_count
+           idiosyncratic_val
+           detect_step_count
+           sleep_timer
+           rand-head-distrbuance
+           distance_traveled
+           energy
+           ricky_energy
+           fov-list-patches
+           sanctuary_detected_flag
+           drugboat_caught_flag
+;           body_v_x
+;           body_v_y
+           temp-turning-val
+           random_switch-timer
+           alternating_procedure_val
+           fov-list-alphas-same1
+           fov-list-alphas-same2
+           fov-list-alphas-other1
+           fov-list-alphas-other2
+           caught-flag
+           t_s
+           detection_flag
+           omega_val
+           omega
+           wait_flag
+           true_velocity
+           V
+           dist-to-closest
+           my-dist-to-closest-std
+           fov-list-betas
+          ]
+
+centroids-own
+          [
+            cc-rad
+            ic-rad
+          ]
+
+patches-own [
+            real-bearing-patch
+            closest-alpha-dist
+          ]
+
+discs-own [
+            age
+          ]
+place-holders-own [
+                    species
+                  ]
+
+
+
+
+
+;;
+;; Setup Procedures
+;;
+to setup
+  clear-all
+  random-seed seed-no
+
+
+  set tick-delta 0.025 ; 10 ticks in one second
+
+  let gr (range  (min-pxcor + 3) (max-pxcor - 3) 1)
+  set circle1size 1
+  set circle2size 1
+
+  set rand-xcor one-of gr
+  set rand-ycor one-of gr
+
+  while [rand-ycor < (- rand-xcor )]
+    [
+      set rand-xcor one-of gr
+     set rand-ycor one-of gr
+    ]
+
+  initialize_lists
+
+  ask patches
+    [
+       set pcolor white
+    ]
+
+
+
+
+  set n number-of-alphas
+
+  while [n > 0]
+  [
+   make_alpha
+   set n (n - 1)
+  ]
+
+    ; adds extra "ghost" turtles that make adding and removing agents during simulation a bit easier
+  create-place-holders 20
+  [
+    setxy max-pxcor max-pycor
+    ht
+    set species "alpha"
+  ]
+  
+  if add_leader?
+  [
+  make_beta
+  ]
+
+   alpha_setup_strict
+  
+
+ create-centroids 1
+  [ 
+    setxy 0 0
+    set size 1
+    set color violet
+    set shape "circle"
+    set cc-rad 3
+    set ic-rad 1
+    ht
+   ]
+
+
+  set-default-shape discs "ring"
+
+  reset-ticks
+end
+
+to initialize_lists
+
+  set circliness_list (list )
+  set rad_var_list (list )
+  set group-rot_list (list )
+  set ang-momentum_list (list )
+  set scatter_list (list )
+  set radius_list (list )
+  set diffusion_list (list)
+  set diffusion_opp_list (list)
+
+  set outer_radius_size_list (list )
+  set circliness_list_list (list )
+  set alg-con_list (list )
+  set num-of-groups_list (list )
+  set group-stability_list (list )
+  set v_avg_list (list )
+
+
+  set DM matrix:make-constant number-of-alphas number-of-alphas 0
+  set AM matrix:make-constant number-of-alphas number-of-alphas 0
+  set GM matrix:make-constant number-of-alphas number-of-alphas number-of-alphas
+
+end
+
+;;
+;; Runtime Procedures
+;;
+to go
+  
+  background_procedures ; for general functions like showing FOV
+
+ ask centroids
+   [ 
+     update_centroid
+     ht 
+   ]
+
+ ask alphas
+    [
+        ifelse can_detect_alphas?
+        [
+          set detect_alphas? true
+        ]
+        [
+          set detect_alphas? false
+         set fov-list-alphas_left (list )
+         set fov-list-alphas_right (list )
+         set fov-list-alphas (list )
+      
+        ]
+        set detect_betas? true
+        
+        
+         alpha_procedure_split 
+        
+      ]
+
+  ask betas 
+  [
+   beta-manual-drive 
+  ]
+
+;  classify_behavior
+  
+  find-metrics
+
+  if end_flag = 1
+  [
+    stop
+
+  ]
+
+
+  if combined_stability_val > 3000
+  [
+    set end_flag  1
+
+  ]
+
+
+  tick-advance 1
+end
+
+to beta-manual-drive 
+  update_agent_state; updates states of agents (i.e. position and heading)
+  
+end
+
+
+
+to update_centroid ; only analyzes alphas, not betas
+  let minx (min [xcor] of alphas) 
+  let maxx (max [xcor] of alphas)
+
+  let miny (min [ycor] of alphas)
+  let maxy (max [ycor] of alphas)
+
+  let centerx mean [xcor] of alphas
+  let centery mean [ycor] of alphas
+
+  setxy centerx centery
+
+  set cc-rad ([distance myself] of max-one-of alphas [distance myself])
+  set ic-rad ([distance myself] of min-one-of alphas [distance myself])
+
+end
+
+
+;to alpha_procedure
+;  do_sensing ; does the sensing to detect whatever the alpha is set to detec
+;
+;
+;  ifelse length fov-list-betas > 0 or length fov-list-alphas > 0 ; if they detect anything they set their detection flag to 1
+;  [
+;    set detection_flag 1
+;  ]
+;  [
+;    set detection_flag 0
+;  ]
+;
+;
+;  ifelse detection_flag = 1
+;  [
+;    set inputs (list alpha-speed-2 90 alpha-turning-rate-2)
+;    set color green
+;  ]
+;  [
+;    set inputs (list alpha-speed-1 90 alpha-turning-rate-1)
+;    set color blue
+;  ]
+;
+; update_agent_state; updates states of agents (i.e. position and heading)
+;
+;
+;end
+
+to alpha_procedure_split
+  do_sensing ; does the sensing to detect whatever the alpha is set to detec
+
+
+  ifelse length fov-list-alphas_right > 0 ; if they detect anything on the right side of the fov they set their detection flag to 1
+  [
+    set detection_flag_right 1
+  ]
+  [
+    set detection_flag_right 0
+  ]
+  
+  ifelse length fov-list-alphas_left > 0 ; if they detect anything on the left side of the fov they set their detection flag to 1
+  [
+    set detection_flag_left 1
+  ]
+  [
+    set detection_flag_left 0
+  ]
+  
+  ifelse length fov-list-betas > 0 ; 
+  [
+    set detection_flag_beta 1
+  ]
+  [
+    set detection_flag_beta 0
+  ]
+
+  ifelse length fov-list-alphas > 0 ; if they detect anything they set their detection flag to 1
+  [
+    set detection_flag 1
+  ]
+  [
+    set detection_flag 0
+  ]
+  let alpha_flag 0
+  
+  
+  
+  (ifelse detect_alpha_region = "Left Half"
+    [
+      set alpha_flag detection_flag_left 
+    ]
+    detect_alpha_region = "Right Half"
+    [
+      set alpha_flag detection_flag_right
+    ]
+    [
+      set alpha_flag detection_flag
+    ]
+    )
+    
+  
+
+    (ifelse detection_flag_beta = 1 ;or detection_flag = 1
+    [
+      set inputs (list alpha-speed-3 90 alpha-turning-rate-3)
+      set color red
+    ]
+    alpha_flag = 1
+    [
+      set inputs (list alpha-speed-2 90 alpha-turning-rate-2)
+      set color green
+    ]
+    [
+      set inputs (list alpha-speed-1 90 alpha-turning-rate-1)
+      set color blue
+    ])  
+  
+  if stop_alphas?
+  [
+    set inputs (list 0 90 0)
+  ]
+  
+;  (ifelse detection_flag_beta = 1 ;or detection_flag = 1
+;  [
+;    set inputs (list alpha-speed-3 90 alpha-turning-rate-3)
+;    set color red
+;  ]
+;  [
+;    set inputs (list alpha-speed-1 90 alpha-turning-rate-1)
+;    set color blue
+;  ])
+
+
+ update_agent_state; updates states of agents (i.e. position and heading)
+
+
+end
+
+
+
+to background_procedures
+ clear-paint
+
+ifelse paint_fov?
+  [
+    ask discs
+      [
+         set age age + 1
+         if age = 1 [ die ]
+       ]
+
+    ask alphas
+      [
+        (ifelse vision-cone-alpha = 360
+          [
+            hatch-discs 1
+                [
+                  set size 2 * (vision-distance-alpha * 1)
+                  set heading ([heading] of myself + FOV-offset)
+                  palette:set-transparency 50
+                ]
+          ]
+          vision-cone-alpha = 270
+          [
+            hatch-discs 1
+                [
+                  set size 2 * (vision-distance-alpha * 1)
+                  set heading ([heading] of myself + FOV-offset)
+                  set shape "270-deg-fov"
+                  palette:set-transparency 50
+                ]
+          ]
+          vision-cone-alpha = 180
+          [
+            hatch-discs 1
+                [
+                  set size 2 * (vision-distance-alpha * 1)
+                  set heading ([heading] of myself + FOV-offset)
+                  set shape "180-deg-fov"
+                  palette:set-transparency 50
+                ]
+          ]
+          vision-cone-alpha = 135
+          [
+            hatch-discs 1
+                [
+                  set size 2 * (vision-distance-alpha * 1)
+                  set heading ([heading] of myself + FOV-offset)
+                  set shape "135-deg-fov"
+                  palette:set-transparency 50
+                ]
+          ]
+          vision-cone-alpha = 90
+          [
+            hatch-discs 1
+                [
+                  set size 2 * (vision-distance-alpha * 1)
+                  set heading ([heading] of myself + FOV-offset)
+                  set shape "90-deg-fov"
+                  palette:set-transparency 50
+                ]
+          ]
+          vision-cone-alpha = 45
+          [
+            hatch-discs 1
+                [
+                  set size 2 * (vision-distance-alpha * 1)
+                  set heading ([heading] of myself + FOV-offset)
+                  set shape "45-deg-fov"
+                  palette:set-transparency 50
+                ]
+          ]
+          vision-cone-alpha = 55
+          [
+            hatch-discs 1
+                [
+                  set size 2 * (vision-distance-alpha * 1)
+                  set heading ([heading] of myself + FOV-offset)
+                  set shape "55-deg-fov"
+                  palette:set-transparency 50
+                ]
+          ]
+          vision-cone-alpha = 60
+          [
+            hatch-discs 1
+                [
+                  set size 2 * (vision-distance-alpha * 1)
+                  set heading ([heading] of myself + FOV-offset)
+                  set shape "60-deg-fov"
+                  palette:set-transparency 50
+                ]
+          ]
+          vision-cone-alpha = 30
+          [
+            hatch-discs 1
+                [
+                  set size 2 * (vision-distance-alpha * 1)
+                  set heading ([heading] of myself + FOV-offset)
+                  set shape "30-deg-fov"
+                  palette:set-transparency 50
+                ]
+          ]
+          [
+            paint-patches-in-new-FOV
+          ]
+          )
+
+      ]
+  ]
+  [
+    ask discs [die]
+  ]
+
+  ifelse draw_path?
+  [
+    ask alphas [pd]
+  ]
+  [
+    ask alphas [pu]
+  ]
+end
+
+to find-metrics
+
+  ask alphas
+  [ ;find_resultant_angle
+    set V sqrt (((item 0 velocity + impact-x)^ 2) + ((item 1 velocity + impact-y)^ 2))
+
+
+
+    set scatter_indiv ((xcor - mean[xcor] of centroids) ^ 2 + (ycor - mean [ycor] of centroids ) ^ 2)
+
+    set rad_var_comp1 sqrt(scatter_indiv)
+    set rad_var_comp1_sum rad_var_comp1_sum + rad_var_comp1
+    set rad_var_comp2 (rad_var_comp1 - rad_var_comp1_mean_sub) ^ 2
+
+    set dist-to-closest distance min-one-of other alphas [distance myself]
+    set dist-to-furthest distance max-one-of other alphas [distance myself]
+
+    set my-dist-to-closest-std (dist-to-closest - dist-to-closest-avg)^ 2
+    set my-dist-to-furthest-std (dist-to-furthest - dist-to-furthest-avg)^ 2
+
+
+
+    set momentum_indiv  (((item 0 velocity + impact-x) * (ycor - mean [ycor] of centroids)) - ((item 1 velocity + impact-y)* (xcor - mean [xcor] of centroids )))
+
+    set rot_indiv  (((item 0 velocity + impact-x) * ((ycor - mean [ycor] of centroids) / sqrt((xcor - mean [xcor] of centroids) ^ 2 + (ycor - mean [ycor] of centroids) ^ 2))) - ((item 1 velocity + impact-y) * ((xcor - mean [xcor] of centroids) / sqrt((xcor - mean [xcor] of centroids) ^ 2 + (ycor - mean [ycor] of centroids) ^ 2))))
+
+
+
+    set V-sum V-sum + V
+    set scatter-sum scatter-sum + scatter_indiv
+    set momentum-sum momentum-sum + momentum_indiv
+    set group-rot-sum group-rot-sum + rot_indiv
+    set rad_var_comp_sum rad_var_comp_sum + rad_var_comp2
+    set dist-to-closest-sum dist-to-closest-sum + dist-to-closest
+    set dist-to-closest-std-sum dist-to-closest-std-sum + my-dist-to-closest-std
+    set dist-to-furthest-sum dist-to-furthest-sum + dist-to-furthest
+    set dist-to-furthest-std-sum dist-to-furthest-std-sum + my-dist-to-furthest-std
+
+
+   ]
+
+
+
+   set avg-speeds (V-sum / number-of-alphas)
+   set scatter (scatter-sum / (number-of-alphas)); * (sqrt(2)* max-pxcor) ^ 2))
+   set ang-momentum (momentum-sum / (number-of-alphas)); * (sqrt(2)* max-pxcor)))
+   set group-rot (group-rot-sum / number-of-alphas)
+   set circliness (mean[cc-rad] of centroids - mean [ic-rad] of centroids )/ mean [ic-rad] of centroids
+
+   set dist-to-closest-avg (dist-to-closest-sum / number-of-alphas)
+   set dist-to-closest-standard-dev ( dist-to-closest-std-sum / number-of-alphas)
+
+  set dist-to-furthest-avg (dist-to-furthest-sum / number-of-alphas)
+   set dist-to-furthest-standard-dev ( dist-to-furthest-std-sum / number-of-alphas)
+
+
+;  set diffusion_val 1 - exp(dist-to-closest-standard-dev / dist-to-closest-avg)
+   set diffusion_val dist-to-closest-standard-dev
+  set diffusion_opp_val dist-to-furthest-standard-dev
+
+   set outer_radius_size (mean [cc-rad] of centroids )
+   set rad_var_comp1_mean (rad_var_comp1_sum / number-of-alphas)
+   set rad_var_comp1_mean_sub rad_var_comp1_mean
+
+   set rad_var (rad_var_comp_sum / (number-of-alphas)); * (sqrt(2)* max-pxcor) ^ 2))
+
+
+   set V-sum 0
+   set scatter-sum 0
+   set momentum-sum 0
+   set group-rot-sum 0
+   set rad_var_comp_sum 0
+   set rad_var_comp1_sum 0
+   set dist-to-closest-sum 0
+   set dist-to-closest-std-sum 0
+   set dist-to-furthest-sum 0
+   set dist-to-furthest-std-sum 0
+
+  ifelse length diffusion_list > 1000
+    [
+     set diffusion_list remove-item 0 diffusion_list
+     set diffusion_list lput diffusion_val diffusion_list
+     ]
+    [
+      set diffusion_list lput diffusion_val diffusion_list
+    ]
+
+  ifelse length diffusion_opp_list > 1000
+    [
+     set diffusion_opp_list remove-item 0 diffusion_opp_list
+     set diffusion_opp_list lput diffusion_opp_val diffusion_opp_list
+     ]
+    [
+      set diffusion_opp_list lput diffusion_opp_val diffusion_opp_list
+    ]
+
+
+   ifelse length v_avg_list > 1000
+    [
+     set v_avg_list remove-item 0 v_avg_list
+     set v_avg_list lput avg-speeds v_avg_list
+     ]
+    [
+      set v_avg_list lput avg-speeds v_avg_list
+    ]
+
+   ifelse length scatter_list > 1000
+    [
+     set scatter_list remove-item 0 scatter_list
+     set scatter_list lput scatter scatter_list
+     ]
+    [
+      set scatter_list lput scatter scatter_list
+    ]
+
+  ifelse length group-rot_list > 1000
+    [
+     set group-rot_list remove-item 0 group-rot_list
+     set group-rot_list lput group-rot group-rot_list
+     ]
+    [
+      set group-rot_list lput group-rot group-rot_list
+    ]
+
+  ifelse length ang-momentum_list > 1000
+    [
+     set ang-momentum_list remove-item 0 ang-momentum_list
+     set ang-momentum_list lput ang-momentum ang-momentum_list
+     ]
+    [
+      set ang-momentum_list lput ang-momentum ang-momentum_list
+    ]
+
+  ifelse length rad_var_list > 1000
+    [
+     set rad_var_list remove-item 0 rad_var_list
+     set rad_var_list lput rad_var rad_var_list
+     ]
+    [
+      set rad_var_list lput rad_var rad_var_list
+    ]
+
+  ifelse length circliness_list > 300
+    [
+     set circliness_list remove-item 0 circliness_list
+     set circliness_list lput circliness circliness_list
+     ]
+    [
+      set circliness_list lput circliness circliness_list
+    ]
+
+  ifelse length alg-con_list > 300
+    [
+     set alg-con_list remove-item 0 alg-con_list
+     set alg-con_list lput alg-con alg-con_list
+     ]
+    [
+      set alg-con_list lput alg-con alg-con_list
+    ]
+
+
+
+   let current_radius mean[cc-rad] of centroids
+
+
+
+  ifelse length radius_list > 300
+    [
+     set radius_list remove-item 0 radius_list
+     set radius_list lput current_radius radius_list
+     ]
+    [
+      set radius_list lput current_radius radius_list
+    ]
+
+   ifelse current_radius > (old_radius * 1.05);if the moving average window increases, it is growing
+     [
+       set growth_val growth_val + 1
+     ]
+     [
+       set growth_val 0
+     ]
+
+   ifelse current_radius < (old_radius * 0.95);if the moving average window decreases, it is shrinking
+     [
+       set shrink_val shrink_val + 1
+     ]
+     [
+       set shrink_val 0
+     ]
+
+
+   if ticks mod 1000 = 0
+     [
+      set old_radius mean radius_list
+      ]
+
+end
+
+;to classify_behavior
+;
+;  find-metrics
+;
+;  ifelse algorithm-alpha = "Milling"
+;  [
+;    if ticks > 1000
+;    [
+;    (ifelse alg-con <= 0.000001
+;    [
+;      set phase "Separated Groups"
+;      set stability_val (stability_val + 1)
+;
+;    ]
+;    avg-speeds < (speed1 * 0.5)
+;    [
+;      set phase "Cluster"
+;      set stability_val (stability_val + 1)
+;    ]
+;    growth_val > 500
+;    [
+;      set phase "Growing"
+;      set stability_val 0
+;    ]
+;    shrink_val > 500
+;    [
+;      set phase "Shrinking"
+;      set stability_val 0
+;    ]
+;      mean circliness_list < 0.04
+;    [
+;      set phase "Milling"
+;      set milling_val 1
+;      set stability_val (stability_val + 1)
+;    ]
+;        mean circliness_list > 0.04 and mean circliness_list < 0.9
+;    [
+;      set phase "Ellipsoidal"
+;      set stability_val (stability_val + 1)
+;    ]
+;    [
+;      set phase "N/A"
+;      set stability_val 0
+;    ]
+;    )
+;    ]
+;  ]
+;  [
+;   if ticks > 1000
+;   [
+;      (ifelse mean diffusion_list < 0.02 and length remove-duplicates diffusion_list < 10
+;     [
+;      set phase "Diffused"
+;      set stability_val (stability_val + 1)
+;    ]
+;      length remove-duplicates diffusion_list < 10
+;      [
+;      set phase "Not Diffused"
+;      set stability_val (stability_val + 1)
+;    ]
+;     [
+;      set phase "N/A"
+;      set stability_val 0;(stability_val + 1)
+;    ]
+;        )
+;   ]
+;  ]
+;
+;  set alpha_distance_list (list )
+;  ask alphas [set alpha_distance_list lput (distance max-one-of other alphas [distance myself]) alpha_distance_list]
+;
+;  set beta_distance_list (list )
+;  ask betas [set beta_distance_list lput (distance max-one-of other betas [distance myself]) beta_distance_list]
+;
+;  ifelse phase = "Milling" and (max alpha_distance_list > max beta_distance_list)
+;  [
+;    set combined_phase "Separated"
+;    set combined_stability_val (combined_stability_val + 1)
+;  ]
+;  [
+;    set combined_phase "N/A"
+;    set combined_stability_val 0
+;  ]
+;
+;
+;end
+
+
+
+
+
+
+;
+;
+;-------------- Nested functions and Setup Procedures below--------------
+;
+;
+
+
+
+to do_sensing
+  
+if detect_alphas?
+  [
+  find-alphas-in-FOV
+  
+  if split_fov?
+    [
+      find-alphas-in-split-FOV
+    ]
+  ]
+if detect_betas?
+  [
+  find-betas-in-FOV
+  ]
+
+end
+
+to update_agent_state
+  agent_dynamics
+
+  if member? self alphas
+  [
+    set distance_traveled (distance_traveled +  (item 0 inputs * tick-delta))
+    set energy (energy +  (((1 * item 0 inputs) ^ 2 + (item 1 inputs * pi / 180) ^ 2) * tick-delta) )
+  ]
+
+
+  if collisions?
+  [
+   do_collisions
+  ]
+
+   set true_velocity (list (( item 0 velocity * 1  ) + (impact-x * 1  ) + (rand-x * 1  )) (( item 1 velocity * 1  ) + (impact-y * 1  ) + (rand-y * 1 )))
+
+
+  let nxcor xcor + ( item 0 velocity * tick-delta  ) + (impact-x * tick-delta  ) + (rand-x * tick-delta  )
+  let nycor ycor + ( item 1 velocity * tick-delta  ) + (impact-y * tick-delta  ) + (rand-y * tick-delta  )
+
+
+  ;; makes sure agents don't go through edge (if the calculated next position is more than the boundary, it just forces the agent to stay in place)
+  if nxcor > max-pxcor or nxcor < min-pxcor
+   [
+     set nxcor xcor
+     set nycor ycor
+     set stuck_count stuck_count + 1
+   ]
+
+
+  if nycor > max-pycor or nycor < min-pycor
+    [ set nycor ycor
+      set nxcor xcor
+      set stuck_count stuck_count + 1]
+
+
+  setxy nxcor nycor
+
+  let nheading heading + (angular-velocity * tick-delta  ) + (impact-angle * tick-delta ) + (rand-head-distrbuance * tick-delta)
+  set heading nheading
+end
+
+
+
+to add_alpha
+  ask place-holder ((count alphas))
+  [  set breed alphas
+      st
+      let tycor one-of (range -4 4 0.01)
+       let txcor one-of (range -4 4 0.01)
+
+       setxy txcor tycor
+
+      set velocity [ 0 0 ]
+      set angular-velocity 0
+      set inputs [0 0 0]
+
+
+
+      set shape "circle 2"
+      set color blue
+      set size 0.3 ; sets size to 1m
+
+      set mass size
+
+    ]
+
+    set number-of-alphas (number-of-alphas + 1)
+end
+
+to remove_alpha
+ask alpha (count alphas - 1)
+  [
+    set breed place-holders
+    ht
+    set species "alpha"
+    setxy (max-pxcor - 1) (max-pycor - 1)
+  ]
+  set number-of-alphas (number-of-alphas - 1)
+
+end
+
+
+
+
+to make_alpha
+  create-alphas 1
+    [
+      set omega_val 1
+      set velocity [ 0 0]
+      set angular-velocity 0
+      set inputs [0 0 0]
+      set size 0.3 ;0.3 meter diameter
+
+      set fov-list-sanctuaries (list )
+      set fov-list-alphas (list )
+      set fov-list-betas (list )
+      set fov-list-drugboats (list )
+      set fov-list-alphas_left (list )
+      set fov-list-alphas_right (list )
+;      set fov-list-alphas-same (list )
+
+
+      place_alphas
+
+
+      set shape "mecanum"
+      set color blue
+      set mass size
+
+
+     set coll_angle2 0
+     set detect_sanctuaries? false
+     set detect_drugboats? false
+     set detect_alphas? false
+
+    set detection_response_type "turn-away"
+
+    set random_switch-timer round random-normal 200 50
+    ]
+end
+
+to make_beta
+  create-betas 1
+    [
+      set velocity [ 0 0]
+      set angular-velocity 0
+      set inputs [0 0 0]
+      set size 0.3 ;1 meter diameter
+
+      set fov-list-sanctuaries (list )
+      set fov-list-alphas (list )
+      set fov-list-betas (list )
+      set fov-list-drugboats (list )
+;      set fov-list-alphas-same (list )
+
+
+      setxy 0 0
+
+
+      set shape "mecanum"
+      set color red
+      set mass size
+
+
+     set coll_angle2 0
+     set detect_sanctuaries? false
+     set detect_drugboats? false
+     set detect_alphas? false
+
+    set detection_response_type "turn-away"
+
+    set random_switch-timer round random-normal 200 50
+    ]
+end
+
+
+
+
+to place_alphas; defines region and/or orientation of where the alphas should start
+  if alpha_setup = "Random"
+   [
+
+      let tycor one-of (range (min-pycor + 1) (max-pycor - 1) 0.01)
+       let txcor one-of (range (min-pxcor + 1) (max-pxcor - 1) 0.01)
+
+       setxy txcor tycor
+   ]
+
+  if alpha_setup = "Center Band"
+   [
+     let tycor one-of (range (-5) (5) 0.01)
+     let txcor one-of (range (min-pxcor + 1) (max-pxcor - 1) 0.01)
+
+     setxy txcor tycor
+   ]
+
+  if alpha_setup = "Barrier"
+   [
+     let tycor one-of (range (-3) (3) 0.01)
+     let txcor one-of (range (min-pxcor + 1) (max-pxcor - 1) 0.01)
+
+     setxy txcor tycor
+
+     ifelse  heading mod 2 = 0
+       [
+         set heading 90       ]
+       [
+         set heading 270
+       ]
+   ]
+
+
+  if alpha_setup = "Inverted V"
+   [
+     let txcor one-of (range (-30) (30) 0.01)
+     let selected_xcor txcor
+     ifelse selected_xcor > 0
+        [setxy selected_xcor (25 - (1.73333 * selected_xcor))]
+        [setxy selected_xcor (25 + (1.73333 * selected_xcor))]
+
+
+     setxy (xcor + random-normal 0 0.5) (ycor + random-normal 0 0.5)
+
+     ifelse  heading mod 2 = 0
+       [
+         set heading towardsxy 0 30;random-normal 90 10
+       ]
+       [
+         set heading 180 + towardsxy 0 30;random-normal 270 10
+       ]
+   ]
+
+  if alpha_setup = "Circle - Center"
+   [
+;    let sr_patches patches with [(distancexy 0 0 < (sqrt(number-of-alphas) * (1) * (1) ) ) and pxcor != 0 and pycor != 0]
+;    move-to one-of sr_patches with [(not any? other turtles in-radius (0.4))]
+;     setxy (xcor + 0.01) (ycor + 0.01)
+      let tycor one-of (range (-1) (1) 0.001)
+       let txcor one-of (range (-1) (1) 0.001)
+
+       setxy txcor tycor
+   ]
+
+  if alpha_setup = "Donut"
+   [
+    let sr_patches patches with [(distancexy 0 0 < (10)) and (distancexy 0 0 > (3 / 2)) and pxcor != 0 and pycor != 0]
+    move-to one-of sr_patches with [(not any? other turtles in-radius ([size] of alpha (0)))]
+     setxy (xcor + 0.01) (ycor + 0.01)
+   ]
+
+  if alpha_setup = "Circle - Random"
+   [
+    let sr_patches patches with [(distancexy rand-xcor rand-ycor < (sqrt(number-of-alphas) * ([size] of alpha (0)) * (1) ) + 1) and pxcor != 0 and pycor != 0]
+    move-to one-of sr_patches with [(not any? other turtles in-radius (.1))]
+     setxy (xcor + random-float 1) (ycor + random-float 1)
+   ]
+
+
+  if alpha_setup = "Circle - Center - Facing Out"
+   [
+;    let sr_patches patches with [(distancexy 0 0 < (sqrt(number-of-alphas) * ([size] of alpha (0)) * (2) ) + 0.35) and pxcor != 0 and pycor != 0]
+;    move-to one-of sr_patches with [not any? other turtles in-radius .1]
+;     setxy (xcor + 0.01) (ycor + 0.01)
+      
+      let tycor one-of (range (-1) (1) 0.001)
+       let txcor one-of (range (-1) (1) 0.001)
+
+       setxy txcor tycor
+
+    set heading 180 + towardsxy 0 0
+   ]
+
+  if alpha_setup = "Custom - Region" ; design your own setup by defining the region they should start in
+   [
+    ; use examples above to find a way to set them up however you like
+   ]
+
+end
+
+
+to alpha_setup_strict; if you want to more precisely place the alphas (i.e. alpha 2 needs to be at position x, etc.)
+
+
+
+  if alpha_setup = "Perfect Circle"
+   [
+
+      let irr  (circle1size); / 10)
+      let j 0
+      let heading_num 360 / (number-of-alphas)
+      let random-rotation random 90
+
+
+      while [j < number-of-alphas]
+      [ask alpha (j)
+        [
+          setxy (irr * -1 * cos(j * heading_num)) (irr * sin(j * heading_num)) 
+;          set heading 180 + towardsxy 0 0
+          set heading j * heading_num
+        ]
+
+        set j j + 1
+      ]
+
+
+   ]
+
+  if alpha_setup = "Custom - Precise"; specify exactly where you want each alpha to be placed to create shapes and better formations
+   [
+     ; use examples above to find a way to set them up however you like
+   ]
+end
+
+
+
+to clear-paint
+ask patches
+    [
+        set pcolor white
+    ]
+end
+
+
+to agent_dynamics
+  ; Reminder, each patch represents 1m, these values below are in terms of patches (i.e. 0.25 patches = 0.025m = 2.5cm)
+
+  let body_v_x (item 0 inputs) * sin (item 1 inputs) ; forward speed
+  let body_v_y (item 0 inputs) * -1 * cos( item 1 inputs) ; transversal speed
+  let theta_dot (item 2 inputs) ; turning rate
+  ; above is altered due to netlogo's definition of 0 deg (or 0 rad). heading of 0 is pointing straight north rather than east.
+  ; and heading of 90 deg is east rather than north (i.e. increasing angle means going clockwise rather than counter-clockwise)
+
+  let resultant_v sqrt(body_v_x ^ 2 + body_v_y ^ 2)
+
+  ifelse body_v_x = 0 and body_v_y = 0 ; checks to make sure atan can be used (if the first argument is zero it sometimes creates an error)
+  [set body_direct heading]
+  [set body_direct atan body_v_y body_v_x]
+
+                                                          ; In traditional coordinates
+  let v_x resultant_v * sin(- body_direct + heading)   ; set v_x resultant_v * cos(- body_direct + heading)
+  let v_y resultant_v * cos(- body_direct + heading )  ; set v_y resultant_v * sin(- body_direct + heading )
+   ; above is altered due to netlogo's definition of 0 deg (or 0 rad). heading of 0 is pointing straight north rather than east.
+  ; and heading of 90 deg is east rather than north (i.e. increasing angle means going clockwise rather than counter-clockwise)
+
+
+  set velocity (list (v_x) (v_y) 0)
+  set angular-velocity (theta_dot)
+end
+
+
+
+to do_collisions
+if count other turtles with [breed != discs and breed != centroids] > 0
+      [
+        let closest-turtle1 (max-one-of place-holders [distance myself])
+
+        if  count alphas > 1
+        [
+          ifelse count alphas > 3
+          [
+            set closest-turtles (min-n-of 2 other turtles with [breed != discs and breed != centroids] [distance myself])
+
+            set closest-turtle1 (min-one-of closest-turtles [distance myself])
+            set closest-turtle2 (max-one-of closest-turtles [distance myself])
+          ]
+          [
+            set closest-turtle1 (min-one-of other turtles with [breed != discs and breed != centroids] [distance myself])
+          ]
+        ]
+
+
+        set closest-turtle closest-turtle1
+
+        ifelse (distance closest-turtle ) < (size + ([size] of closest-turtle)) / 2
+           [
+              let xdiff item 0 target-diff
+              let ydiff item 1 target-diff
+
+              if closest-turtle2 != 0
+              [
+                let xdiff2 item 0 target-diff2
+                let ydiff2 item 1 target-diff2
+                set coll_angle2 (rel-bearing2 - (body_direct2))
+                ifelse coll_angle2 < -180
+                  [
+                    set coll_angle2 coll_angle2 + 360
+                   ]
+                  [
+                    ifelse coll_angle2 > 180
+                    [set coll_angle2 coll_angle2 - 360]
+                    [set coll_angle2 coll_angle2]
+                  ]
+              ]
+              set body_direct2 (360 - body_direct)
+              let coll_angle (body_direct2 - rel-bearing); - (90 - heading)); - (body_direct2))
+;              let coll_angle (heading + body_direct2) - (rel-bearing)
+
+
+              if body_direct2 > 180
+              [
+                set body_direct2 (body_direct2 - 360)
+              ]
+
+              ifelse coll_angle < -180
+              [
+                set coll_angle coll_angle + 360
+               ]
+              [
+                ifelse coll_angle > 180
+                [set coll_angle coll_angle - 360]
+                [set coll_angle coll_angle]
+              ]
+
+
+              ifelse abs(coll_angle) < 90
+              [
+                set impact-x  (-1 * item 0 velocity)
+                set impact-y  (-1 * item 1 velocity)
+
+                set stuck_count stuck_count + 1
+              ]
+              [
+               set impact-x 0
+               set impact-y 0
+               set impact-angle 0
+              ]
+
+              if closest-turtle2 != 0
+              [
+                if (distance closest-turtle2 ) < (size + ([size] of closest-turtle)) / 2
+                [
+                   if abs(coll_angle2) < 90
+                   [
+                     set impact-x  (-1 * item 0 velocity)
+                     set impact-y  (-1 * item 1 velocity)
+                   ]
+                ]
+              ]
+
+                ]
+          [
+            set impact-angle 0
+            set impact-x 0
+            set impact-y 0
+          ]
+      ]
+end
+
+
+to find-alphas-in-FOV
+  let vision-dd 0
+  let vision-cc 0
+  let real-bearing 0
+
+
+  if breed = alphas
+  [
+   set vision-dd vision-distance-alpha
+   set vision-cc vision-cone-alpha
+  ]
+
+
+
+  set fov-list-alphas (list )
+  set i (0)
+
+
+
+  while [i < (count alphas)]
+    [
+      if self != turtle ((i )  )
+        [
+          let sub-heading towards alpha (i ) - heading
+          set real-bearing sub-heading
+
+          if sub-heading < 0
+            [set real-bearing sub-heading + 360]
+
+          if sub-heading > 180
+            [set real-bearing sub-heading - 360]
+
+          if real-bearing > 180
+            [set real-bearing real-bearing - 360]
+          
+          
+
+
+          if ((real-bearing < ((vision-cc / 2)+ FOV-offset)) and (real-bearing >  (FOV-offset - (vision-cc / 2))) )   and (distance-nowrap (alpha (i )) < (vision-dd * 1));
+           [
+             set fov-list-alphas fput (alpha (i)) fov-list-alphas
+
+           ]
+        ]
+     set i (i + 1)
+      ]
+end
+
+to find-alphas-in-split-FOV
+  let vision-dd 0
+  let vision-cc 0
+  let real-bearing 0
+
+
+  if breed = alphas
+  [
+   set vision-dd vision-distance-alpha
+   set vision-cc vision-cone-alpha
+  ]
+
+
+
+  set fov-list-alphas_left (list )
+  set fov-list-alphas_right (list )
+  set i (0)
+
+
+
+  while [i < (count alphas)]
+    [
+      if self != turtle ((i )  )
+        [
+          let sub-heading towards alpha (i ) - heading
+          set real-bearing sub-heading
+
+          if sub-heading < 0
+            [set real-bearing sub-heading + 360]
+
+          if sub-heading > 180
+            [set real-bearing sub-heading - 360]
+
+          if real-bearing > 180
+            [set real-bearing real-bearing - 360]
+          
+          
+
+
+          if ((real-bearing <  (FOV-offset + fov_split_angle)) and (real-bearing >  ((FOV-offset) - (vision-cc / 2))) )   and (distance-nowrap (alpha (i )) < (vision-dd * 1));
+           [
+             set fov-list-alphas_left fput (alpha (i)) fov-list-alphas_left
+           ]
+          
+          if ((real-bearing < ((vision-cc / 2)+ (FOV-offset + fov_split_angle))) and (real-bearing >  ((FOV-offset) )) )   and (distance-nowrap (alpha (i )) < (vision-dd * 1));
+           [
+             set fov-list-alphas_right fput (alpha (i)) fov-list-alphas_right
+           ]
+        ]
+     set i (i + 1)
+      ]
+end
+
+to find-betas-in-FOV
+  let vision-dd 0
+  let vision-cc 0
+  let real-bearing 0
+
+  if breed = alphas
+  [
+   set vision-dd vision-distance-alpha
+   set vision-cc vision-cone-alpha
+  ]
+
+
+
+  set fov-list-betas (list )
+  set i (number-of-alphas + count place-holders with [species = "alpha"])
+
+  while [i < (count betas + count alphas + count place-holders with [species = "alpha"])]
+    [
+      if self != turtle ((i )  )
+        [
+          let sub-heading towards beta (i ) - heading
+          set real-bearing sub-heading
+
+          if sub-heading < 0
+            [set real-bearing sub-heading + 360]
+
+          if sub-heading > 180
+            [set real-bearing sub-heading - 360]
+
+          if real-bearing > 180
+            [set real-bearing real-bearing - 360]
+
+
+          if ((real-bearing < ((vision-cc / 2)+ FOV-offset)) and (real-bearing >  (FOV-offset - (vision-cc / 2))) )   and (distance-nowrap (beta (i )) < (vision-dd * 1));
+           [
+             set fov-list-betas fput (beta (i)) fov-list-betas
+
+           ]
+        ]
+     set i (i + 1)
+      ]
+end
+
+
+to paint-patches-in-new-FOV
+
+  let vision-dd 0
+  let vision-cc 0
+
+  if breed = alphas
+  [
+    set vision-dd vision-distance-alpha
+    set vision-cc vision-cone-alpha
+  ]
+
+
+
+  set fov-list-patches (list )
+  set i 0
+
+  set fov-list-patches patches in-cone (vision-dd * 1) (vision-cc) with [(distancexy-nowrap ([xcor] of myself) ([ycor] of myself) <= (vision-dd * 1))  and pcolor != black]
+
+
+  ask fov-list-patches
+  [
+      ifelse towards myself  > 180
+      [
+        let sub-heading (towards myself - 180) - [heading] of myself
+        set real-bearing-patch sub-heading
+        if sub-heading < 0
+          [set real-bearing-patch sub-heading + 360]
+
+        if sub-heading > 180
+          [set real-bearing-patch sub-heading - 360]
+
+        if real-bearing-patch > 180
+          [set real-bearing-patch real-bearing-patch - 360]
+      ]
+      [
+        let sub-heading (towards myself + 180) - [heading] of myself
+        set real-bearing-patch sub-heading
+
+        if sub-heading < 0
+          [set real-bearing-patch sub-heading + 360]
+
+        if sub-heading > 180
+          [set real-bearing-patch sub-heading - 360]
+
+        if real-bearing-patch > 180
+          [set real-bearing-patch real-bearing-patch - 360]
+      ]
+
+    let current-closest-alpha-distance distance myself
+
+
+     if (real-bearing-patch < ((vision-cc / 2)) and real-bearing-patch > ((-1 * (vision-cc / 2))))
+     [
+      ifelse member? myself alphas
+      [
+        set pcolor orange
+;       set pcolor scale-color red current-closest-alpha-distance 0 10 ; Adjust range as needed
+      ]
+      [set pcolor yellow]
+     ]
+  ]
+
+end
+
+
+
+
+
+
+
+
+to-report target-diff  ;; alpha reporter
+     report
+    (   map
+        [ [a q] -> a - q]
+        (list
+          [xcor] of closest-turtle
+          [ycor] of closest-turtle)
+        (list
+          xcor
+          ycor))
+
+end
+
+to-report target-diff2  ;; alpha reporter
+     report
+    (   map
+        [ [a q] -> a - q]
+        (list
+          [xcor] of closest-turtle2
+          [ycor] of closest-turtle2)
+        (list
+          xcor
+          ycor))
+end
+
+
+to-report rel-bearing
+  let xdiff item 0 target-diff
+  let ydiff item 1 target-diff
+  let angle 0
+
+  let cart-heading (90 - heading)
+
+  ifelse cart-heading < 0
+    [set cart-heading cart-heading + 360]
+    [set cart-heading cart-heading]
+
+  ifelse cart-heading > 180
+    [set cart-heading cart-heading - 360]
+    [set cart-heading cart-heading]
+
+  set angle (atan ydiff xdiff)
+
+
+  let bearing cart-heading - angle
+  if bearing < -180
+    [set bearing bearing + 360]
+  report( bearing )
+end
+
+to-report rel-bearing2
+  let xdiff2 item 0 target-diff2
+  let ydiff2 item 1 target-diff2
+  let angle2 0
+
+  let cart-heading2 (90 - heading)
+
+  ifelse cart-heading2 < 0
+    [set cart-heading2 cart-heading2 + 360]
+    [set cart-heading2 cart-heading2]
+
+  ifelse cart-heading2 > 180
+    [set cart-heading2 cart-heading2 - 360]
+    [set cart-heading2 cart-heading2]
+
+  if xdiff2 != 0 and ydiff2 != 0
+    [set angle2 (atan ydiff2 xdiff2)]
+
+
+  let bearing2 cart-heading2 - angle2
+  if bearing2 < -180
+    [set bearing2 bearing2 + 360]
+  report( bearing2 )
+end]]></code>
+  <widgets>
+    <view x="1063" wrappingAllowedX="false" y="160" frameRate="10.0" minPycor="-10" height="633" showTickCounter="true" patchSize="23.905" fontSize="10" wrappingAllowedY="false" width="633" tickCounterLabel="ticks" maxPycor="10" updateMode="1" maxPxcor="10" minPxcor="-10"></view>
+    <slider x="191" step="1" y="30" max="150" width="150" display="seed-no" height="50" min="1" direction="Horizontal" default="2.0" variable="seed-no"></slider>
+    <slider x="23" step="0.1" y="284" max="3" width="217" display="vision-distance-alpha" height="50" min="0" direction="Horizontal" default="1.1" variable="vision-distance-alpha" units="m"></slider>
+    <slider x="20" step="0.05" y="543" max="0.25" width="185" display="alpha-speed-1" height="50" min="-0.25" direction="Horizontal" default="0.25" variable="alpha-speed-1" units="m/s"></slider>
+    <slider x="18" step="5" y="598" max="180" width="234" display="alpha-turning-rate-1" height="50" min="-180" direction="Horizontal" default="30.0" variable="alpha-turning-rate-1" units="deg/s"></slider>
+    <button x="24" y="400" height="40" disableUntilTicks="false" forever="false" kind="Observer" width="103">add_alpha</button>
+    <button x="23" y="445" height="40" disableUntilTicks="false" forever="false" kind="Observer" width="126">remove_alpha</button>
+    <switch x="375" y="34" height="40" on="false" variable="paint_fov?" width="120" display="paint_fov?"></switch>
+    <switch x="375" y="79" height="40" on="false" variable="draw_path?" width="121" display="draw_path?"></switch>
+    <button x="497" y="77" height="40" disableUntilTicks="false" forever="false" kind="Observer" width="103" display="clear-paths">clear-drawing</button>
+    <button x="497" y="30" height="40" disableUntilTicks="false" forever="false" kind="Observer" width="100">clear-paint</button>
+    <slider x="24" step="1" y="227" max="100" width="185" display="number-of-alphas" height="50" min="0" direction="Horizontal" default="6.0" variable="number-of-alphas"></slider>
+    <note x="383" y="17" backgroundDark="0" fontSize="11" width="215" markdown="false" height="26" textColorDark="-1" textColorLight="-16777216" backgroundLight="0">Turn off to speed up sim
+</note>
+    <note x="2194" y="1245" backgroundDark="0" fontSize="11" width="215" markdown="false" height="26" textColorDark="-1" textColorLight="-16777216" backgroundLight="0"></note>
+    <note x="26" y="85" backgroundDark="0" fontSize="11" width="188" markdown="false" height="23" textColorDark="-1" textColorLight="-16777216" backgroundLight="0">Hunters</note>
+    <chooser x="23" y="161" height="60" variable="alpha_setup" current="4" width="198" display="alpha_setup">
+      <choice type="string" value="Random"></choice>
+      <choice type="string" value="Circle - Center"></choice>
+      <choice type="string" value="Circle - Center - Facing Out"></choice>
+      <choice type="string" value="Circle - Random"></choice>
+      <choice type="string" value="Perfect Circle"></choice>
+    </chooser>
+    <switch x="630" y="32" height="40" on="true" variable="collisions?" width="119" display="collisions?"></switch>
+    <slider x="15" step="0.05" y="694" max="0.25" width="185" display="alpha-speed-2" height="50" min="-0.25" direction="Horizontal" default="0.25" variable="alpha-speed-2" units="m/s"></slider>
+    <slider x="13" step="5" y="749" max="180" width="227" display="alpha-turning-rate-2" height="50" min="-180" direction="Horizontal" default="-5.0" variable="alpha-turning-rate-2" units="deg/s"></slider>
+    <note x="27" y="510" backgroundDark="0" fontSize="11" width="250" markdown="false" height="30" textColorDark="-1" textColorLight="-16777216" backgroundLight="0">Inputs for when Alphas detect nothing</note>
+    <note x="157" y="404" backgroundDark="0" fontSize="11" width="128" markdown="false" height="64" textColorDark="-1" textColorLight="-16777216" backgroundLight="0">can only add up to 20
+ during a single run</note>
+    <monitor x="705" precision="17" y="202" height="61" fontSize="11" width="100" display="Circliness Metric">min (list (precision (1 / mean circliness_list) 4) 100)</monitor>
+    <button x="112" actionKey="G" y="21" height="40" disableUntilTicks="false" forever="true" kind="Observer" width="67">go</button>
+    <button x="28" actionKey="P" y="20" height="40" disableUntilTicks="false" forever="false" kind="Observer" width="79" display="setup">setup</button>
+    <button x="283" actionKey="W" y="1023" height="40" disableUntilTicks="false" forever="false" kind="Observer" width="116" display="Forward">ask betas [set inputs (list (leader-speed) 90 0)]</button>
+    <switch x="395" y="878" height="40" on="true" variable="add_leader?" width="75" display="add_leader?"></switch>
+    <button x="393" actionKey="D" y="1088" height="40" disableUntilTicks="false" forever="false" kind="Observer" width="116" display="Turn Right">ask betas [set inputs (list (leader-speed) 90 3)]</button>
+    <button x="185" actionKey="A" y="1082" height="40" disableUntilTicks="false" forever="false" kind="Observer" width="116" display="Turn Left">ask betas [set inputs (list (leader-speed) 90 -3)]</button>
+    <button x="296" actionKey="S" y="1142" height="40" disableUntilTicks="false" forever="false" kind="Observer" width="116" display="Reverse">ask betas [set inputs (list (leader-speed) 270 0)]</button>
+    <slider x="373" step="0.05" y="605" max="0.25" width="185" display="alpha-speed-3" height="50" min="-0.25" direction="Horizontal" default="0.25" variable="alpha-speed-3" units="m/s"></slider>
+    <slider x="370" step="5" y="665" max="180" width="234" display="alpha-turning-rate-3" height="50" min="-180" direction="Horizontal" default="0.0" variable="alpha-turning-rate-3" units="deg/s"></slider>
+    <note x="28" y="659" backgroundDark="0" fontSize="11" width="250" markdown="false" height="30" textColorDark="-1" textColorLight="-16777216" backgroundLight="0">Inputs for when Alphas detect something</note>
+    <note x="356" y="560" backgroundDark="0" fontSize="11" width="251" markdown="false" height="36" textColorDark="-1" textColorLight="-16777216" backgroundLight="0">Inputs for when Alphas detect leader</note>
+    <switch x="358" y="388" height="40" on="false" variable="can_detect_alphas?" width="153" display="can_detect_alphas?"></switch>
+    <chooser x="363" y="449" height="61" variable="detect_alpha_region" current="0" width="251" display="detect_alpha_region">
+      <choice type="string" value="Left Half"></choice>
+      <choice type="string" value="Right Half"></choice>
+      <choice type="string" value="Whole"></choice>
+    </chooser>
+    <switch x="529" y="384" height="40" on="true" variable="split_fov?" width="96" display="split_fov?"></switch>
+    <slider x="372" step="10" y="300" max="90" width="251" display="FOV-offset" height="50" min="-90" direction="Horizontal" default="50.0" variable="FOV-offset" units="deg"></slider>
+    <slider x="682" step="10" y="507" max="60" width="250" display="fov_split_angle" height="50" min="-60" direction="Horizontal" default="0.0" variable="fov_split_angle" units="deg"></slider>
+    <button x="297" actionKey="X" y="1247" height="40" disableUntilTicks="false" forever="false" kind="Observer" width="92" display="stop">ask betas [set inputs (list (0) 270 0)]</button>
+    <slider x="560" step="0.01" y="997" max="0.1" width="250" display="leader-speed" height="50" min="0" direction="Horizontal" default="0.03" variable="leader-speed" units="m/s"></slider>
+    <slider x="22" step="5" y="344" max="180" width="195" display="vision-cone-alpha" height="50" min="0" direction="Horizontal" default="55.0" variable="vision-cone-alpha" units="deg"></slider>
+    <switch x="80" y="824" height="40" on="false" variable="stop_alphas?" width="129" display="stop_alphas?"></switch>
+  </widgets>
+  <info>## WHAT IS IT?
+
+(a general understanding of what the model is trying to show or explain)
+
+## HOW IT WORKS
+
+(what rules the agents use to create the overall behavior of the model)
+
+## HOW TO USE IT
+
+(how to use the model, including a description of each of the items in the Interface tab)
+
+## THINGS TO NOTICE
+
+(suggested things for the user to notice while running the model)
+
+## THINGS TO TRY
+
+(suggested things for the user to try to do (move sliders, switches, etc.) with the model)
+
+## EXTENDING THE MODEL
+
+(suggested things to add or change in the Code tab to make the model more complicated, detailed, accurate, etc.)
+
+## NETLOGO FEATURES
+
+(interesting or unusual features of NetLogo that the model uses, particularly in the Code tab; or where workarounds were needed for missing features)
+
+## RELATED MODELS
+
+(models in the NetLogo Models Library and elsewhere which are of related interest)
+
+## CREDITS AND REFERENCES
+
+(a reference to the model's URL on the web if it has one, as well as any other necessary credits, citations, and links)</info>
+  <turtleShapes>
+    <shape name="default" rotatable="true" editableColorIndex="0">
+      <polygon color="-1920102913" filled="true" marked="true">
+        <point x="150" y="5"></point>
+        <point x="40" y="250"></point>
+        <point x="150" y="205"></point>
+        <point x="260" y="250"></point>
+      </polygon>
+    </shape>
+    <shape name="135-deg-fov" rotatable="true" editableColorIndex="0">
+      <polygon color="-1920102913" filled="true" marked="true">
+        <point x="150" y="150"></point>
+        <point x="9" y="103"></point>
+        <point x="15" y="90"></point>
+        <point x="30" y="60"></point>
+        <point x="60" y="30"></point>
+        <point x="90" y="15"></point>
+        <point x="135" y="0"></point>
+        <point x="165" y="0"></point>
+        <point x="210" y="15"></point>
+        <point x="240" y="30"></point>
+        <point x="270" y="60"></point>
+        <point x="286" y="90"></point>
+        <point x="292" y="104"></point>
+        <point x="150" y="150"></point>
+        <point x="0" y="150"></point>
+      </polygon>
+      <line endX="150" startY="150" marked="false" color="-1" endY="0" startX="150"></line>
+    </shape>
+    <shape name="180-deg-fov" rotatable="true" editableColorIndex="0">
+      <polygon color="-1920102913" filled="true" marked="true">
+        <point x="0" y="150"></point>
+        <point x="0" y="120"></point>
+        <point x="15" y="90"></point>
+        <point x="30" y="60"></point>
+        <point x="60" y="30"></point>
+        <point x="90" y="15"></point>
+        <point x="135" y="0"></point>
+        <point x="165" y="0"></point>
+        <point x="210" y="15"></point>
+        <point x="240" y="30"></point>
+        <point x="270" y="60"></point>
+        <point x="285" y="90"></point>
+        <point x="300" y="120"></point>
+        <point x="300" y="150"></point>
+        <point x="0" y="150"></point>
+      </polygon>
+      <line endX="150" startY="150" marked="false" color="-1" endY="0" startX="150"></line>
+    </shape>
+    <shape name="270-deg-fov" rotatable="true" editableColorIndex="0">
+      <polygon color="-1920102913" filled="true" marked="true">
+        <point x="0" y="150"></point>
+        <point x="0" y="120"></point>
+        <point x="15" y="90"></point>
+        <point x="30" y="60"></point>
+        <point x="60" y="30"></point>
+        <point x="90" y="15"></point>
+        <point x="135" y="0"></point>
+        <point x="165" y="0"></point>
+        <point x="210" y="15"></point>
+        <point x="240" y="30"></point>
+        <point x="270" y="60"></point>
+        <point x="285" y="90"></point>
+        <point x="300" y="120"></point>
+        <point x="300" y="150"></point>
+        <point x="0" y="150"></point>
+      </polygon>
+      <polygon color="-1920102913" filled="true" marked="true">
+        <point x="150" y="150"></point>
+        <point x="60" y="255"></point>
+        <point x="52" y="264"></point>
+        <point x="25" y="235"></point>
+        <point x="13" y="211"></point>
+        <point x="5" y="186"></point>
+        <point x="0" y="161"></point>
+        <point x="0" y="151"></point>
+        <point x="0" y="150"></point>
+        <point x="150" y="150"></point>
+      </polygon>
+      <polygon color="-1920102913" filled="true" marked="true">
+        <point x="60" y="180"></point>
+      </polygon>
+      <polygon color="-1920102913" filled="true" marked="true">
+        <point x="150" y="150"></point>
+        <point x="240" y="255"></point>
+        <point x="248" y="264"></point>
+        <point x="275" y="235"></point>
+        <point x="287" y="211"></point>
+        <point x="295" y="186"></point>
+        <point x="300" y="161"></point>
+        <point x="300" y="151"></point>
+        <point x="300" y="150"></point>
+        <point x="150" y="150"></point>
+      </polygon>
+      <line endX="150" startY="150" marked="false" color="-1" endY="0" startX="150"></line>
+    </shape>
+    <shape name="30-deg-fov" rotatable="true" editableColorIndex="0">
+      <polygon color="-1920102913" filled="true" marked="true">
+        <point x="150" y="150"></point>
+        <point x="104" y="8"></point>
+        <point x="110" y="6"></point>
+        <point x="120" y="4"></point>
+        <point x="126" y="3"></point>
+        <point x="141" y="1"></point>
+        <point x="151" y="0"></point>
+        <point x="169" y="1"></point>
+        <point x="180" y="4"></point>
+        <point x="194" y="7"></point>
+        <point x="150" y="150"></point>
+      </polygon>
+      <line endX="150" startY="150" marked="false" color="-1" endY="0" startX="150"></line>
+    </shape>
+    <shape name="45-deg-fov" rotatable="true" editableColorIndex="0">
+      <polygon color="-1920102913" filled="true" marked="true">
+        <point x="105" y="210"></point>
+      </polygon>
+      <polygon color="-1920102913" filled="true" marked="true">
+        <point x="150" y="150"></point>
+        <point x="210" y="14"></point>
+        <point x="180" y="0"></point>
+        <point x="120" y="0"></point>
+        <point x="90" y="15"></point>
+        <point x="150" y="150"></point>
+      </polygon>
+      <line endX="150" startY="150" marked="false" color="-1" endY="0" startX="150"></line>
+    </shape>
+    <shape name="55-deg-fov" rotatable="true" editableColorIndex="0">
+      <polygon color="-1920102913" filled="true" marked="true">
+        <point x="150" y="150"></point>
+        <point x="75" y="15"></point>
+        <point x="77" y="19"></point>
+        <point x="94" y="11"></point>
+        <point x="114" y="5"></point>
+        <point x="126" y="2"></point>
+        <point x="141" y="0"></point>
+        <point x="154" y="0"></point>
+        <point x="167" y="0"></point>
+        <point x="176" y="2"></point>
+        <point x="192" y="6"></point>
+        <point x="207" y="12"></point>
+        <point x="213" y="14"></point>
+        <point x="222" y="18"></point>
+        <point x="150" y="150"></point>
+      </polygon>
+      <line endX="150" startY="150" marked="false" color="-1" endY="0" startX="150"></line>
+    </shape>
+    <shape name="60-deg-fov" rotatable="true" editableColorIndex="0">
+      <polygon color="-1920102913" filled="true" marked="true">
+        <point x="150" y="150"></point>
+        <point x="69" y="25"></point>
+        <point x="77" y="19"></point>
+        <point x="94" y="11"></point>
+        <point x="114" y="5"></point>
+        <point x="126" y="2"></point>
+        <point x="141" y="0"></point>
+        <point x="154" y="0"></point>
+        <point x="167" y="0"></point>
+        <point x="176" y="2"></point>
+        <point x="192" y="6"></point>
+        <point x="207" y="12"></point>
+        <point x="225" y="20"></point>
+        <point x="229" y="21"></point>
+        <point x="150" y="150"></point>
+      </polygon>
+      <line endX="150" startY="150" marked="false" color="-1" endY="0" startX="150"></line>
+    </shape>
+    <shape name="90-deg-fov" rotatable="true" editableColorIndex="0">
+      <polygon color="-1920102913" filled="true" marked="true">
+        <point x="150" y="150"></point>
+        <point x="255" y="45"></point>
+        <point x="240" y="30"></point>
+        <point x="210" y="15"></point>
+        <point x="180" y="0"></point>
+        <point x="120" y="0"></point>
+        <point x="60" y="30"></point>
+        <point x="45" y="45"></point>
+        <point x="150" y="150"></point>
+      </polygon>
+      <line endX="150" startY="150" marked="true" color="-1920102913" endY="0" startX="150"></line>
+      <line endX="150" startY="150" marked="false" color="-1" endY="0" startX="150"></line>
+    </shape>
+    <shape name="airplane" rotatable="true" editableColorIndex="0">
+      <polygon color="-1920102913" filled="true" marked="true">
+        <point x="150" y="0"></point>
+        <point x="135" y="15"></point>
+        <point x="120" y="60"></point>
+        <point x="120" y="105"></point>
+        <point x="15" y="165"></point>
+        <point x="15" y="195"></point>
+        <point x="120" y="180"></point>
+        <point x="135" y="240"></point>
+        <point x="105" y="270"></point>
+        <point x="120" y="285"></point>
+        <point x="150" y="270"></point>
+        <point x="180" y="285"></point>
+        <point x="210" y="270"></point>
+        <point x="165" y="240"></point>
+        <point x="180" y="180"></point>
+        <point x="285" y="195"></point>
+        <point x="285" y="165"></point>
+        <point x="180" y="105"></point>
+        <point x="180" y="60"></point>
+        <point x="165" y="15"></point>
+      </polygon>
+    </shape>
+    <shape name="arrow" rotatable="true" editableColorIndex="0">
+      <polygon color="-1920102913" filled="true" marked="true">
+        <point x="150" y="0"></point>
+        <point x="0" y="150"></point>
+        <point x="105" y="150"></point>
+        <point x="105" y="293"></point>
+        <point x="195" y="293"></point>
+        <point x="195" y="150"></point>
+        <point x="300" y="150"></point>
+      </polygon>
+    </shape>
+    <shape name="ball tennis" rotatable="false" editableColorIndex="0">
+      <circle x="30" y="30" marked="true" color="-1920102913" diameter="240" filled="true"></circle>
+      <circle x="30" y="30" marked="true" color="-1920102913" diameter="240" filled="false"></circle>
+      <polygon color="255" filled="true" marked="false">
+        <point x="50" y="82"></point>
+        <point x="54" y="90"></point>
+        <point x="59" y="107"></point>
+        <point x="64" y="140"></point>
+        <point x="64" y="164"></point>
+        <point x="63" y="189"></point>
+        <point x="59" y="207"></point>
+        <point x="54" y="222"></point>
+        <point x="68" y="236"></point>
+        <point x="76" y="220"></point>
+        <point x="81" y="195"></point>
+        <point x="84" y="163"></point>
+        <point x="83" y="139"></point>
+        <point x="78" y="102"></point>
+        <point x="72" y="83"></point>
+        <point x="63" y="67"></point>
+      </polygon>
+      <polygon color="255" filled="true" marked="false">
+        <point x="250" y="82"></point>
+        <point x="246" y="90"></point>
+        <point x="241" y="107"></point>
+        <point x="236" y="140"></point>
+        <point x="236" y="164"></point>
+        <point x="237" y="189"></point>
+        <point x="241" y="207"></point>
+        <point x="246" y="222"></point>
+        <point x="232" y="236"></point>
+        <point x="224" y="220"></point>
+        <point x="219" y="195"></point>
+        <point x="216" y="163"></point>
+        <point x="217" y="139"></point>
+        <point x="222" y="102"></point>
+        <point x="228" y="83"></point>
+        <point x="237" y="67"></point>
+      </polygon>
+      <polygon color="-1" filled="true" marked="false">
+        <point x="247" y="79"></point>
+        <point x="243" y="86"></point>
+        <point x="237" y="106"></point>
+        <point x="232" y="138"></point>
+        <point x="232" y="167"></point>
+        <point x="235" y="199"></point>
+        <point x="239" y="215"></point>
+        <point x="244" y="225"></point>
+        <point x="236" y="234"></point>
+        <point x="229" y="221"></point>
+        <point x="224" y="196"></point>
+        <point x="220" y="163"></point>
+        <point x="221" y="138"></point>
+        <point x="227" y="102"></point>
+        <point x="234" y="83"></point>
+        <point x="240" y="71"></point>
+      </polygon>
+      <polygon color="-1" filled="true" marked="false">
+        <point x="53" y="79"></point>
+        <point x="57" y="86"></point>
+        <point x="63" y="106"></point>
+        <point x="68" y="138"></point>
+        <point x="68" y="167"></point>
+        <point x="65" y="199"></point>
+        <point x="61" y="215"></point>
+        <point x="56" y="225"></point>
+        <point x="64" y="234"></point>
+        <point x="71" y="221"></point>
+        <point x="76" y="196"></point>
+        <point x="80" y="163"></point>
+        <point x="79" y="138"></point>
+        <point x="73" y="102"></point>
+        <point x="66" y="83"></point>
+        <point x="60" y="71"></point>
+      </polygon>
+    </shape>
+    <shape name="boat" rotatable="true" editableColorIndex="0">
+      <polygon color="-1920102913" filled="true" marked="true">
+        <point x="150" y="0"></point>
+        <point x="120" y="15"></point>
+        <point x="105" y="30"></point>
+        <point x="90" y="105"></point>
+        <point x="90" y="165"></point>
+        <point x="90" y="195"></point>
+        <point x="90" y="240"></point>
+        <point x="105" y="270"></point>
+        <point x="105" y="270"></point>
+        <point x="120" y="285"></point>
+        <point x="150" y="300"></point>
+        <point x="180" y="285"></point>
+        <point x="210" y="270"></point>
+        <point x="210" y="255"></point>
+        <point x="210" y="240"></point>
+        <point x="210" y="210"></point>
+        <point x="210" y="165"></point>
+        <point x="210" y="105"></point>
+        <point x="195" y="30"></point>
+        <point x="180" y="15"></point>
+      </polygon>
+      <line endX="120" startY="60" marked="false" color="-1" endY="135" startX="150"></line>
+      <line endX="180" startY="60" marked="false" color="-1" endY="135" startX="150"></line>
+      <polygon color="-1" filled="false" marked="false">
+        <point x="150" y="60"></point>
+        <point x="120" y="135"></point>
+        <point x="180" y="135"></point>
+        <point x="150" y="60"></point>
+        <point x="150" y="165"></point>
+      </polygon>
+    </shape>
+    <shape name="box" rotatable="false" editableColorIndex="0">
+      <polygon color="-1920102913" filled="true" marked="true">
+        <point x="150" y="285"></point>
+        <point x="285" y="225"></point>
+        <point x="285" y="75"></point>
+        <point x="150" y="135"></point>
+      </polygon>
+      <polygon color="-1920102913" filled="true" marked="true">
+        <point x="150" y="135"></point>
+        <point x="15" y="75"></point>
+        <point x="150" y="15"></point>
+        <point x="285" y="75"></point>
+      </polygon>
+      <polygon color="-1920102913" filled="true" marked="true">
+        <point x="15" y="75"></point>
+        <point x="15" y="225"></point>
+        <point x="150" y="285"></point>
+        <point x="150" y="135"></point>
+      </polygon>
+      <line endX="150" startY="285" marked="false" color="255" endY="135" startX="150"></line>
+      <line endX="15" startY="135" marked="false" color="255" endY="75" startX="150"></line>
+      <line endX="285" startY="135" marked="false" color="255" endY="75" startX="150"></line>
+    </shape>
+    <shape name="bug" rotatable="true" editableColorIndex="0">
+      <circle x="96" y="182" marked="true" color="-1920102913" diameter="108" filled="true"></circle>
+      <circle x="110" y="127" marked="true" color="-1920102913" diameter="80" filled="true"></circle>
+      <circle x="110" y="75" marked="true" color="-1920102913" diameter="80" filled="true"></circle>
+      <line endX="80" startY="100" marked="true" color="-1920102913" endY="30" startX="150"></line>
+      <line endX="220" startY="100" marked="true" color="-1920102913" endY="30" startX="150"></line>
+    </shape>
+    <shape name="butterfly" rotatable="true" editableColorIndex="0">
+      <polygon color="-1920102913" filled="true" marked="true">
+        <point x="150" y="165"></point>
+        <point x="209" y="199"></point>
+        <point x="225" y="225"></point>
+        <point x="225" y="255"></point>
+        <point x="195" y="270"></point>
+        <point x="165" y="255"></point>
+        <point x="150" y="240"></point>
+      </polygon>
+      <polygon color="-1920102913" filled="true" marked="true">
+        <point x="150" y="165"></point>
+        <point x="89" y="198"></point>
+        <point x="75" y="225"></point>
+        <point x="75" y="255"></point>
+        <point x="105" y="270"></point>
+        <point x="135" y="255"></point>
+        <point x="150" y="240"></point>
+      </polygon>
+      <polygon color="-1920102913" filled="true" marked="true">
+        <point x="139" y="148"></point>
+        <point x="100" y="105"></point>
+        <point x="55" y="90"></point>
+        <point x="25" y="90"></point>
+        <point x="10" y="105"></point>
+        <point x="10" y="135"></point>
+        <point x="25" y="180"></point>
+        <point x="40" y="195"></point>
+        <point x="85" y="194"></point>
+        <point x="139" y="163"></point>
+      </polygon>
+      <polygon color="-1920102913" filled="true" marked="true">
+        <point x="162" y="150"></point>
+        <point x="200" y="105"></point>
+        <point x="245" y="90"></point>
+        <point x="275" y="90"></point>
+        <point x="290" y="105"></point>
+        <point x="290" y="135"></point>
+        <point x="275" y="180"></point>
+        <point x="260" y="195"></point>
+        <point x="215" y="195"></point>
+        <point x="162" y="165"></point>
+      </polygon>
+      <polygon color="255" filled="true" marked="false">
+        <point x="150" y="255"></point>
+        <point x="135" y="225"></point>
+        <point x="120" y="150"></point>
+        <point x="135" y="120"></point>
+        <point x="150" y="105"></point>
+        <point x="165" y="120"></point>
+        <point x="180" y="150"></point>
+        <point x="165" y="225"></point>
+      </polygon>
+      <circle x="135" y="90" marked="false" color="255" diameter="30" filled="true"></circle>
+      <line endX="195" startY="105" marked="false" color="255" endY="60" startX="150"></line>
+      <line endX="105" startY="105" marked="false" color="255" endY="60" startX="150"></line>
+    </shape>
+    <shape name="car" rotatable="false" editableColorIndex="0">
+      <polygon color="-1920102913" filled="true" marked="true">
+        <point x="300" y="180"></point>
+        <point x="279" y="164"></point>
+        <point x="261" y="144"></point>
+        <point x="240" y="135"></point>
+        <point x="226" y="132"></point>
+        <point x="213" y="106"></point>
+        <point x="203" y="84"></point>
+        <point x="185" y="63"></point>
+        <point x="159" y="50"></point>
+        <point x="135" y="50"></point>
+        <point x="75" y="60"></point>
+        <point x="0" y="150"></point>
+        <point x="0" y="165"></point>
+        <point x="0" y="225"></point>
+        <point x="300" y="225"></point>
+        <point x="300" y="180"></point>
+      </polygon>
+      <circle x="180" y="180" marked="false" color="255" diameter="90" filled="true"></circle>
+      <circle x="30" y="180" marked="false" color="255" diameter="90" filled="true"></circle>
+      <polygon color="255" filled="true" marked="false">
+        <point x="162" y="80"></point>
+        <point x="132" y="78"></point>
+        <point x="134" y="135"></point>
+        <point x="209" y="135"></point>
+        <point x="194" y="105"></point>
+        <point x="189" y="96"></point>
+        <point x="180" y="89"></point>
+      </polygon>
+      <circle x="47" y="195" marked="true" color="-1920102913" diameter="58" filled="true"></circle>
+      <circle x="195" y="195" marked="true" color="-1920102913" diameter="58" filled="true"></circle>
+    </shape>
+    <shape name="circle" rotatable="true" editableColorIndex="0">
+      <line endX="135" startY="135" marked="true" color="-1920102913" endY="30" startX="135"></line>
+      <circle x="0" y="0" marked="true" color="-1920102913" diameter="300" filled="true"></circle>
+    </shape>
+    <shape name="circle 2" rotatable="true" editableColorIndex="0">
+      <circle x="0" y="0" marked="false" color="255" diameter="300" filled="true"></circle>
+      <circle x="0" y="0" marked="true" color="-1920102913" diameter="300" filled="true"></circle>
+      <polygon color="-1" filled="true" marked="false">
+        <point x="150" y="0"></point>
+        <point x="105" y="135"></point>
+        <point x="195" y="135"></point>
+        <point x="150" y="0"></point>
+      </polygon>
+    </shape>
+    <shape name="circle 3" rotatable="true" editableColorIndex="0">
+      <circle x="0" y="0" marked="false" color="255" diameter="300" filled="true"></circle>
+      <circle x="0" y="0" marked="true" color="-1920102913" diameter="300" filled="true"></circle>
+      <polygon color="-1" filled="true" marked="false">
+        <point x="150" y="0"></point>
+        <point x="105" y="135"></point>
+        <point x="195" y="135"></point>
+        <point x="150" y="0"></point>
+      </polygon>
+      <rectangle endX="250" startY="171" marked="false" color="-1" endY="246" startX="55" filled="true"></rectangle>
+    </shape>
+    <shape name="cow" rotatable="false" editableColorIndex="0">
+      <polygon color="-1920102913" filled="true" marked="true">
+        <point x="200" y="193"></point>
+        <point x="197" y="249"></point>
+        <point x="179" y="249"></point>
+        <point x="177" y="196"></point>
+        <point x="166" y="187"></point>
+        <point x="140" y="189"></point>
+        <point x="93" y="191"></point>
+        <point x="78" y="179"></point>
+        <point x="72" y="211"></point>
+        <point x="49" y="209"></point>
+        <point x="48" y="181"></point>
+        <point x="37" y="149"></point>
+        <point x="25" y="120"></point>
+        <point x="25" y="89"></point>
+        <point x="45" y="72"></point>
+        <point x="103" y="84"></point>
+        <point x="179" y="75"></point>
+        <point x="198" y="76"></point>
+        <point x="252" y="64"></point>
+        <point x="272" y="81"></point>
+        <point x="293" y="103"></point>
+        <point x="285" y="121"></point>
+        <point x="255" y="121"></point>
+        <point x="242" y="118"></point>
+        <point x="224" y="167"></point>
+      </polygon>
+      <polygon color="-1920102913" filled="true" marked="true">
+        <point x="73" y="210"></point>
+        <point x="86" y="251"></point>
+        <point x="62" y="249"></point>
+        <point x="48" y="208"></point>
+      </polygon>
+      <polygon color="-1920102913" filled="true" marked="true">
+        <point x="25" y="114"></point>
+        <point x="16" y="195"></point>
+        <point x="9" y="204"></point>
+        <point x="23" y="213"></point>
+        <point x="25" y="200"></point>
+        <point x="39" y="123"></point>
+      </polygon>
+    </shape>
+    <shape name="cylinder" rotatable="false" editableColorIndex="0">
+      <circle x="0" y="0" marked="true" color="-1920102913" diameter="300" filled="true"></circle>
+    </shape>
+    <shape name="dot" rotatable="false" editableColorIndex="0">
+      <circle x="90" y="90" marked="true" color="-1920102913" diameter="120" filled="true"></circle>
+    </shape>
+    <shape name="drop" rotatable="false" editableColorIndex="0">
+      <circle x="73" y="133" marked="true" color="-1920102913" diameter="152" filled="true"></circle>
+      <polygon color="-1920102913" filled="true" marked="true">
+        <point x="219" y="181"></point>
+        <point x="205" y="152"></point>
+        <point x="185" y="120"></point>
+        <point x="174" y="95"></point>
+        <point x="163" y="64"></point>
+        <point x="156" y="37"></point>
+        <point x="149" y="7"></point>
+        <point x="147" y="166"></point>
+      </polygon>
+      <polygon color="-1920102913" filled="true" marked="true">
+        <point x="79" y="182"></point>
+        <point x="95" y="152"></point>
+        <point x="115" y="120"></point>
+        <point x="126" y="95"></point>
+        <point x="137" y="64"></point>
+        <point x="144" y="37"></point>
+        <point x="150" y="6"></point>
+        <point x="154" y="165"></point>
+      </polygon>
+    </shape>
+    <shape name="face happy" rotatable="false" editableColorIndex="0">
+      <circle x="8" y="8" marked="true" color="-1920102913" diameter="285" filled="true"></circle>
+      <circle x="60" y="75" marked="false" color="255" diameter="60" filled="true"></circle>
+      <circle x="180" y="75" marked="false" color="255" diameter="60" filled="true"></circle>
+      <polygon color="255" filled="true" marked="false">
+        <point x="150" y="255"></point>
+        <point x="90" y="239"></point>
+        <point x="62" y="213"></point>
+        <point x="47" y="191"></point>
+        <point x="67" y="179"></point>
+        <point x="90" y="203"></point>
+        <point x="109" y="218"></point>
+        <point x="150" y="225"></point>
+        <point x="192" y="218"></point>
+        <point x="210" y="203"></point>
+        <point x="227" y="181"></point>
+        <point x="251" y="194"></point>
+        <point x="236" y="217"></point>
+        <point x="212" y="240"></point>
+      </polygon>
+    </shape>
+    <shape name="face neutral" rotatable="false" editableColorIndex="0">
+      <circle x="8" y="7" marked="true" color="-1920102913" diameter="285" filled="true"></circle>
+      <circle x="60" y="75" marked="false" color="255" diameter="60" filled="true"></circle>
+      <circle x="180" y="75" marked="false" color="255" diameter="60" filled="true"></circle>
+      <rectangle endX="240" startY="195" marked="false" color="255" endY="225" startX="60" filled="true"></rectangle>
+    </shape>
+    <shape name="face sad" rotatable="false" editableColorIndex="0">
+      <circle x="8" y="8" marked="true" color="-1920102913" diameter="285" filled="true"></circle>
+      <circle x="60" y="75" marked="false" color="255" diameter="60" filled="true"></circle>
+      <circle x="180" y="75" marked="false" color="255" diameter="60" filled="true"></circle>
+      <polygon color="255" filled="true" marked="false">
+        <point x="150" y="168"></point>
+        <point x="90" y="184"></point>
+        <point x="62" y="210"></point>
+        <point x="47" y="232"></point>
+        <point x="67" y="244"></point>
+        <point x="90" y="220"></point>
+        <point x="109" y="205"></point>
+        <point x="150" y="198"></point>
+        <point x="192" y="205"></point>
+        <point x="210" y="220"></point>
+        <point x="227" y="242"></point>
+        <point x="251" y="229"></point>
+        <point x="236" y="206"></point>
+        <point x="212" y="183"></point>
+      </polygon>
+    </shape>
+    <shape name="fish" rotatable="false" editableColorIndex="0">
+      <polygon color="-1" filled="true" marked="false">
+        <point x="44" y="131"></point>
+        <point x="21" y="87"></point>
+        <point x="15" y="86"></point>
+        <point x="0" y="120"></point>
+        <point x="15" y="150"></point>
+        <point x="0" y="180"></point>
+        <point x="13" y="214"></point>
+        <point x="20" y="212"></point>
+        <point x="45" y="166"></point>
+      </polygon>
+      <polygon color="-1" filled="true" marked="false">
+        <point x="135" y="195"></point>
+        <point x="119" y="235"></point>
+        <point x="95" y="218"></point>
+        <point x="76" y="210"></point>
+        <point x="46" y="204"></point>
+        <point x="60" y="165"></point>
+      </polygon>
+      <polygon color="-1" filled="true" marked="false">
+        <point x="75" y="45"></point>
+        <point x="83" y="77"></point>
+        <point x="71" y="103"></point>
+        <point x="86" y="114"></point>
+        <point x="166" y="78"></point>
+        <point x="135" y="60"></point>
+      </polygon>
+      <polygon color="-1920102913" filled="true" marked="true">
+        <point x="30" y="136"></point>
+        <point x="151" y="77"></point>
+        <point x="226" y="81"></point>
+        <point x="280" y="119"></point>
+        <point x="292" y="146"></point>
+        <point x="292" y="160"></point>
+        <point x="287" y="170"></point>
+        <point x="270" y="195"></point>
+        <point x="195" y="210"></point>
+        <point x="151" y="212"></point>
+        <point x="30" y="166"></point>
+      </polygon>
+      <circle x="215" y="106" marked="false" color="255" diameter="30" filled="true"></circle>
+    </shape>
+    <shape name="flag" rotatable="false" editableColorIndex="0">
+      <rectangle endX="75" startY="15" marked="true" color="-1920102913" endY="300" startX="60" filled="true"></rectangle>
+      <polygon color="-1920102913" filled="true" marked="true">
+        <point x="90" y="150"></point>
+        <point x="270" y="90"></point>
+        <point x="90" y="30"></point>
+      </polygon>
+      <line endX="90" startY="135" marked="true" color="-1920102913" endY="135" startX="75"></line>
+      <line endX="90" startY="45" marked="true" color="-1920102913" endY="45" startX="75"></line>
+    </shape>
+    <shape name="flower" rotatable="false" editableColorIndex="0">
+      <polygon color="1504722175" filled="true" marked="false">
+        <point x="135" y="120"></point>
+        <point x="165" y="165"></point>
+        <point x="180" y="210"></point>
+        <point x="180" y="240"></point>
+        <point x="150" y="300"></point>
+        <point x="165" y="300"></point>
+        <point x="195" y="240"></point>
+        <point x="195" y="195"></point>
+        <point x="165" y="135"></point>
+      </polygon>
+      <circle x="85" y="132" marked="true" color="-1920102913" diameter="38" filled="true"></circle>
+      <circle x="130" y="147" marked="true" color="-1920102913" diameter="38" filled="true"></circle>
+      <circle x="192" y="85" marked="true" color="-1920102913" diameter="38" filled="true"></circle>
+      <circle x="85" y="40" marked="true" color="-1920102913" diameter="38" filled="true"></circle>
+      <circle x="177" y="40" marked="true" color="-1920102913" diameter="38" filled="true"></circle>
+      <circle x="177" y="132" marked="true" color="-1920102913" diameter="38" filled="true"></circle>
+      <circle x="70" y="85" marked="true" color="-1920102913" diameter="38" filled="true"></circle>
+      <circle x="130" y="25" marked="true" color="-1920102913" diameter="38" filled="true"></circle>
+      <circle x="96" y="51" marked="true" color="-1920102913" diameter="108" filled="true"></circle>
+      <circle x="113" y="68" marked="false" color="255" diameter="74" filled="true"></circle>
+      <polygon color="1504722175" filled="true" marked="false">
+        <point x="189" y="233"></point>
+        <point x="219" y="188"></point>
+        <point x="249" y="173"></point>
+        <point x="279" y="188"></point>
+        <point x="234" y="218"></point>
+      </polygon>
+      <polygon color="1504722175" filled="true" marked="false">
+        <point x="180" y="255"></point>
+        <point x="150" y="210"></point>
+        <point x="105" y="210"></point>
+        <point x="75" y="240"></point>
+        <point x="135" y="240"></point>
+      </polygon>
+    </shape>
+    <shape name="house" rotatable="false" editableColorIndex="0">
+      <rectangle endX="255" startY="120" marked="true" color="-1920102913" endY="285" startX="45" filled="true"></rectangle>
+      <rectangle endX="180" startY="210" marked="false" color="255" endY="285" startX="120" filled="true"></rectangle>
+      <polygon color="-1920102913" filled="true" marked="true">
+        <point x="15" y="120"></point>
+        <point x="150" y="15"></point>
+        <point x="285" y="120"></point>
+      </polygon>
+      <line endX="270" startY="120" marked="false" color="255" endY="120" startX="30"></line>
+    </shape>
+    <shape name="key" rotatable="false" editableColorIndex="0">
+      <rectangle endX="285" startY="120" marked="true" color="-1920102913" endY="150" startX="90" filled="true"></rectangle>
+      <rectangle endX="285" startY="135" marked="true" color="-1920102913" endY="195" startX="255" filled="true"></rectangle>
+      <rectangle endX="210" startY="135" marked="true" color="-1920102913" endY="195" startX="180" filled="true"></rectangle>
+      <circle x="0" y="60" marked="true" color="-1920102913" diameter="150" filled="true"></circle>
+      <circle x="30" y="90" marked="false" color="-1" diameter="90" filled="true"></circle>
+    </shape>
+    <shape name="leaf" rotatable="false" editableColorIndex="0">
+      <polygon color="-1920102913" filled="true" marked="true">
+        <point x="150" y="210"></point>
+        <point x="135" y="195"></point>
+        <point x="120" y="210"></point>
+        <point x="60" y="210"></point>
+        <point x="30" y="195"></point>
+        <point x="60" y="180"></point>
+        <point x="60" y="165"></point>
+        <point x="15" y="135"></point>
+        <point x="30" y="120"></point>
+        <point x="15" y="105"></point>
+        <point x="40" y="104"></point>
+        <point x="45" y="90"></point>
+        <point x="60" y="90"></point>
+        <point x="90" y="105"></point>
+        <point x="105" y="120"></point>
+        <point x="120" y="120"></point>
+        <point x="105" y="60"></point>
+        <point x="120" y="60"></point>
+        <point x="135" y="30"></point>
+        <point x="150" y="15"></point>
+        <point x="165" y="30"></point>
+        <point x="180" y="60"></point>
+        <point x="195" y="60"></point>
+        <point x="180" y="120"></point>
+        <point x="195" y="120"></point>
+        <point x="210" y="105"></point>
+        <point x="240" y="90"></point>
+        <point x="255" y="90"></point>
+        <point x="263" y="104"></point>
+        <point x="285" y="105"></point>
+        <point x="270" y="120"></point>
+        <point x="285" y="135"></point>
+        <point x="240" y="165"></point>
+        <point x="240" y="180"></point>
+        <point x="270" y="195"></point>
+        <point x="240" y="210"></point>
+        <point x="180" y="210"></point>
+        <point x="165" y="195"></point>
+      </polygon>
+      <polygon color="-1920102913" filled="true" marked="true">
+        <point x="135" y="195"></point>
+        <point x="135" y="240"></point>
+        <point x="120" y="255"></point>
+        <point x="105" y="255"></point>
+        <point x="105" y="285"></point>
+        <point x="135" y="285"></point>
+        <point x="165" y="240"></point>
+        <point x="165" y="195"></point>
+      </polygon>
+    </shape>
+    <shape name="levy" rotatable="true" editableColorIndex="0">
+      <polygon color="-1920102913" filled="true" marked="true">
+        <point x="150" y="15"></point>
+        <point x="120" y="0"></point>
+        <point x="75" y="60"></point>
+        <point x="60" y="135"></point>
+        <point x="15" y="180"></point>
+        <point x="15" y="210"></point>
+        <point x="120" y="195"></point>
+        <point x="90" y="255"></point>
+        <point x="105" y="285"></point>
+        <point x="120" y="300"></point>
+        <point x="150" y="270"></point>
+        <point x="180" y="300"></point>
+        <point x="195" y="285"></point>
+        <point x="210" y="255"></point>
+        <point x="180" y="195"></point>
+        <point x="285" y="210"></point>
+        <point x="285" y="180"></point>
+        <point x="240" y="135"></point>
+        <point x="225" y="60"></point>
+        <point x="180" y="0"></point>
+      </polygon>
+      <polygon color="-1" filled="true" marked="false">
+        <point x="120" y="60"></point>
+        <point x="120" y="165"></point>
+        <point x="135" y="165"></point>
+        <point x="135" y="60"></point>
+      </polygon>
+      <polygon color="-1" filled="true" marked="false">
+        <point x="135" y="150"></point>
+        <point x="180" y="150"></point>
+        <point x="180" y="165"></point>
+        <point x="135" y="165"></point>
+      </polygon>
+    </shape>
+    <shape name="line" rotatable="true" editableColorIndex="0">
+      <line endX="150" startY="0" marked="true" color="-1920102913" endY="300" startX="150"></line>
+    </shape>
+    <shape name="line half" rotatable="true" editableColorIndex="0">
+      <line endX="150" startY="0" marked="true" color="-1920102913" endY="150" startX="150"></line>
+    </shape>
+    <shape name="mecanum" rotatable="true" editableColorIndex="0">
+      <rectangle endX="240" startY="30" marked="true" color="-1920102913" endY="270" startX="60" filled="true"></rectangle>
+      <polygon color="-1920102913" filled="true" marked="true">
+        <point x="60" y="30"></point>
+        <point x="60" y="30"></point>
+        <point x="90" y="15"></point>
+        <point x="210" y="15"></point>
+        <point x="240" y="30"></point>
+      </polygon>
+      <circle x="99" y="24" marked="false" color="255" diameter="42" filled="true"></circle>
+      <circle x="159" y="24" marked="false" color="255" diameter="42" filled="true"></circle>
+      <rectangle endX="60" startY="45" marked="false" color="255" endY="90" startX="60" filled="true"></rectangle>
+      <rectangle endX="60" startY="45" marked="false" color="-244705793" endY="90" startX="30" filled="true"></rectangle>
+      <rectangle endX="60" startY="210" marked="false" color="-244705793" endY="255" startX="30" filled="true"></rectangle>
+      <rectangle endX="270" startY="210" marked="false" color="-244705793" endY="255" startX="240" filled="true"></rectangle>
+      <rectangle endX="270" startY="45" marked="false" color="-244705793" endY="90" startX="240" filled="true"></rectangle>
+      <polygon color="-244705793" filled="true" marked="false">
+        <point x="46" y="216"></point>
+        <point x="62" y="228"></point>
+      </polygon>
+    </shape>
+    <shape name="pentagon" rotatable="false" editableColorIndex="0">
+      <polygon color="-1920102913" filled="true" marked="true">
+        <point x="150" y="15"></point>
+        <point x="15" y="120"></point>
+        <point x="60" y="285"></point>
+        <point x="240" y="285"></point>
+        <point x="285" y="120"></point>
+      </polygon>
+    </shape>
+    <shape name="person" rotatable="false" editableColorIndex="0">
+      <circle x="110" y="5" marked="true" color="-1920102913" diameter="80" filled="true"></circle>
+      <polygon color="-1920102913" filled="true" marked="true">
+        <point x="105" y="90"></point>
+        <point x="120" y="195"></point>
+        <point x="90" y="285"></point>
+        <point x="105" y="300"></point>
+        <point x="135" y="300"></point>
+        <point x="150" y="225"></point>
+        <point x="165" y="300"></point>
+        <point x="195" y="300"></point>
+        <point x="210" y="285"></point>
+        <point x="180" y="195"></point>
+        <point x="195" y="90"></point>
+      </polygon>
+      <rectangle endX="172" startY="79" marked="true" color="-1920102913" endY="94" startX="127" filled="true"></rectangle>
+      <polygon color="-1920102913" filled="true" marked="true">
+        <point x="195" y="90"></point>
+        <point x="240" y="150"></point>
+        <point x="225" y="180"></point>
+        <point x="165" y="105"></point>
+      </polygon>
+      <polygon color="-1920102913" filled="true" marked="true">
+        <point x="105" y="90"></point>
+        <point x="60" y="150"></point>
+        <point x="75" y="180"></point>
+        <point x="135" y="105"></point>
+      </polygon>
+    </shape>
+    <shape name="plant" rotatable="false" editableColorIndex="0">
+      <rectangle endX="165" startY="90" marked="true" color="-1920102913" endY="300" startX="135" filled="true"></rectangle>
+      <polygon color="-1920102913" filled="true" marked="true">
+        <point x="135" y="255"></point>
+        <point x="90" y="210"></point>
+        <point x="45" y="195"></point>
+        <point x="75" y="255"></point>
+        <point x="135" y="285"></point>
+      </polygon>
+      <polygon color="-1920102913" filled="true" marked="true">
+        <point x="165" y="255"></point>
+        <point x="210" y="210"></point>
+        <point x="255" y="195"></point>
+        <point x="225" y="255"></point>
+        <point x="165" y="285"></point>
+      </polygon>
+      <polygon color="-1920102913" filled="true" marked="true">
+        <point x="135" y="180"></point>
+        <point x="90" y="135"></point>
+        <point x="45" y="120"></point>
+        <point x="75" y="180"></point>
+        <point x="135" y="210"></point>
+      </polygon>
+      <polygon color="-1920102913" filled="true" marked="true">
+        <point x="165" y="180"></point>
+        <point x="165" y="210"></point>
+        <point x="225" y="180"></point>
+        <point x="255" y="120"></point>
+        <point x="210" y="135"></point>
+      </polygon>
+      <polygon color="-1920102913" filled="true" marked="true">
+        <point x="135" y="105"></point>
+        <point x="90" y="60"></point>
+        <point x="45" y="45"></point>
+        <point x="75" y="105"></point>
+        <point x="135" y="135"></point>
+      </polygon>
+      <polygon color="-1920102913" filled="true" marked="true">
+        <point x="165" y="105"></point>
+        <point x="165" y="135"></point>
+        <point x="225" y="105"></point>
+        <point x="255" y="45"></point>
+        <point x="210" y="60"></point>
+      </polygon>
+      <polygon color="-1920102913" filled="true" marked="true">
+        <point x="135" y="90"></point>
+        <point x="120" y="45"></point>
+        <point x="150" y="15"></point>
+        <point x="180" y="45"></point>
+        <point x="165" y="90"></point>
+      </polygon>
+    </shape>
+    <shape name="police" rotatable="false" editableColorIndex="0">
+      <circle x="45" y="45" marked="true" color="-1920102913" diameter="210" filled="false"></circle>
+      <polygon color="-1920102913" filled="true" marked="true">
+        <point x="96" y="225"></point>
+        <point x="150" y="60"></point>
+        <point x="206" y="224"></point>
+        <point x="63" y="120"></point>
+        <point x="236" y="120"></point>
+      </polygon>
+      <polygon color="-1920102913" filled="true" marked="true">
+        <point x="120" y="120"></point>
+        <point x="195" y="120"></point>
+        <point x="180" y="180"></point>
+        <point x="180" y="185"></point>
+        <point x="113" y="183"></point>
+      </polygon>
+      <polygon color="-1920102913" filled="false" marked="true">
+        <point x="30" y="15"></point>
+        <point x="0" y="45"></point>
+        <point x="15" y="60"></point>
+        <point x="30" y="90"></point>
+        <point x="30" y="105"></point>
+        <point x="15" y="165"></point>
+        <point x="3" y="209"></point>
+        <point x="3" y="225"></point>
+        <point x="15" y="255"></point>
+        <point x="60" y="270"></point>
+        <point x="75" y="270"></point>
+        <point x="99" y="256"></point>
+        <point x="105" y="270"></point>
+        <point x="120" y="285"></point>
+        <point x="150" y="300"></point>
+        <point x="180" y="285"></point>
+        <point x="195" y="270"></point>
+        <point x="203" y="256"></point>
+        <point x="240" y="270"></point>
+        <point x="255" y="270"></point>
+        <point x="285" y="255"></point>
+        <point x="294" y="225"></point>
+        <point x="294" y="210"></point>
+        <point x="285" y="165"></point>
+        <point x="270" y="105"></point>
+        <point x="270" y="90"></point>
+        <point x="285" y="60"></point>
+        <point x="300" y="45"></point>
+        <point x="270" y="15"></point>
+        <point x="225" y="30"></point>
+        <point x="210" y="30"></point>
+        <point x="150" y="15"></point>
+        <point x="90" y="30"></point>
+        <point x="75" y="30"></point>
+      </polygon>
+    </shape>
+    <shape name="ring" rotatable="true" editableColorIndex="0">
+      <circle x="0" y="0" marked="true" color="-1920102913" diameter="300" filled="true"></circle>
+      <polygon color="-1" filled="false" marked="false">
+        <point x="150" y="0"></point>
+        <point x="135" y="150"></point>
+        <point x="165" y="150"></point>
+        <point x="150" y="0"></point>
+      </polygon>
+    </shape>
+    <shape name="runner" rotatable="true" editableColorIndex="0">
+      <circle x="-3" y="-3" marked="true" color="-1920102913" diameter="306" filled="true"></circle>
+      <rectangle endX="255" startY="45" marked="true" color="-1920102913" endY="255" startX="45" filled="true"></rectangle>
+      <polygon color="-1" filled="true" marked="false">
+        <point x="150" y="0"></point>
+        <point x="105" y="135"></point>
+        <point x="195" y="135"></point>
+        <point x="150" y="0"></point>
+      </polygon>
+      <rectangle endX="250" startY="60" marked="false" color="-1" endY="225" startX="60" filled="true"></rectangle>
+    </shape>
+    <shape name="sanctuary" rotatable="true" editableColorIndex="0">
+      <circle x="-1" y="-1" marked="true" color="-1920102913" diameter="301" filled="false"></circle>
+    </shape>
+    <shape name="second-hunters" rotatable="true" editableColorIndex="0">
+      <circle x="0" y="0" marked="false" color="255" diameter="300" filled="true"></circle>
+      <circle x="0" y="0" marked="true" color="-1920102913" diameter="300" filled="true"></circle>
+      <polygon color="-1" filled="true" marked="false">
+        <point x="150" y="0"></point>
+        <point x="105" y="135"></point>
+        <point x="195" y="135"></point>
+        <point x="150" y="0"></point>
+      </polygon>
+      <polygon color="-1" filled="false" marked="false">
+        <point x="75" y="165"></point>
+        <point x="210" y="225"></point>
+        <point x="90" y="225"></point>
+        <point x="210" y="165"></point>
+        <point x="210" y="225"></point>
+        <point x="255" y="135"></point>
+        <point x="60" y="135"></point>
+        <point x="90" y="225"></point>
+      </polygon>
+    </shape>
+    <shape name="sheep" rotatable="false" editableColorIndex="15">
+      <circle x="203" y="65" marked="true" color="-1" diameter="88" filled="true"></circle>
+      <circle x="70" y="65" marked="true" color="-1" diameter="162" filled="true"></circle>
+      <circle x="150" y="105" marked="true" color="-1" diameter="120" filled="true"></circle>
+      <polygon color="-1920102913" filled="true" marked="false">
+        <point x="218" y="120"></point>
+        <point x="240" y="165"></point>
+        <point x="255" y="165"></point>
+        <point x="278" y="120"></point>
+      </polygon>
+      <circle x="214" y="72" marked="false" color="-1920102913" diameter="67" filled="true"></circle>
+      <rectangle endX="179" startY="223" marked="true" color="-1" endY="298" startX="164" filled="true"></rectangle>
+      <polygon color="-1" filled="true" marked="true">
+        <point x="45" y="285"></point>
+        <point x="30" y="285"></point>
+        <point x="30" y="240"></point>
+        <point x="15" y="195"></point>
+        <point x="45" y="210"></point>
+      </polygon>
+      <circle x="3" y="83" marked="true" color="-1" diameter="150" filled="true"></circle>
+      <rectangle endX="80" startY="221" marked="true" color="-1" endY="296" startX="65" filled="true"></rectangle>
+      <polygon color="-1" filled="true" marked="true">
+        <point x="195" y="285"></point>
+        <point x="210" y="285"></point>
+        <point x="210" y="240"></point>
+        <point x="240" y="210"></point>
+        <point x="195" y="210"></point>
+      </polygon>
+      <polygon color="-1920102913" filled="true" marked="false">
+        <point x="276" y="85"></point>
+        <point x="285" y="105"></point>
+        <point x="302" y="99"></point>
+        <point x="294" y="83"></point>
+      </polygon>
+      <polygon color="-1920102913" filled="true" marked="false">
+        <point x="219" y="85"></point>
+        <point x="210" y="105"></point>
+        <point x="193" y="99"></point>
+        <point x="201" y="83"></point>
+      </polygon>
+    </shape>
+    <shape name="square" rotatable="false" editableColorIndex="0">
+      <rectangle endX="300" startY="0" marked="true" color="-1920102913" endY="300" startX="0" filled="true"></rectangle>
+    </shape>
+    <shape name="square 2" rotatable="false" editableColorIndex="0">
+      <rectangle endX="270" startY="30" marked="true" color="-1920102913" endY="270" startX="30" filled="true"></rectangle>
+      <rectangle endX="240" startY="60" marked="false" color="255" endY="240" startX="60" filled="true"></rectangle>
+    </shape>
+    <shape name="star" rotatable="false" editableColorIndex="0">
+      <polygon color="-1920102913" filled="true" marked="true">
+        <point x="151" y="1"></point>
+        <point x="185" y="108"></point>
+        <point x="298" y="108"></point>
+        <point x="207" y="175"></point>
+        <point x="242" y="282"></point>
+        <point x="151" y="216"></point>
+        <point x="59" y="282"></point>
+        <point x="94" y="175"></point>
+        <point x="3" y="108"></point>
+        <point x="116" y="108"></point>
+      </polygon>
+    </shape>
+    <shape name="target" rotatable="false" editableColorIndex="0">
+      <circle x="0" y="0" marked="true" color="-1920102913" diameter="300" filled="true"></circle>
+      <circle x="30" y="30" marked="false" color="255" diameter="240" filled="true"></circle>
+      <circle x="60" y="60" marked="true" color="-1920102913" diameter="180" filled="true"></circle>
+      <circle x="90" y="90" marked="false" color="255" diameter="120" filled="true"></circle>
+      <circle x="120" y="120" marked="true" color="-1920102913" diameter="60" filled="true"></circle>
+    </shape>
+    <shape name="tree" rotatable="false" editableColorIndex="0">
+      <circle x="118" y="3" marked="true" color="-1920102913" diameter="94" filled="true"></circle>
+      <rectangle endX="180" startY="195" marked="false" color="-1653716737" endY="300" startX="120" filled="true"></rectangle>
+      <circle x="65" y="21" marked="true" color="-1920102913" diameter="108" filled="true"></circle>
+      <circle x="116" y="41" marked="true" color="-1920102913" diameter="127" filled="true"></circle>
+      <circle x="45" y="90" marked="true" color="-1920102913" diameter="120" filled="true"></circle>
+      <circle x="104" y="74" marked="true" color="-1920102913" diameter="152" filled="true"></circle>
+    </shape>
+    <shape name="triangle" rotatable="false" editableColorIndex="0">
+      <polygon color="-1920102913" filled="true" marked="true">
+        <point x="150" y="30"></point>
+        <point x="15" y="255"></point>
+        <point x="285" y="255"></point>
+      </polygon>
+    </shape>
+    <shape name="triangle 2" rotatable="false" editableColorIndex="0">
+      <polygon color="-1920102913" filled="true" marked="true">
+        <point x="150" y="30"></point>
+        <point x="15" y="255"></point>
+        <point x="285" y="255"></point>
+      </polygon>
+      <polygon color="255" filled="true" marked="false">
+        <point x="151" y="99"></point>
+        <point x="225" y="223"></point>
+        <point x="75" y="224"></point>
+      </polygon>
+    </shape>
+    <shape name="truck" rotatable="false" editableColorIndex="0">
+      <rectangle endX="195" startY="45" marked="true" color="-1920102913" endY="187" startX="4" filled="true"></rectangle>
+      <polygon color="-1920102913" filled="true" marked="true">
+        <point x="296" y="193"></point>
+        <point x="296" y="150"></point>
+        <point x="259" y="134"></point>
+        <point x="244" y="104"></point>
+        <point x="208" y="104"></point>
+        <point x="207" y="194"></point>
+      </polygon>
+      <rectangle endX="195" startY="60" marked="false" color="-1" endY="105" startX="195" filled="true"></rectangle>
+      <polygon color="255" filled="true" marked="false">
+        <point x="238" y="112"></point>
+        <point x="252" y="141"></point>
+        <point x="219" y="141"></point>
+        <point x="218" y="112"></point>
+      </polygon>
+      <circle x="234" y="174" marked="false" color="255" diameter="42" filled="true"></circle>
+      <rectangle endX="214" startY="185" marked="true" color="-1920102913" endY="194" startX="181" filled="true"></rectangle>
+      <circle x="144" y="174" marked="false" color="255" diameter="42" filled="true"></circle>
+      <circle x="24" y="174" marked="false" color="255" diameter="42" filled="true"></circle>
+      <circle x="24" y="174" marked="true" color="-1920102913" diameter="42" filled="false"></circle>
+      <circle x="144" y="174" marked="true" color="-1920102913" diameter="42" filled="false"></circle>
+      <circle x="234" y="174" marked="true" color="-1920102913" diameter="42" filled="false"></circle>
+    </shape>
+    <shape name="turtle" rotatable="true" editableColorIndex="0">
+      <polygon color="1504722175" filled="true" marked="false">
+        <point x="215" y="219"></point>
+        <point x="240" y="248"></point>
+        <point x="246" y="269"></point>
+        <point x="228" y="281"></point>
+        <point x="215" y="267"></point>
+        <point x="193" y="225"></point>
+      </polygon>
+      <polygon color="1504722175" filled="true" marked="false">
+        <point x="225" y="90"></point>
+        <point x="255" y="75"></point>
+        <point x="275" y="75"></point>
+        <point x="290" y="89"></point>
+        <point x="299" y="108"></point>
+        <point x="291" y="124"></point>
+        <point x="270" y="105"></point>
+        <point x="255" y="105"></point>
+        <point x="240" y="105"></point>
+      </polygon>
+      <polygon color="1504722175" filled="true" marked="false">
+        <point x="75" y="90"></point>
+        <point x="45" y="75"></point>
+        <point x="25" y="75"></point>
+        <point x="10" y="89"></point>
+        <point x="1" y="108"></point>
+        <point x="9" y="124"></point>
+        <point x="30" y="105"></point>
+        <point x="45" y="105"></point>
+        <point x="60" y="105"></point>
+      </polygon>
+      <polygon color="1504722175" filled="true" marked="false">
+        <point x="132" y="70"></point>
+        <point x="134" y="49"></point>
+        <point x="107" y="36"></point>
+        <point x="108" y="2"></point>
+        <point x="150" y="-13"></point>
+        <point x="192" y="3"></point>
+        <point x="192" y="37"></point>
+        <point x="169" y="50"></point>
+        <point x="172" y="72"></point>
+      </polygon>
+      <polygon color="1504722175" filled="true" marked="false">
+        <point x="85" y="219"></point>
+        <point x="60" y="248"></point>
+        <point x="54" y="269"></point>
+        <point x="72" y="281"></point>
+        <point x="85" y="267"></point>
+        <point x="107" y="225"></point>
+      </polygon>
+      <polygon color="-1920102913" filled="true" marked="true">
+        <point x="75" y="30"></point>
+        <point x="225" y="30"></point>
+        <point x="270" y="75"></point>
+        <point x="270" y="195"></point>
+        <point x="255" y="240"></point>
+        <point x="180" y="300"></point>
+        <point x="135" y="300"></point>
+        <point x="45" y="240"></point>
+        <point x="30" y="195"></point>
+        <point x="30" y="75"></point>
+      </polygon>
+    </shape>
+    <shape name="turtle2" rotatable="true" editableColorIndex="0">
+      <polygon color="1504722175" filled="true" marked="false">
+        <point x="215" y="219"></point>
+        <point x="240" y="248"></point>
+        <point x="246" y="269"></point>
+        <point x="228" y="281"></point>
+        <point x="215" y="267"></point>
+        <point x="193" y="225"></point>
+      </polygon>
+      <polygon color="1504722175" filled="true" marked="false">
+        <point x="225" y="90"></point>
+        <point x="255" y="75"></point>
+        <point x="275" y="75"></point>
+        <point x="290" y="89"></point>
+        <point x="299" y="108"></point>
+        <point x="291" y="124"></point>
+        <point x="270" y="105"></point>
+        <point x="255" y="105"></point>
+        <point x="240" y="105"></point>
+      </polygon>
+      <polygon color="1504722175" filled="true" marked="false">
+        <point x="75" y="90"></point>
+        <point x="45" y="75"></point>
+        <point x="25" y="75"></point>
+        <point x="10" y="89"></point>
+        <point x="1" y="108"></point>
+        <point x="9" y="124"></point>
+        <point x="30" y="105"></point>
+        <point x="45" y="105"></point>
+        <point x="60" y="105"></point>
+      </polygon>
+      <polygon color="1504722175" filled="true" marked="false">
+        <point x="132" y="70"></point>
+        <point x="134" y="49"></point>
+        <point x="107" y="36"></point>
+        <point x="108" y="2"></point>
+        <point x="150" y="-13"></point>
+        <point x="192" y="3"></point>
+        <point x="192" y="37"></point>
+        <point x="169" y="50"></point>
+        <point x="172" y="72"></point>
+      </polygon>
+      <polygon color="1504722175" filled="true" marked="false">
+        <point x="85" y="219"></point>
+        <point x="60" y="248"></point>
+        <point x="54" y="269"></point>
+        <point x="72" y="281"></point>
+        <point x="85" y="267"></point>
+        <point x="107" y="225"></point>
+      </polygon>
+      <polygon color="-1920102913" filled="true" marked="true">
+        <point x="75" y="30"></point>
+        <point x="225" y="30"></point>
+        <point x="270" y="75"></point>
+        <point x="270" y="195"></point>
+        <point x="255" y="240"></point>
+        <point x="180" y="300"></point>
+        <point x="135" y="300"></point>
+        <point x="45" y="240"></point>
+        <point x="30" y="195"></point>
+        <point x="30" y="75"></point>
+      </polygon>
+    </shape>
+    <shape name="wheel" rotatable="false" editableColorIndex="0">
+      <circle x="3" y="3" marked="true" color="-1920102913" diameter="294" filled="true"></circle>
+      <circle x="30" y="30" marked="false" color="255" diameter="240" filled="true"></circle>
+      <line endX="150" startY="285" marked="true" color="-1920102913" endY="15" startX="150"></line>
+      <line endX="285" startY="150" marked="true" color="-1920102913" endY="150" startX="15"></line>
+      <circle x="120" y="120" marked="true" color="-1920102913" diameter="60" filled="true"></circle>
+      <line endX="79" startY="40" marked="true" color="-1920102913" endY="269" startX="216"></line>
+      <line endX="269" startY="84" marked="true" color="-1920102913" endY="221" startX="40"></line>
+      <line endX="269" startY="216" marked="true" color="-1920102913" endY="79" startX="40"></line>
+      <line endX="221" startY="40" marked="true" color="-1920102913" endY="269" startX="84"></line>
+    </shape>
+    <shape name="wolf" rotatable="false" editableColorIndex="0">
+      <polygon color="255" filled="true" marked="false">
+        <point x="253" y="133"></point>
+        <point x="245" y="131"></point>
+        <point x="245" y="133"></point>
+      </polygon>
+      <polygon color="-1920102913" filled="true" marked="true">
+        <point x="2" y="194"></point>
+        <point x="13" y="197"></point>
+        <point x="30" y="191"></point>
+        <point x="38" y="193"></point>
+        <point x="38" y="205"></point>
+        <point x="20" y="226"></point>
+        <point x="20" y="257"></point>
+        <point x="27" y="265"></point>
+        <point x="38" y="266"></point>
+        <point x="40" y="260"></point>
+        <point x="31" y="253"></point>
+        <point x="31" y="230"></point>
+        <point x="60" y="206"></point>
+        <point x="68" y="198"></point>
+        <point x="75" y="209"></point>
+        <point x="66" y="228"></point>
+        <point x="65" y="243"></point>
+        <point x="82" y="261"></point>
+        <point x="84" y="268"></point>
+        <point x="100" y="267"></point>
+        <point x="103" y="261"></point>
+        <point x="77" y="239"></point>
+        <point x="79" y="231"></point>
+        <point x="100" y="207"></point>
+        <point x="98" y="196"></point>
+        <point x="119" y="201"></point>
+        <point x="143" y="202"></point>
+        <point x="160" y="195"></point>
+        <point x="166" y="210"></point>
+        <point x="172" y="213"></point>
+        <point x="173" y="238"></point>
+        <point x="167" y="251"></point>
+        <point x="160" y="248"></point>
+        <point x="154" y="265"></point>
+        <point x="169" y="264"></point>
+        <point x="178" y="247"></point>
+        <point x="186" y="240"></point>
+        <point x="198" y="260"></point>
+        <point x="200" y="271"></point>
+        <point x="217" y="271"></point>
+        <point x="219" y="262"></point>
+        <point x="207" y="258"></point>
+        <point x="195" y="230"></point>
+        <point x="192" y="198"></point>
+        <point x="210" y="184"></point>
+        <point x="227" y="164"></point>
+        <point x="242" y="144"></point>
+        <point x="259" y="145"></point>
+        <point x="284" y="151"></point>
+        <point x="277" y="141"></point>
+        <point x="293" y="140"></point>
+        <point x="299" y="134"></point>
+        <point x="297" y="127"></point>
+        <point x="273" y="119"></point>
+        <point x="270" y="105"></point>
+      </polygon>
+      <polygon color="-1920102913" filled="true" marked="true">
+        <point x="-1" y="195"></point>
+        <point x="14" y="180"></point>
+        <point x="36" y="166"></point>
+        <point x="40" y="153"></point>
+        <point x="53" y="140"></point>
+        <point x="82" y="131"></point>
+        <point x="134" y="133"></point>
+        <point x="159" y="126"></point>
+        <point x="188" y="115"></point>
+        <point x="227" y="108"></point>
+        <point x="236" y="102"></point>
+        <point x="238" y="98"></point>
+        <point x="268" y="86"></point>
+        <point x="269" y="92"></point>
+        <point x="281" y="87"></point>
+        <point x="269" y="103"></point>
+        <point x="269" y="113"></point>
+      </polygon>
+    </shape>
+    <shape name="x" rotatable="false" editableColorIndex="0">
+      <polygon color="-1920102913" filled="true" marked="true">
+        <point x="270" y="75"></point>
+        <point x="225" y="30"></point>
+        <point x="30" y="225"></point>
+        <point x="75" y="270"></point>
+      </polygon>
+      <polygon color="-1920102913" filled="true" marked="true">
+        <point x="30" y="75"></point>
+        <point x="75" y="30"></point>
+        <point x="270" y="225"></point>
+        <point x="225" y="270"></point>
+      </polygon>
+    </shape>
+  </turtleShapes>
+  <linkShapes>
+    <shape name="default" curviness="0.0">
+      <lines>
+        <line x="-0.2" visible="false">
+          <dash value="0.0"></dash>
+          <dash value="1.0"></dash>
+        </line>
+        <line x="0.0" visible="true">
+          <dash value="1.0"></dash>
+          <dash value="0.0"></dash>
+        </line>
+        <line x="0.2" visible="false">
+          <dash value="0.0"></dash>
+          <dash value="1.0"></dash>
+        </line>
+      </lines>
+      <indicator>
+        <shape name="link direction" rotatable="true" editableColorIndex="0">
+          <line endX="90" startY="150" marked="true" color="-1920102913" endY="180" startX="150"></line>
+          <line endX="210" startY="150" marked="true" color="-1920102913" endY="180" startX="150"></line>
+        </shape>
+      </indicator>
+    </shape>
+  </linkShapes>
+  <previewCommands>setup repeat 75 [ go ]</previewCommands>
+  <experiments>
+    <experiment name="Circliness_parameter_sweep" repetitions="1" sequentialRunOrder="true" runMetricsEveryStep="false" timeLimit="10000">
+      <setup>setup</setup>
+      <go>go</go>
+      <exitCondition>end_flag = 1</exitCondition>
+      <metrics>
+        <metric>phase</metric>
+        <metric>mean v_avg_list</metric>
+        <metric>mean group-rot_list</metric>
+        <metric>mean ang-momentum_list</metric>
+        <metric>mean scatter_list</metric>
+        <metric>mean rad_var_list</metric>
+        <metric>mean circliness_list</metric>
+      </metrics>
+      <constants>
+        <steppedValueSet variable="vision-cone" first="10" step="3" last="90"></steppedValueSet>
+        <steppedValueSet variable="number-of-robots" first="3" step="1" last="15"></steppedValueSet>
+        <steppedValueSet variable="seed-no" first="1" step="1" last="10"></steppedValueSet>
+      </constants>
+    </experiment>
+    <experiment name="Circliness_parameter_sweep_num_of_agents_forward_speed" repetitions="1" sequentialRunOrder="true" runMetricsEveryStep="false" timeLimit="15000">
+      <setup>setup</setup>
+      <go>go</go>
+      <exitCondition>end_flag = 1</exitCondition>
+      <metrics>
+        <metric>phase</metric>
+        <metric>mean v_avg_list</metric>
+        <metric>mean group-rot_list</metric>
+        <metric>mean ang-momentum_list</metric>
+        <metric>mean scatter_list</metric>
+        <metric>mean rad_var_list</metric>
+        <metric>mean circliness_list</metric>
+      </metrics>
+      <constants>
+        <steppedValueSet variable="speed1" first="0.25" step="0.25" last="5"></steppedValueSet>
+        <steppedValueSet variable="number-of-robots" first="3" step="1" last="15"></steppedValueSet>
+        <steppedValueSet variable="seed-no" first="1" step="1" last="10"></steppedValueSet>
+      </constants>
+    </experiment>
+    <experiment name="diffusion_parameter_sweep_num_of_agents_forward_speed (copy)" repetitions="1" sequentialRunOrder="true" runMetricsEveryStep="false" timeLimit="25000">
+      <setup>setup</setup>
+      <go>go</go>
+      <exitCondition>end_flag = 1</exitCondition>
+      <metrics>
+        <metric>phase</metric>
+        <metric>mean v_avg_list</metric>
+        <metric>mean group-rot_list</metric>
+        <metric>mean ang-momentum_list</metric>
+        <metric>mean scatter_list</metric>
+        <metric>mean rad_var_list</metric>
+        <metric>mean circliness_list</metric>
+        <metric>mean diffusion_list</metric>
+      </metrics>
+      <constants>
+        <steppedValueSet variable="speed1" first="0.25" step="0.25" last="5"></steppedValueSet>
+        <steppedValueSet variable="number-of-robots" first="3" step="1" last="15"></steppedValueSet>
+        <steppedValueSet variable="seed-no" first="1" step="1" last="10"></steppedValueSet>
+      </constants>
+    </experiment>
+    <experiment name="combined_phase_vision-distances" repetitions="1" sequentialRunOrder="true" runMetricsEveryStep="false" timeLimit="35000">
+      <setup>setup</setup>
+      <go>go</go>
+      <exitCondition>end_flag = 1</exitCondition>
+      <metrics>
+        <metric>combined_phase</metric>
+        <metric>mean v_avg_list</metric>
+        <metric>mean group-rot_list</metric>
+        <metric>mean ang-momentum_list</metric>
+        <metric>mean scatter_list</metric>
+        <metric>mean rad_var_list</metric>
+        <metric>mean circliness_list</metric>
+        <metric>mean diffusion_list</metric>
+      </metrics>
+      <constants>
+        <steppedValueSet variable="vision-distance-sobot" first="0.5" step="0.5" last="3"></steppedValueSet>
+        <steppedValueSet variable="vision-distance" first="0.5" step="0.5" last="9"></steppedValueSet>
+        <steppedValueSet variable="seed-no" first="1" step="1" last="10"></steppedValueSet>
+      </constants>
+    </experiment>
+    <experiment name="diffusion_parameter_sweep_num_of_agents_forward_speed" repetitions="1" sequentialRunOrder="true" runMetricsEveryStep="false" timeLimit="25000">
+      <setup>setup</setup>
+      <go>go</go>
+      <exitCondition>end_flag = 1</exitCondition>
+      <metrics>
+        <metric>phase</metric>
+        <metric>mean v_avg_list</metric>
+        <metric>mean group-rot_list</metric>
+        <metric>mean ang-momentum_list</metric>
+        <metric>mean scatter_list</metric>
+        <metric>mean rad_var_list</metric>
+        <metric>mean circliness_list</metric>
+        <metric>mean diffusion_list</metric>
+        <metric>max robot_distance_list</metric>
+      </metrics>
+      <constants>
+        <steppedValueSet variable="speed1" first="0.25" step="0.25" last="5"></steppedValueSet>
+        <steppedValueSet variable="number-of-robots" first="3" step="1" last="15"></steppedValueSet>
+        <steppedValueSet variable="seed-no" first="1" step="1" last="10"></steppedValueSet>
+      </constants>
+    </experiment>
+  </experiments>
+</model>
