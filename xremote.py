@@ -1,5 +1,6 @@
 import os
 import re
+import sys
 import time
 import math
 import json
@@ -25,6 +26,20 @@ remap_turn = st.Remap(
     [0, 0.7, 1],
     [0, 0.5, 1]
 )
+
+win_axis_map = {
+    'x': 0,
+    'y': 1,
+    'r': 2,
+}
+
+linux_axis_map = {
+    'x': 0,
+    'y': 1,
+    'r': 3,
+}
+
+axis_map = linux_axis_map if sys.platform == 'linux' else win_axis_map
 
 
 @dataclass
@@ -345,9 +360,9 @@ def test():
                 text_print.tprint(screen, f"Axis {i} value: {axis:>6.3f}")
             text_print.unindent()
 
-            x = joystick.get_axis(0)
-            y = joystick.get_axis(1)
-            r = joystick.get_axis(2)
+            x = joystick.get_axis(axis_map['x'])
+            y = joystick.get_axis(axis_map['y'])
+            r = joystick.get_axis(axis_map['r'])
             vec = np.array([x, y])
             v = np.linalg.norm(vec)
             angle = math.degrees(np.arctan2(*vec)) + 270
