@@ -31,6 +31,10 @@ def broadcast(cmd):
     s.sendto(data, ('<broadcast>', UDP_PORT))
 
 
+def broadcasta(cmd):
+    broadcast(cmd.encode('ascii'))
+
+
 def start_all():
     broadcast(b"  resume")
     print("Sent >> resume <<\tcommand to all robots.")
@@ -105,6 +109,10 @@ def prompt(state, cmd=None, delprev=False):
     elif cmd.startswith('switch') or cmd.startswith(':'):
         switch(cmd)
         return 'running'
+    elif cmd.startswith('screenshot') or cmd.startswith('maskshot'):
+        broadcasta(cmd)
+        print(f"Sent >> {cmd} <<\tcommand to all robots.")
+        return state
     elif cmd.startswith('s') and cmd != 'st' or cmd == "'":
         stop_all()
         return 'stopped'
