@@ -29,12 +29,12 @@ source ~/.bashrc
 # Put our git repo in /home/pi
 cd $H
 
-rm -rf $H/.git
-rm -f $H/.gitmodules
+sudo rm -rf $H/.git
+sudo rm -f $H/.gitmodules
 
-rm -rf $H/hiwonder_common
-rm -rf $H/caspyan
-rm -rf $H/boot
+sudo rm -rf $H/hiwonder_common
+sudo rm -rf $H/caspyan
+sudo rm -rf $H/boot
 
 
 git init
