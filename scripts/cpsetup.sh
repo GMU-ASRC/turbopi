@@ -21,3 +21,4 @@ set -e
 chmod +x $SETUPSCRIPTS/config
 # rm $SETUPSCRIPTS/*.secret
 cd $SETUPSCRIPTS
+echo Done copying.

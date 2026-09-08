@@ -17,14 +17,14 @@ touch $SETUPSCRIPTS/setup_repo_started
 
 source ~/.bashrc
 
-if ! command -v pyenv &> /dev/null; then
-    export PYENV_ROOT="$HOME/.pyenv"
-    export PATH="$PYENV_ROOT/bin:$PATH"
-    eval "$(pyenv init -)"
-fi
+# if ! command -v pyenv &> /dev/null; then
+#     export PYENV_ROOT="$HOME/.pyenv"
+#     export PATH="$PYENV_ROOT/bin:$PATH"
+#     eval "$(pyenv init -)"
+# fi
 
-echo "activating python 3.13.4"
-pyenv global 3.13.4
+# echo "activating python 3.13.4"
+# pyenv global 3.13.4
 
 # Put our git repo in /home/pi
 cd $H
