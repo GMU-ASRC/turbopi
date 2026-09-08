@@ -64,6 +64,8 @@ sleep 1
 # TODO
 # sudo ifconfig eth0 192.168.1.100 netmask 255.255.255.0
 
+# TODO: replace deb with archive in /etc/apt/sources.list
+
 echo -e "\n\nRunning locale.sh"
 bash ./locale.sh
 echo -e "\n\nRunning add_wifi.sh"

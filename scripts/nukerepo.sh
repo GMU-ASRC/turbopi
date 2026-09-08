@@ -30,12 +30,19 @@ pyenv global 3.13.4
 cd $H
 
 rm -rf $H/.git
+rm -f $H/.gitmodules
+
+rm -rf $H/hiwonder_common
+rm -rf $H/caspyan
+rm -rf $H/boot
+
 
 git init
 git remote add origin https://github.com/GMU-ASRC/turbopi-root.git
 git fetch
 git reset origin/main --hard
 git checkout -t origin/main
+git switch main --force
 git config pull.ff only
 
 git submodule update --init --recursive
@@ -49,7 +56,8 @@ chmod +x install_buttonman.sh
 sudo ./install_buttonman.sh
 
 cd $H/caspyan
-git switch main
+git switch main --force
+git config pull.ff only
 git pull
 sudo pip install -e .
 cd $H
@@ -59,3 +67,5 @@ rm -f $SETUPSCRIPTS/setup_repo_started
 
 echo ALL DONE!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 sleep 3600
+
+# git clean -fd

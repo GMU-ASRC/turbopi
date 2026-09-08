@@ -76,8 +76,8 @@ if [[ "$1" == "INSTALL_REPO" ]]; then
     cd $SETUPSCRIPTS
     echo running install_python.sh
     source $SETUPSCRIPTS/install_python.sh
-    echo running install_repo.sh
-    source $SETUPSCRIPTS/install_repo.sh
+    echo running nukerepo.sh
+    source $SETUPSCRIPTS/nukerepo.sh
 fi
 else
     echo skipping install_python.sh
