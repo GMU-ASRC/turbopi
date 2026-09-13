@@ -42,7 +42,7 @@ git init -b main
 git remote add origin https://github.com/GMU-ASRC/turbopi-root.git
 git fetch
 git reset origin/main --hard
-git checkout -t origin/main
+git branch -u origin/main main
 git switch main --force
 git pull
 
