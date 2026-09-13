@@ -37,13 +37,14 @@ sudo rm -rf $H/caspyan
 sudo rm -rf $H/boot
 
 
-git init
+git config --global pull.ff only
+git init -b main
 git remote add origin https://github.com/GMU-ASRC/turbopi-root.git
 git fetch
 git reset origin/main --hard
 git checkout -t origin/main
 git switch main --force
-git config pull.ff only
+git pull
 
 git submodule update --init --recursive
 
@@ -57,13 +58,14 @@ sudo ./install_buttonman.sh
 
 cd $H/caspyan
 git switch main --force
-git config pull.ff only
 git pull
 sudo pip install -e .
 cd $H
 
 touch $SETUPSCRIPTS/setup_repo_done
 rm -f $SETUPSCRIPTS/setup_repo_started
+
+
 
 echo ALL DONE!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 sleep 3600
