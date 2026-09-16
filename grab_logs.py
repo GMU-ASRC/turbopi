@@ -9,17 +9,20 @@ Each robots' _most recent_ logs folder will be zipped up and stored in the times
 """
 
 
+import os
 import time
 import pathlib as pl
 
 from InquirerPy import inquirer
 from InquirerPy.base import Choice
 from InquirerPy.separator import Separator
-from xremote import discover
 from ast import literal_eval
 import fabric
 import multiprocessing
-import os
+
+os.environ['PYGAME_HIDE_SUPPORT_PROMPT'] = "hide"
+
+from xremote import discover
 
 PI_LOGS_PATH = pl.PurePosixPath('/home/pi/logs')
 
@@ -84,6 +87,11 @@ def download_logs(robot, destination):
     c.close()
 
 
+def download_logs_mp(bundle):
+    robot, destination = bundle
+    download_logs(robot, destination)
+
+
 if __name__ == '__main__':
     res = select_robots()
     timestamp = time.strftime('%y%m%d-%H%M%S')
@@ -95,4 +103,4 @@ if __name__ == '__main__':
     #     download_logs(robot, destination)
     # multi-threaded
     with multiprocessing.Pool(processes=os.cpu_count()) as pool:
-        pool.map(download_logs, ((robot, destination) for robot in res))
+        pool.map(download_logs_mp, ((robot, destination) for robot in res))
