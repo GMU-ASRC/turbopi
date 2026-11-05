@@ -23,7 +23,24 @@ Research-related (not installed by main branch provision scripts):
 
 -----
 
-## Directory Structure
+# TurboPi
+
+<img width="300" alt="clean_low_DSC7819" src="https://github.com/user-attachments/assets/b194a3be-7b30-4c84-8ab5-736ce5f86894" />
+
+The [Hiwonder TurboPi](https://www.hiwonder.com/products/turbopi?variant=42513906860119) is a ~300 USD 4-wheeled mecanum robot which we use in our swarms research.
+It is equipped with a camera as its primary sensor, but it also has an ultrasonic sensor and line following sensor.
+Notably, it does not have wheel encoders.
+
+It is equipped with a Raspberry Pi; our lab uses the Raspberry Pi 4b 4GB variant running Raspberry Pi OS 13. Though Hiwonder make ROS images for the robot, we do not use ROS.
+
+For more information on the TurboPi, see:
+* Our [wiki](https://github.com/GMU-ASRC/turbopi/wiki)
+* Our API documentation (coming soon, refer to docstrings in the other repos for now)
+* [Hiwonder's docs and SDK](https://docs.hiwonder.com/projects/TurboPi/en/advanced/docs/1.getting_ready.html) (may not apply to our software image)
+
+
+
+# Directory Structure
 
 ```
 ┬
