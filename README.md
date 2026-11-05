@@ -1,13 +1,27 @@
 # GMU-ASRC/turbopi
-This repository contains scripts and models for the **Hiwonder TurboPi** robot.
 
-This repository only contains **scripts for managing the robot**. Code for the 
-robot is in the [turbopi-root](https://github.com/GMU-ASRC/turbopi-root) repository.
+This repository contains scripts and models for the **Hiwonder TurboPi** robot.
 
 GMU's [ASRC](https://github.com/GMU-ASRC) uses the TurboPi robot as a platform 
 for testing and developing emergent behaviors in **swarm robotics**.
 
-### Link to the [wiki](https://github.com/GMU-ASRC/turbopi/wiki)
+This repository only contains **scripts for managing the robot**. Nothing from this repo should go onto an actual Turbopi robot.
+
+-----
+
+Part of the GMU-ASRC TurboPi cinematic universe:
+* [Provision](https://github.com/GMU-ASRC/turbopi-provision)
+* [Driver](https://github.com/GMU-ASRC/turbopi-driver)
+* [Core Services](https://github.com/GMU-ASRC/turbopi-coreservices)
+
+Research-related (not installed by main branch provision scripts):
+* [TurboPi Main Page management and simulations](https://github.com/GMU-ASRC/turbopi) (You are here)
+* [Managed Home Directory](https://github.com/GMU-ASRC/turbopi-root)
+
+
+<b> Link to the [wiki](https://github.com/GMU-ASRC/turbopi/wiki) </b>
+
+-----
 
 ## Directory Structure
 
